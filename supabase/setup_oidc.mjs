@@ -1,4 +1,4 @@
-// supabase/setup_oidc.mjs
+
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
