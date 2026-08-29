@@ -396,3 +396,23 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Supabase Local CLI
+supabase/.temp/
+supabase/.branches/
+
+# Secrets & Environment
+*.env
+*.env.local
+*.env.*.local
+appsettings.Production.json
+appsettings.Secrets.json
+
+# Frontend & OS Artifacts
+dist/
+build/
+.next/
+.svelte-kit/
+.output/
+.DS_Store
+Thumbs.db
