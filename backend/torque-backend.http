@@ -1,6 +1,0 @@
-@torque_backend_HostAddress = http://localhost:5267
-
-GET {{torque_backend_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
