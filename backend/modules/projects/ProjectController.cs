@@ -29,4 +29,36 @@ public class ProjectController : ControllerBase
             CreatedAt = project.CreatedAt
         });
     }
+
+    //Create Project
+    [HttpPost("create")]
+    public async Task<IActionResult> Create([FromBody] CreateProjectDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Title))
+        {
+            return BadRequest("Title is required!");
+        }
+
+        Project project = new Project
+        {
+            Title = dto.Title,
+            Description = dto.Description,
+            // TODO implement auth and get user id
+            OwnerUserId = Guid.Empty
+        };
+
+        _db.Projects.Add(project);
+        await _db.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetById), new { id = project.Id }, new PublicProjectDto
+        {
+            Id = project.Id,
+            OwnerUserId = project.OwnerUserId,
+            Title = project.Title,
+            Description = project.Description,
+            CreatedAt = project.CreatedAt
+        });
+
+    }
+
 }
