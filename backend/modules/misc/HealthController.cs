@@ -1,13 +1,17 @@
 using Microsoft.AspNetCore.Mvc;
 using Torque.Data;
-namespace Torque.Modules.Misc;
+
+// A endpoint for sharing the health of the backend
+// endpoint: /health
+
+namespace Torque.Misc;
 
 [ApiController]
 [Route("api/health")]
 public class HealthController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public HealthController(AppDbContext db) => _db = db; // DI hands us the registered DbContext
+    public HealthController(AppDbContext db) => _db = db;
 
     [HttpGet]
     public async Task<IActionResult> Get()

@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Torque.Data;
-using EFCore.NamingConventions;
 
-namespace Torque.Extensions;
+namespace Torque.Database;
 
 public static class DatabaseExtension
 {

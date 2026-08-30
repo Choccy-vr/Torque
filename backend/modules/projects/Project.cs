@@ -1,4 +1,4 @@
-namespace Torque.Entities;
+namespace Torque.Projects;
 
 public class Project
 {
