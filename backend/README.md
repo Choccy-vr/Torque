@@ -10,10 +10,10 @@ The backend for Torque written in C#.
 
 ## Endpoints
 
-| Method | Route | Description |
-|---|---|---|
-| GET | `api/health` | return JSON |
-| GET | `api/user/{id:guid}` | Get public profile (no PII) by user ID |
-| GET | `api/user/me` | Get authenticated user's own profile — not implemented (returns 501, no auth wired up) |
-| GET | `api/project/{id:guid}` | Get a project by ID |
-| POST | `api/project/create` | Create a new project (owner ID not yet set — auth pending) |
+| Method | Route | Auth required | Description |
+|---|---|---|---|
+| GET | `api/health` | No | return JSON |
+| GET | `api/user/{id:guid}` | No | Get public profile (no PII) by user ID |
+| GET | `api/user/me` | YES | Get authenticated user's own profile |
+| GET | `api/project/{id:guid}` | No | Get a project by ID |
+| POST | `api/project/create` | YES | Create a new project, owned by the authenticated user. Body (JSON): `title` (string, required), `description` (string, optional) |

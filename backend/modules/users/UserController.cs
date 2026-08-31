@@ -1,6 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Torque.Data;
-
+using Torque.Extensions;
 // A controller for user data
 // endpoint: /api/user/<command>
 
@@ -30,10 +31,24 @@ public class UserController : ControllerBase
     }
 
     // Own profile for the authenticated user
+    [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> GetMe()
     {
-        // TODO: no auth is implemented yet. 
-        return StatusCode(501, new { status = "not_implemented", reason = "auth not wired up yet" });
+        var userId = this.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var user = await _db.Users.FindAsync(userId);
+        if (user is null) return NotFound();
+
+        return Ok(new OwnProfileDto
+        {
+            Id = user.Id,
+            Username = user.Username,
+            Email = user.Email,
+            Bio = user.Bio,
+            CreatedAt = user.CreatedAt
+
+        });
     }
 }
