@@ -1,6 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Torque.Data;
-
+using Torque.Extensions;
 // A controller for project data
 // endpoint: /api/project/<command>
 
@@ -31,9 +32,13 @@ public class ProjectController : ControllerBase
     }
 
     //Create Project
+    [Authorize]
     [HttpPost("create")]
     public async Task<IActionResult> Create([FromBody] CreateProjectDto dto)
     {
+        var userId = this.GetUserId();
+        if (userId is null) return Unauthorized();
+
         if (string.IsNullOrWhiteSpace(dto.Title))
         {
             return BadRequest("Title is required!");
@@ -43,8 +48,7 @@ public class ProjectController : ControllerBase
         {
             Title = dto.Title,
             Description = dto.Description,
-            // TODO implement auth and get user id
-            OwnerUserId = Guid.Empty
+            OwnerUserId = userId.Value
         };
 
         _db.Projects.Add(project);
