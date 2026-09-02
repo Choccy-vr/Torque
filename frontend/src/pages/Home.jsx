@@ -3,12 +3,32 @@ import flag from '../assets/flag-orpheus-top.png'
 import motor from '../assets/motor.png'
 import {ChevronDown} from 'lucide-react'
 import { ReactLenis, useLenis } from 'lenis/react'
+import {useEffect, useState} from 'react'
 
 function handleSubmit() {
-  
+  console.log('Form submitted');
 }
 
 export default function Home() {
+
+  const [hideArrow, setHideArrow] = useState(false);
+
+  const lenis = useLenis((lenis) => {
+    console.log(window.scrollY);
+  })
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setHideArrow(window.scrollY >= 5);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   return (
     <>
       <ReactLenis root/>
@@ -51,25 +71,41 @@ export default function Home() {
         </div>
       
         <div className="absolute bottom-4 left-0 right-0">
-          <ChevronDown className="mx-auto w-12 h-12 text-white animate-bounce hover:opacity-80 transition-all duration-300 ease cursor-pointer" />
+          <ChevronDown 
+            className={`mx-auto w-16 h-16 text-white animate-bounce transition-all duration-300 ease ${hideArrow ? "opacity-0 pointer-events-none" : "opacity-100 hover:opacity-80 cursor-pointer"}`} 
+
+            onClick={() => {
+              const section = document.querySelector('.section1');
+              section?.scrollIntoView({ behavior: 'smooth', block: "center" });
+              console.log("clicked");
+            }}
+          />
         </div>
 
       </div>
 
-      <section className="min-h-screen w-full z-20 mt-20">
-
-        <div className="font-phantom relative items-center justify-center min-h-full z-20 pointer-events-none">
-          <div className="w-full max-w-7xl mx-auto px-6 md:px-4 pointer-events-auto">
-              <div className="space-y-4 md:space-y-5 text-center md:text-left">
-
-                <div className="w-full flex items-center justify-center ">
-                  <h1 className="text-6xl md:text-8xl font-phantom font-bold text-white">How It Works</h1>
-                </div>
-
+      <section className="section1 min-h-screen w-full z-20 mt-10 pt-20">
+          <div className="font-phantom relative flex items-center justify-center flex-col px-6 md:px-4 pointer-events-auto z-20">
+            <h1 className="text-6xl md:text-8xl font-bold text-white z-20">How It Works</h1>
+            <div className="grid grid-cols-1 mt-20 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-16 max-w-screen-2xl mx-auto">
+              <div className="bg-black p-6 md:p-8 text-center text-white">
+                <h1 className="md:text-lg">Design</h1>
+                <p className="md:text-lg">Design your hardware project — pick a motor-powered idea and plan how it'll work.</p>
               </div>
+              <div className="bg-black p-6 md:p-8 text-center text-white">
+                <h1 className="md:text-lg">Build</h1>
+                <p className="md:text-lg">Get a grant to pay for the parts, then build your design into something real.</p>
+              </div>
+              <div className="bg-black p-6 md:p-8 text-center text-white">
+                <h1 className="md:text-lg">Revise</h1>
+                <p className="md:text-lg">Test what you built and make any revisions it needs to work better.</p>
+              </div>
+              <div className="bg-black p-6 md:p-8 text-center text-white">
+                <h1 className="md:text-lg">Ship</h1>
+                <p className="md:text-lg">Ship a finished, working project and unlock more prizes in the shop.</p>
+              </div>
+            </div>
           </div>
-        </div>
-
       </section>
     </>
   )
