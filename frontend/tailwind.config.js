@@ -6,6 +6,7 @@ export default {
   ],
   theme: {
     extend: {},
+    phantom: ["Phantom Sans", 'sans-serif'],
   },
   plugins: [],
 }
