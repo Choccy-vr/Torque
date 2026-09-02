@@ -405,6 +405,8 @@ supabase/.branches/
 *.env
 *.env.local
 *.env.*.local
+# ...but the placeholder template is meant to be committed
+!example.env
 appsettings.Production.json
 appsettings.Secrets.json
 

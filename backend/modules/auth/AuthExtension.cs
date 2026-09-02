@@ -15,6 +15,16 @@ public static class AuthExtension
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
         {
+            // Keep JWT claim names as-is. Without this, `sub` is rewritten to
+            // ClaimTypes.NameIdentifier and ControllerExtension.GetUserId() finds nothing.
+            options.MapInboundClaims = false;
+
+            // Supabase signs user tokens with a rotating asymmetric key (ES256) and publishes
+            // it as JWKS, so the keys have to be discovered rather than configured. The legacy
+            // symmetric secret below still validates older HS256 tokens; both are tried.
+            options.MetadataAddress = $"{supabaseUrl}/auth/v1/.well-known/openid-configuration";
+            options.RequireHttpsMetadata = supabaseUrl.StartsWith("https", StringComparison.OrdinalIgnoreCase);
+
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
@@ -27,7 +37,6 @@ public static class AuthExtension
 
             };
         });
-        services.AddAuthentication();
 
         return services;
     }

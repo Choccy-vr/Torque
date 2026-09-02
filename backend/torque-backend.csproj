@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The harness is served straight off disk, so editing it never needs a rebuild.
+         Without this, dotnet watch restarts the server on every html/css/js keystroke. -->
+    <Watch Remove="testing/**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="EFCore" Version="1.1.2" />
     <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />

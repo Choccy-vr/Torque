@@ -1,5 +1,6 @@
 using Torque.Database;
 using Torque.Auth;
+using Torque.Testing;
 using DotNetEnv;
 
 Env.Load();
@@ -13,7 +14,13 @@ builder.Services.AddSupabaseAuth(builder.Configuration);
 var app = builder.Build();
 
 //app.UseCors(CorsExtensions.FrontendPolicy);
-app.MapControllers();
 app.UseAuthentication();
 app.UseAuthorization();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseTestingHarness();
+}
+
+app.MapControllers();
 app.Run();
