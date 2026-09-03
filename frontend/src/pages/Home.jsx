@@ -47,6 +47,7 @@ export default function Home() {
     <>
       <ReactLenis root/>
       <div className="fixed inset-0 z-0 bg-[#d48300] [background-image:linear-gradient(#f7ff0040_1px,transparent_1px),linear-gradient(90deg,#f7ff0040_1px,transparent_1px)] [background-size:50px_50px]" />
+      <div className="fixed inset-0 z-0 bg-black opacity-20" />
 
       <div>
         <img
@@ -101,7 +102,7 @@ export default function Home() {
       <section className="section1 w-full z-20 mt-10 pt-20">
           <div className="font-phantom relative flex items-center justify-center flex-col pointer-events-auto z-20">
             <h1 className="text-4xl md:text-6xl font-bold text-white z-20">How It Works</h1>
-            <div className="grid grid-cols-1 mt-20 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-16 max-w-screen-2xl mx-auto">
+            <div className="grid grid-cols-1 mt-20 md:grid-cols-2 lg:grid-cols-4 gap-8 px-20 md:gap-16 max-w-screen-2xl mx-auto">
               <div className="bg-black p-6 md:p-8 text-center text-white">
                 <h1 className="md:text-lg">Design</h1>
                 <p className="md:text-lg">Design your hardware project — pick a motor-powered idea and plan how it'll work.</p>
@@ -125,22 +126,31 @@ export default function Home() {
       <section className="section2 w-full z-20 mt-10 pt-20">
         <div className="font-phantom relative flex items-center justify-center flex-col pointer-events-auto z-20">
           <h1 className="text-4xl md:text-6xl font-bold text-white z-20">FAQ</h1>
-          <div className="faqBox p-10 bg-black text-white m-20 max-w-screen-2xl mx-auto gap-4 flex flex-col">
+          <div className="text-white w-full max-w-2xl px-10 m-20 mx-auto gap-5 flex flex-col">
             {faq.map((item, index) => (
-              <div key={index} className="faqItem">
+              <div key={index} className="w-full">
                 <div 
-                  className="faqQuestion w-full bg-white text-black p-4 flex flex-row items-center justify-between cursor-pointer transition-all duration-300 ease hover:opacity-80"
+                  className="bg-white rounded-md text-black p-4 flex w-full flex-col cursor-pointer transition-all duration-300 ease hover:opacity-85"
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}  
                 >
-                  <h1>{item.question}</h1>
-                  {openFaq === index ? <ChevronUp /> : <ChevronDown />}
+                  <div className="flex flex-row w-full items-center justify-between transition-all duration-300 ease">
+                    <h1>{item.question}</h1>
+                    {openFaq === index ? <ChevronUp /> : <ChevronDown />}
+                  </div>
+
+
+                  <p className={`transition-all duration-500 ease text-md ${openFaq === index ? 'max-h-20 opacity-50 mt-4 ' : 'mt-0 opacity-0 max-h-0 overflow-hidden'}`}>{item.answer}</p>
+
                 </div>
-                  <p className={`faqAnswer mt-4 ${openFaq === index ? 'block' : 'hidden'}`}>{item.answer}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
+
+      <footer className="w-full flex items-center justify-center z-50 relative h-32 mt-20 bg-black text-white">
+        <h1>Made with ❤️ by the Hack Club community</h1>
+      </footer>
     </>
   )
 }
