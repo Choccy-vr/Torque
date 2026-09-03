@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Torque API Harness</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <h1>Torque API Harness</h1>
+  <div id="status-bar" class="status-bar">
+    <span class="pill" id="pill-config">config &middot; loading</span>
+    <span class="pill" id="pill-backend">backend &middot; ?</span>
+    <span class="pill" id="pill-auth">auth &middot; signed out</span>
+  </div>
+</header>
+
+<main>
+  <div class="col">
+
+    <section class="card" id="auth-card">
+      <h2>Authentication</h2>
+      <p class="muted" id="auth-provider-line">&mdash;</p>
+
+      <div class="row" id="auth-actions">
+        <button id="btn-signin" class="primary">Sign in with OIDC</button>
+        <button id="btn-refresh" disabled>Refresh session</button>
+        <button id="btn-signout" disabled>Sign out</button>
+      </div>
+
+      <div id="auth-error" class="banner error" hidden></div>
+
+      <dl id="auth-details" class="kv" hidden>
+        <dt>user id (sub)</dt><dd><code id="auth-sub"></code> <button class="mini" data-copy="auth-sub">copy</button></dd>
+        <dt>email</dt><dd><code id="auth-email"></code></dd>
+        <dt>expires</dt><dd><span id="auth-exp"></span></dd>
+        <dt>access token</dt><dd><button class="mini" id="btn-copy-token">copy bearer token</button></dd>
+      </dl>
+
+      <details id="auth-raw" hidden>
+        <summary>Decoded JWT payload</summary>
+        <pre id="auth-jwt"></pre>
+      </details>
+      <details id="auth-user-raw" hidden>
+        <summary>Supabase user object (OIDC claims land in <code>user_metadata</code>)</summary>
+        <pre id="auth-user"></pre>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Endpoints</h2>
+      <div id="endpoints"></div>
+    </section>
+
+    <section class="card">
+      <h2>Custom request</h2>
+      <div class="row">
+        <select id="custom-method">
+          <option>GET</option><option>POST</option><option>PUT</option>
+          <option>PATCH</option><option>DELETE</option>
+        </select>
+        <input id="custom-path" type="text" value="/api/" spellcheck="false" class="grow">
+        <label class="check"><input type="checkbox" id="custom-auth" checked> auth</label>
+        <button id="custom-send" class="primary">Send</button>
+      </div>
+      <textarea id="custom-body" rows="5" spellcheck="false" placeholder="JSON body (ignored for GET)"></textarea>
+    </section>
+
+  </div>
+
+  <div class="col">
+
+    <section class="card sticky">
+      <h2>Response</h2>
+      <div id="response-empty" class="muted">No requests sent yet.</div>
+
+      <div id="response" hidden>
+        <div class="row resp-head">
+          <span class="status" id="resp-status"></span>
+          <span class="muted" id="resp-label"></span>
+          <span class="muted" id="resp-time"></span>
+        </div>
+        <div id="resp-hint" class="banner hint" hidden></div>
+        <pre id="resp-body"></pre>
+        <details>
+          <summary>Response headers</summary>
+          <pre id="resp-headers"></pre>
+        </details>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>History</h2>
+      <ol id="history" class="history"><li class="muted">empty</li></ol>
+    </section>
+
+  </div>
+</main>
+
+<script src="vendor/supabase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

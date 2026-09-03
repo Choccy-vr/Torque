@@ -8,6 +8,14 @@ The backend for Torque written in C#.
 2. Copy example.env and rename it .env and put in all your env vars
 3. Run dotnet watch
 
+## Testing
+
+**DISCLAIMER:** This part was done using AI
+
+`./testing/run.sh` brings up Supabase and the backend, and serves a test harness at
+<http://localhost:5267/testing/> that signs in over OIDC and sends authenticated
+requests to every endpoint below. See [testing/README.md](testing/README.md).
+
 ## Endpoints
 
 | Method | Route | Auth required | Description |

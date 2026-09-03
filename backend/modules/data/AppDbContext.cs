@@ -19,10 +19,6 @@ public class AppDbContext : DbContext
         builder.Entity<Project>()
             .Property(p => p.Id)
             .HasDefaultValueSql("gen_random_uuid()");
-
-        builder.Entity<User>()
-            .Property(p => p.Id)
-            .HasDefaultValueSql("gen_random_uuid()");
     }
 
 }
