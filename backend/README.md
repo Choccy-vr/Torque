@@ -10,7 +10,7 @@ The backend for Torque written in C#.
 
 ## Testing
 
-DISCLAIMER: This part was done using AI
+**DISCLAIMER:** This part was done using AI
 
 `./testing/run.sh` brings up Supabase and the backend, and serves a test harness at
 <http://localhost:5267/testing/> that signs in over OIDC and sends authenticated

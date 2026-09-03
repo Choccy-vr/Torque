@@ -21,6 +21,7 @@ public class User
     public string HackatimeID { get; set; } = null!;
     public bool YswsEligible { get; set; } = false;
     public bool VerificationStatus { get; set; } = false;
+    public bool CompletedFirstTimeSetup { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
 }
