@@ -1,8 +1,8 @@
 import React from 'react'
 import flag from '../assets/flag-orpheus-top.png'
 import motor from '../assets/motor.png'
-import {ChevronDown} from 'lucide-react'
-import { ReactLenis, useLenis } from 'lenis/react'
+import {ChevronDown, ChevronUp} from 'lucide-react'
+import {ReactLenis, useLenis } from 'lenis/react'
 import {useEffect, useState} from 'react'
 
 function handleSubmit() {
@@ -12,6 +12,20 @@ function handleSubmit() {
 export default function Home() {
 
   const [hideArrow, setHideArrow] = useState(false);
+  const [openFaq, setOpenFaq] = useState(null);
+
+  const faq = [
+    {question: "What is Torque?", answer: "Torque is a program where you build hardware projects with motors, and get funding and prizes for your projects."},
+    {question: "Who can participate?", answer: "You have to be a teen, ages 13-18."},
+    {question: "Can I join if I'm a beginner?", answer: "Yes! You don't need prior hardware experience to join. We have guides and a helpful community."},
+    {question: "Is this free?", answer: "Yes, Torque is completely free to join."},
+    {question: "What is Hack Club?", answer: "Hack Club is a 501(c)(3) nonprofit and network of 100k+ technical high schoolers who believe you learn best by building."},
+    {question: "How many projects can I build?", answer: "There's no limit to the number of projects you can build! We encourage you to explore your creativity and build as many projects as you want."},
+  ]
+
+  const handleAnswerClick = () => {
+    setHideAnswer(!hideAnswer);
+  }
 
   const lenis = useLenis((lenis) => {
     console.log(window.scrollY);
@@ -38,11 +52,11 @@ export default function Home() {
         <img
           src={flag}
           alt="Hack Club Flag"
-          className="fixed top-0 left-6 z-10 h-20 hover:opacity-75 cursor-pointer transition-all duration-300 ease"
+          className="fixed top-0 left-6 z-50 h-20 hover:opacity-75 cursor-pointer transition-all duration-300 ease"
           onClick={() => window.open('https://hackclub.com', '_blank')}
         />
 
-        <button className="fixed top-8 right-10 z-10 rounded-md bg-white px-12 py-2 text-black transition-all duration-300 ease hover:opacity-80">
+        <button className="fixed top-8 right-10 z-50 rounded-md bg-white px-12 py-2 text-black transition-all duration-300 ease hover:opacity-80">
           Log In
         </button>
       </div>
@@ -84,9 +98,9 @@ export default function Home() {
 
       </div>
 
-      <section className="section1 min-h-screen w-full z-20 mt-10 pt-20">
-          <div className="font-phantom relative flex items-center justify-center flex-col px-6 md:px-4 pointer-events-auto z-20">
-            <h1 className="text-6xl md:text-8xl font-bold text-white z-20">How It Works</h1>
+      <section className="section1 w-full z-20 mt-10 pt-20">
+          <div className="font-phantom relative flex items-center justify-center flex-col pointer-events-auto z-20">
+            <h1 className="text-4xl md:text-6xl font-bold text-white z-20">How It Works</h1>
             <div className="grid grid-cols-1 mt-20 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-16 max-w-screen-2xl mx-auto">
               <div className="bg-black p-6 md:p-8 text-center text-white">
                 <h1 className="md:text-lg">Design</h1>
@@ -106,6 +120,26 @@ export default function Home() {
               </div>
             </div>
           </div>
+      </section>
+
+      <section className="section2 w-full z-20 mt-10 pt-20">
+        <div className="font-phantom relative flex items-center justify-center flex-col pointer-events-auto z-20">
+          <h1 className="text-4xl md:text-6xl font-bold text-white z-20">FAQ</h1>
+          <div className="faqBox p-10 bg-black text-white m-20 max-w-screen-2xl mx-auto gap-4 flex flex-col">
+            {faq.map((item, index) => (
+              <div key={index} className="faqItem">
+                <div 
+                  className="faqQuestion w-full bg-white text-black p-4 flex flex-row items-center justify-between cursor-pointer transition-all duration-300 ease hover:opacity-80"
+                  onClick={() => setOpenFaq(openFaq === index ? null : index)}  
+                >
+                  <h1>{item.question}</h1>
+                  {openFaq === index ? <ChevronUp /> : <ChevronDown />}
+                </div>
+                  <p className={`faqAnswer mt-4 ${openFaq === index ? 'block' : 'hidden'}`}>{item.answer}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
     </>
   )
