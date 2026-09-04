@@ -1,7 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -39,17 +39,13 @@ public static class AuthExtension
             {
                 OnTokenValidated = context =>
                 {
-                    var token = (JwtSecurityToken)context.SecurityToken;
+                    var token = (JsonWebToken)context.SecurityToken;
                     var identity = (ClaimsIdentity)context.Principal!.Identity!;
 
-                    var metadataClaim = token.Payload.TryGetValue("user_metadata", out var raw)
-                        ? raw?.ToString()
-                        : null;
-
-                    if (!string.IsNullOrEmpty(metadataClaim))
+                    if (token.TryGetPayloadValue("user_metadata", out JsonElement metadata)
+                        && metadata.ValueKind == JsonValueKind.Object)
                     {
-                        using var doc = JsonDocument.Parse(metadataClaim);
-                        foreach (var prop in doc.RootElement.EnumerateObject())
+                        foreach (var prop in metadata.EnumerateObject())
                         {
                             if (prop.Value.ValueKind == JsonValueKind.String)
                                 identity.AddClaim(new Claim($"user_metadata:{prop.Name}", prop.Value.GetString()!));

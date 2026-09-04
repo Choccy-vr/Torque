@@ -32,7 +32,12 @@ public class EnsureUserExistsFilter : IAsyncActionFilter
                         Id = userId,
                         Email = email,
                         Name = RealName,
-                        HcUserID = HcUserID
+                        HcUserID = HcUserID,
+                        Username = RealName,
+                        Bio = "",
+                        SlackUserID = "",
+                        Role = "",
+                        HackatimeID = ""
                     });
                     await _db.SaveChangesAsync();
                 }
