@@ -45,11 +45,7 @@ public static class AuthExtension
                     if (token.TryGetPayloadValue("user_metadata", out JsonElement metadata)
                         && metadata.ValueKind == JsonValueKind.Object)
                     {
-                        foreach (var prop in metadata.EnumerateObject())
-                        {
-                            if (prop.Value.ValueKind == JsonValueKind.String)
-                                identity.AddClaim(new Claim($"user_metadata:{prop.Name}", prop.Value.GetString()!));
-                        }
+                        AddClaimsFromJson(identity, "user_metadata", metadata);
                     }
 
                     return Task.CompletedTask;
@@ -58,5 +54,29 @@ public static class AuthExtension
         });
 
         return services;
+    }
+
+    private static void AddClaimsFromJson(ClaimsIdentity identity, string prefix, JsonElement element)
+    {
+        foreach (var prop in element.EnumerateObject())
+        {
+            var claimType = $"{prefix}:{prop.Name}";
+            switch (prop.Value.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    AddClaimsFromJson(identity, claimType, prop.Value);
+                    break;
+                case JsonValueKind.String:
+                    identity.AddClaim(new Claim(claimType, prop.Value.GetString()!));
+                    break;
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                    identity.AddClaim(new Claim(claimType, prop.Value.GetBoolean() ? "true" : "false"));
+                    break;
+                case JsonValueKind.Number:
+                    identity.AddClaim(new Claim(claimType, prop.Value.GetRawText()));
+                    break;
+            }
+        }
     }
 }

@@ -22,6 +22,13 @@ public class EnsureUserExistsFilter : IAsyncActionFilter
                 var email = principal.FindFirst("email")?.Value ?? "";
                 var RealName = principal.FindFirst("user_metadata:name")?.Value ?? "";
                 var HcUserID = principal.FindFirst("user_metadata:sub")?.Value ?? "";
+                var SlackUserID = principal.FindFirst("user_metadata:custom_claims:slack_id")?.Value ?? "";
+                bool VerificationStatus = string.Equals(
+                    principal.FindFirst("user_metadata:custom_claims:verification_status")?.Value,
+                    "verified", StringComparison.OrdinalIgnoreCase);
+                bool YswsEligible = bool.TryParse(
+                    principal.FindFirst("user_metadata:custom_claims:ysws_eligible")?.Value,
+                    out var yswsEligible) && yswsEligible;
 
                 var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
@@ -35,9 +42,11 @@ public class EnsureUserExistsFilter : IAsyncActionFilter
                         HcUserID = HcUserID,
                         Username = RealName,
                         Bio = "",
-                        SlackUserID = "",
+                        SlackUserID = SlackUserID,
                         Role = "",
-                        HackatimeID = ""
+                        HackatimeID = "",
+                        VerificationStatus = VerificationStatus,
+                        YswsEligible = YswsEligible
                     });
                     await _db.SaveChangesAsync();
                 }
@@ -47,6 +56,9 @@ public class EnsureUserExistsFilter : IAsyncActionFilter
                     if (user.Email != email) { user.Email = email; changed = true; }
                     if (user.Name != RealName) { user.Name = RealName; changed = true; }
                     if (user.HcUserID != HcUserID) { user.HcUserID = HcUserID; changed = true; }
+                    if (user.SlackUserID != SlackUserID) { user.SlackUserID = SlackUserID; changed = true; }
+                    if (user.VerificationStatus != VerificationStatus) { user.VerificationStatus = VerificationStatus; changed = true; }
+                    if (user.YswsEligible != YswsEligible) { user.YswsEligible = YswsEligible; changed = true; }
 
                     if (changed)
                         await _db.SaveChangesAsync();
