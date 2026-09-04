@@ -28,11 +28,7 @@ public class UserController : ControllerBase
             Bio = user.Bio,
             ProfilePictureUrl = user.ProfilePictureUrl,
             Volts = user.Volts,
-            TotalTimeShipped = user.TotalTimeShipped,
-            TotalProjects = user.TotalProjects,
-            TotalDevlogs = user.TotalDevlogs,
             Projects = user.Projects,
-            Devlogs = user.Devlogs,
             CreatedAt = user.CreatedAt
         });
     }
@@ -57,17 +53,14 @@ public class UserController : ControllerBase
             Name = user.Name,
             ProfilePictureUrl = user.ProfilePictureUrl,
             Volts = user.Volts,
-            TotalTimeShipped = user.TotalTimeShipped,
-            TotalProjects = user.TotalProjects,
-            TotalDevlogs = user.TotalDevlogs,
             Projects = user.Projects,
-            Devlogs = user.Devlogs,
             SlackUserID = user.SlackUserID,
             Role = user.Role,
             HcUserID = user.HcUserID,
             HackatimeID = user.HackatimeID,
             YswsEligible = user.YswsEligible,
             VerificationStatus = user.VerificationStatus,
+            Country = user.Country,
             CreatedAt = user.CreatedAt
         });
     }
