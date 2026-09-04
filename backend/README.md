@@ -25,3 +25,5 @@ requests to every endpoint below. See [testing/README.md](testing/README.md).
 | GET | `api/user/me` | YES | Get authenticated user's own profile |
 | GET | `api/project/{id:guid}` | No | Get a project by ID |
 | POST | `api/project/create` | YES | Create a new project, owned by the authenticated user. Body (JSON): `title` (string, required), `description` (string, optional) |
+| GET | `api/devlog/{id:guid}` | No | Get a devlog by ID |
+| POST | `api/devlog/create` | YES | Create a new devlog, owned by the authenticated user. Body (JSON): `projectId` (guid, required), `title` (string, required), `text` (string, required), `imageUrls` (string[], optional) |

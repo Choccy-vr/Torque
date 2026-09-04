@@ -1,4 +1,4 @@
-namespace Torque.Projects;
+namespace Torque.Users;
 // Entity model for Users
 // db table: Users
 public class User

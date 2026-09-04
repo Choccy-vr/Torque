@@ -57,6 +57,27 @@ const ENDPOINTS = [
       hackatimeProjectNames: ['my-project'],
     },
   },
+  {
+    id: 'devlog-by-id',
+    method: 'GET',
+    path: '/api/devlog/{id}',
+    auth: false,
+    desc: 'A single devlog. 404 when no such devlog.',
+    params: [{ name: 'id', placeholder: 'devlog uuid' }],
+  },
+  {
+    id: 'devlog-create',
+    method: 'POST',
+    path: '/api/devlog/create',
+    auth: true,
+    desc: 'Creates a devlog owned by the signed-in user. 400 when title/projectId/text is blank.',
+    body: {
+      projectId: '00000000-0000-0000-0000-000000000000',
+      title: 'Test devlog',
+      text: 'created from the harness',
+      imageUrls: [],
+    },
+  },
 ];
 
 // ---------------------------------------------------------------- boot
@@ -294,6 +315,12 @@ async function send({ method, path, body, auth, endpointId }) {
   // A created project's id is immediately useful to the GET /api/project/{id} row.
   if (endpointId === 'project-create' && res.status === 201 && parsed?.id) {
     const target = $('p-project-by-id-id');
+    if (target) target.value = parsed.id;
+  }
+
+  // Same convenience for devlogs: feed the created id into the GET row.
+  if (endpointId === 'devlog-create' && res.status === 201 && parsed?.id) {
+    const target = $('p-devlog-by-id-id');
     if (target) target.value = parsed.id;
   }
 }
