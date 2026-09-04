@@ -47,7 +47,15 @@ const ENDPOINTS = [
     path: '/api/project/create',
     auth: true,
     desc: 'Creates a project owned by the signed-in user. 400 when title is blank.',
-    body: { title: 'Test project', description: 'created from the harness' },
+    body: {
+      title: 'Test project',
+      description: 'created from the harness',
+      tier: 0,
+      repoUrl: 'https://github.com/example/repo',
+      demoUrl: 'https://example.com/demo',
+      readmeUrl: 'https://github.com/example/repo#readme',
+      hackatimeProjectNames: ['my-project'],
+    },
   },
 ];
 

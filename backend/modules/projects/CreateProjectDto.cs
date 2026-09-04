@@ -5,5 +5,11 @@ public record CreateProjectDto
 {
     public string Title { get; init; } = null!;
     public string? Description { get; init; }
+    public int Tier { get; init; }
 
+    public string? RepoUrl { get; init; }
+    public string? DemoUrl { get; init; }
+    public string? ReadmeUrl { get; init; }
+
+    public string[]? HackatimeProjectNames { get; init; }
 }
