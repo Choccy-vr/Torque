@@ -4,8 +4,8 @@ namespace Torque.Projects;
 public record PublicDevlogDto
 {
     public Guid Id { get; init; }
-    public Guid OwnerUserId { get; init; }
-    public Guid ProjectId { get; init; }
+    public string OwnerUserId { get; init; } = null!;
+    public string ProjectId { get; init; } = null!;
 
     public string Title { get; init; } = null!;
     public string Text { get; init; } = null!;

@@ -20,7 +20,7 @@ public record ReviewerProfileDto
     public string? Country { get; init; }
 
 
-    public Guid[]? Projects { get; init; }
+    public string[]? Projects { get; init; }
 
 
     public string Role { get; init; } = null!;

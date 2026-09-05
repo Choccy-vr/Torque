@@ -4,7 +4,7 @@ namespace Torque.Projects;
 public record PrivateProjectDto
 {
     public Guid Id { get; init; }
-    public Guid OwnerUserId { get; init; }
+    public string OwnerUserId { get; init; } = null!;
 
     public string Title { get; init; } = null!;
     public string? Description { get; init; }
@@ -14,10 +14,12 @@ public record PrivateProjectDto
     public string? DemoUrl { get; init; }
     public string? ReadmeUrl { get; init; }
 
-    public Guid ClaimedByReviewer { get; init; }
+    public string ClaimedByReviewer { get; init; } = null!;
     public DateTime ClaimedAt { get; init; }
 
     public string[]? HackatimeProjectNames { get; init; }
+
+    public string[]? DevlogIds { get; init; }
 
     public ProjectStatus Status { get; init; } = ProjectStatus.Unshipped;
 

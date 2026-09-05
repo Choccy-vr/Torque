@@ -3,7 +3,7 @@ namespace Torque.Projects;
 // Derived from Devlog.cs
 public record CreateDevlogDto
 {
-    public Guid ProjectId { get; init; }
+    public string? ProjectId { get; init; }
 
     public string Title { get; init; } = null!;
     public string Text { get; init; } = null!;

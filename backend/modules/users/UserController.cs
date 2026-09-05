@@ -28,7 +28,7 @@ public class UserController : ControllerBase
             Bio = user.Bio,
             ProfilePictureUrl = user.ProfilePictureUrl,
             Volts = user.Volts,
-            Projects = user.Projects,
+            Projects = user.Projects?.Select(p => p.ToString()).ToArray(),
             CreatedAt = user.CreatedAt
         });
     }
@@ -53,7 +53,7 @@ public class UserController : ControllerBase
             Name = user.Name,
             ProfilePictureUrl = user.ProfilePictureUrl,
             Volts = user.Volts,
-            Projects = user.Projects,
+            Projects = user.Projects?.Select(p => p.ToString()).ToArray(),
             SlackUserID = user.SlackUserID,
             Role = user.Role,
             HcUserID = user.HcUserID,

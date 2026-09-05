@@ -25,7 +25,7 @@ public class ProjectController : ControllerBase
         return Ok(new PublicProjectDto
         {
             Id = project.Id,
-            OwnerUserId = project.OwnerUserId,
+            OwnerUserId = project.OwnerUserId.ToString(),
             Title = project.Title,
             Description = project.Description,
             Tier = project.Tier,
@@ -35,8 +35,47 @@ public class ProjectController : ControllerBase
             Status = project.Status,
             TotalHours = project.TotalHoursRaw,
             AiUse = project.AiUse,
+            DevlogIds = project.DevlogIds,
             CreatedAt = project.CreatedAt
         });
+    }
+
+    // projects for the authenticated user
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> GetMine()
+    {
+        var userId = this.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var projects = await _db.Projects
+            .Where(p => p.OwnerUserId == userId.Value)
+            .Select(p => new PrivateProjectDto
+            {
+                Id = p.Id,
+                OwnerUserId = p.OwnerUserId.ToString(),
+                Title = p.Title,
+                Description = p.Description,
+                Tier = p.Tier,
+                RepoUrl = p.RepoUrl,
+                DemoUrl = p.DemoUrl,
+                ReadmeUrl = p.ReadmeUrl,
+                ClaimedByReviewer = p.ClaimedByReviewer.ToString(),
+                ClaimedAt = p.ClaimedAt,
+                HackatimeProjectNames = p.HackatimeProjectNames,
+                DevlogIds = p.DevlogIds,
+                Status = p.Status,
+                TrackedDesignHours = p.TrackedDesignHours,
+                TrackedBuildHours = p.TrackedBuildHours,
+                TotalHoursRaw = p.TotalHoursRaw,
+                TotalHoursApproved = p.TotalHoursApproved,
+                AiUse = p.AiUse,
+                VoltsGranted = p.VoltsGranted,
+                CreatedAt = p.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(projects);
     }
 
     //Create Project
@@ -95,16 +134,17 @@ public class ProjectController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = project.Id }, new PrivateProjectDto
         {
             Id = project.Id,
-            OwnerUserId = project.OwnerUserId,
+            OwnerUserId = project.OwnerUserId.ToString(),
             Title = project.Title,
             Description = project.Description,
             Tier = project.Tier,
             RepoUrl = project.RepoUrl,
             DemoUrl = project.DemoUrl,
             ReadmeUrl = project.ReadmeUrl,
-            ClaimedByReviewer = project.ClaimedByReviewer,
+            ClaimedByReviewer = project.ClaimedByReviewer.ToString(),
             ClaimedAt = project.ClaimedAt,
             HackatimeProjectNames = project.HackatimeProjectNames,
+            DevlogIds = project.DevlogIds,
             Status = project.Status,
             TrackedDesignHours = project.TrackedDesignHours,
             TrackedBuildHours = project.TrackedBuildHours,

@@ -18,6 +18,8 @@ public class Project
 
     public string[]? HackatimeProjectNames { get; set; }
 
+    public string[]? DevlogIds { get; set; }
+
     public ProjectStatus Status { get; set; } = ProjectStatus.Unshipped;
 
     public float TrackedDesignHours { get; set; } = 0;// hours spent on design stage

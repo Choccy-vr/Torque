@@ -11,7 +11,7 @@ public record OwnProfileDto
     public string Name { get; init; } = null!;
     public string? ProfilePictureUrl { get; init; }
     public int Volts { get; init; }
-    public Guid[]? Projects { get; init; }
+    public string[]? Projects { get; init; }
     public string SlackUserID { get; init; } = null!;
     public string Role { get; init; } = null!;
     public string HcUserID { get; init; } = null!;

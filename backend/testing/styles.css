@@ -100,6 +100,26 @@ pre {
 .banner.hint  { background: #1a1608; border: 1px solid #4a3c14; color: #f0d48a; }
 .banner pre { max-height: 200px; }
 
+/* endpoint group cards */
+#endpoints { display: flex; flex-direction: column; gap: 16px; }
+
+details.card summary {
+  cursor: pointer; list-style: none; user-select: none;
+  display: flex; align-items: center; gap: 8px;
+}
+details.card summary::-webkit-details-marker { display: none; }
+details.card summary::before {
+  content: '▸'; display: inline-block; color: var(--muted); font-size: 11px;
+  transition: transform .15s ease; transform: rotate(0deg);
+}
+details.card[open] summary::before { transform: rotate(90deg); }
+details.card summary h2 { margin: 0; }
+details.card summary .ep-count {
+  margin-left: auto; font-size: 11px; color: var(--muted);
+  font-weight: 400; text-transform: none; letter-spacing: normal;
+}
+details.card .ep-list { margin-top: 12px; }
+
 /* endpoint rows */
 .ep { border-top: 1px solid var(--line); padding: 12px 0; }
 .ep:first-child { border-top: none; padding-top: 0; }

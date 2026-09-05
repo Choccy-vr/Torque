@@ -9,6 +9,6 @@ public record PublicProfileDto
     public string Bio { get; init; } = null!;
     public string? ProfilePictureUrl { get; init; }
     public int Volts { get; init; }
-    public Guid[]? Projects { get; init; }
+    public string[]? Projects { get; init; }
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 }
