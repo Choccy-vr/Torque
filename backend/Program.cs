@@ -1,5 +1,6 @@
 using Torque.Database;
 using Torque.Auth;
+using Torque.Extensions;
 using Torque.Testing;
 using Torque.Users;
 using DotNetEnv;
@@ -12,13 +13,13 @@ builder.Services.AddControllers(options =>
     options.Filters.Add<EnsureUserExistsFilter>();
 });
 builder.Services.AddScoped<EnsureUserExistsFilter>();
-//builder.Services.AddFrontendCors(builder.Configuration);
+builder.Services.AddFrontendCors(builder.Configuration);
 builder.Services.AddAppDatabase(builder.Configuration);
 builder.Services.AddSupabaseAuth(builder.Configuration);
 
 var app = builder.Build();
 
-//app.UseCors(CorsExtensions.FrontendPolicy);
+app.UseCors(CorsExtensions.FrontendPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -10,9 +10,11 @@ let config = null;
 
 // Mirrors the endpoint table in backend/README.md.
 // `auth: true` means the action carries [Authorize].
+// `group` maps 1:1 to the backend module (modules/<group>) and drives the section headings below.
 const ENDPOINTS = [
   {
     id: 'health',
+    group: 'misc',
     method: 'GET',
     path: '/api/health',
     auth: false,
@@ -20,6 +22,7 @@ const ENDPOINTS = [
   },
   {
     id: 'user-by-id',
+    group: 'users',
     method: 'GET',
     path: '/api/user/{id}',
     auth: false,
@@ -28,6 +31,7 @@ const ENDPOINTS = [
   },
   {
     id: 'user-me',
+    group: 'users',
     method: 'GET',
     path: '/api/user/me',
     auth: true,
@@ -35,6 +39,7 @@ const ENDPOINTS = [
   },
   {
     id: 'project-by-id',
+    group: 'projects',
     method: 'GET',
     path: '/api/project/{id}',
     auth: false,
@@ -42,14 +47,81 @@ const ENDPOINTS = [
     params: [{ name: 'id', placeholder: 'project uuid' }],
   },
   {
+    id: 'project-me',
+    group: 'projects',
+    method: 'GET',
+    path: '/api/project/me',
+    auth: true,
+    desc: "The signed-in user's own projects.",
+  },
+  {
     id: 'project-create',
+    group: 'projects',
     method: 'POST',
     path: '/api/project/create',
     auth: true,
     desc: 'Creates a project owned by the signed-in user. 400 when title is blank.',
-    body: { title: 'Test project', description: 'created from the harness' },
+    body: {
+      title: 'Test project',
+      description: 'created from the harness',
+      tier: 0,
+      repoUrl: 'https://github.com/example/repo',
+      demoUrl: 'https://example.com/demo',
+      readmeUrl: 'https://github.com/example/repo#readme',
+      hackatimeProjectNames: ['my-project'],
+    },
+  },
+  {
+    id: 'devlog-by-id',
+    group: 'devlogs',
+    method: 'GET',
+    path: '/api/devlog/{id}',
+    auth: false,
+    desc: 'A single devlog. 404 when no such devlog.',
+    params: [{ name: 'id', placeholder: 'devlog uuid' }],
+  },
+  {
+    id: 'devlog-me',
+    group: 'devlogs',
+    method: 'GET',
+    path: '/api/devlog/me',
+    auth: true,
+    desc: "The signed-in user's own devlogs, newest first. Capped at 30.",
+  },
+  {
+    id: 'devlog-batch',
+    group: 'devlogs',
+    method: 'POST',
+    path: '/api/devlog/batch',
+    auth: false,
+    desc: 'Fetch up to 30 devlogs by id at once — feed it a project\'s devlogIds. 400 if more than 30 ids or any id is malformed.',
+    body: {
+      ids: [],
+    },
+  },
+  {
+    id: 'devlog-create',
+    group: 'devlogs',
+    method: 'POST',
+    path: '/api/devlog/create',
+    auth: true,
+    desc: 'Creates a devlog owned by the signed-in user. 400 when title/projectId/text is blank.',
+    body: {
+      projectId: '00000000-0000-0000-0000-000000000000',
+      title: 'Test devlog',
+      text: 'created from the harness',
+      imageUrls: [],
+    },
   },
 ];
+
+// Display order and labels for the groups above.
+const GROUP_LABELS = {
+  misc: 'Misc',
+  users: 'Users',
+  projects: 'Projects',
+  devlogs: 'Devlogs',
+};
 
 // ---------------------------------------------------------------- boot
 
@@ -172,61 +244,87 @@ function hideAuthError() { $('auth-error').hidden = true; }
 // ---------------------------------------------------------------- endpoints UI
 
 function renderEndpoints() {
-  $('endpoints').innerHTML = '';
+  const root = $('endpoints');
+  root.innerHTML = '';
 
+  const groups = new Map();
   for (const ep of ENDPOINTS) {
-    const wrap = document.createElement('div');
-    wrap.className = 'ep';
-
-    const head = document.createElement('div');
-    head.className = 'ep-head';
-    head.innerHTML = `
-      <span class="method ${ep.method}">${ep.method}</span>
-      <span class="ep-path">${ep.path}</span>
-      ${ep.auth ? '<span class="lock">requires auth</span>' : ''}`;
-
-    const actions = document.createElement('div');
-    actions.className = 'ep-actions';
-
-    for (const p of ep.params ?? []) {
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.id = `p-${ep.id}-${p.name}`;
-      input.placeholder = p.placeholder;
-      input.size = 36;
-      input.spellcheck = false;
-      actions.append(input);
-    }
-
-    const authLabel = document.createElement('label');
-    authLabel.className = 'check';
-    authLabel.innerHTML = `<input type="checkbox" id="a-${ep.id}" ${ep.auth ? 'checked' : ''}> auth`;
-
-    const send = document.createElement('button');
-    send.className = 'primary';
-    send.textContent = 'Send';
-    send.addEventListener('click', () => sendEndpoint(ep));
-
-    actions.append(authLabel, send);
-    head.append(actions);
-    wrap.append(head);
-
-    const desc = document.createElement('div');
-    desc.className = 'ep-desc';
-    desc.textContent = ep.desc;
-    wrap.append(desc);
-
-    if (ep.body) {
-      const ta = document.createElement('textarea');
-      ta.id = `b-${ep.id}`;
-      ta.rows = 5;
-      ta.spellcheck = false;
-      ta.value = JSON.stringify(ep.body, null, 2);
-      wrap.append(ta);
-    }
-
-    $('endpoints').append(wrap);
+    if (!groups.has(ep.group)) groups.set(ep.group, []);
+    groups.get(ep.group).push(ep);
   }
+
+  for (const [group, eps] of groups) {
+    const card = document.createElement('details');
+    card.className = 'card';
+    card.open = true;
+
+    const summary = document.createElement('summary');
+    summary.innerHTML = `
+      <h2>${GROUP_LABELS[group] ?? group}</h2>
+      <span class="ep-count">${eps.length}</span>`;
+    card.append(summary);
+
+    const list = document.createElement('div');
+    list.className = 'ep-list';
+    for (const ep of eps) list.append(buildEndpointRow(ep));
+    card.append(list);
+
+    root.append(card);
+  }
+}
+
+function buildEndpointRow(ep) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ep';
+
+  const head = document.createElement('div');
+  head.className = 'ep-head';
+  head.innerHTML = `
+    <span class="method ${ep.method}">${ep.method}</span>
+    <span class="ep-path">${ep.path}</span>
+    ${ep.auth ? '<span class="lock">requires auth</span>' : ''}`;
+
+  const actions = document.createElement('div');
+  actions.className = 'ep-actions';
+
+  for (const p of ep.params ?? []) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = `p-${ep.id}-${p.name}`;
+    input.placeholder = p.placeholder;
+    input.size = 36;
+    input.spellcheck = false;
+    actions.append(input);
+  }
+
+  const authLabel = document.createElement('label');
+  authLabel.className = 'check';
+  authLabel.innerHTML = `<input type="checkbox" id="a-${ep.id}" ${ep.auth ? 'checked' : ''}> auth`;
+
+  const send = document.createElement('button');
+  send.className = 'primary';
+  send.textContent = 'Send';
+  send.addEventListener('click', () => sendEndpoint(ep));
+
+  actions.append(authLabel, send);
+  head.append(actions);
+  wrap.append(head);
+
+  const desc = document.createElement('div');
+  desc.className = 'ep-desc';
+  desc.textContent = ep.desc;
+  wrap.append(desc);
+
+  if (ep.body) {
+    const ta = document.createElement('textarea');
+    ta.id = `b-${ep.id}`;
+    ta.rows = 5;
+    ta.spellcheck = false;
+    ta.value = JSON.stringify(ep.body, null, 2);
+    wrap.append(ta);
+  }
+
+  return wrap;
 }
 
 function sendEndpoint(ep) {
@@ -287,6 +385,25 @@ async function send({ method, path, body, auth, endpointId }) {
   if (endpointId === 'project-create' && res.status === 201 && parsed?.id) {
     const target = $('p-project-by-id-id');
     if (target) target.value = parsed.id;
+  }
+
+  // Same convenience for devlogs: feed the created id into the GET row, and
+  // into the batch row's ids array so it's ready to fetch straight away.
+  if (endpointId === 'devlog-create' && res.status === 201 && parsed?.id) {
+    const target = $('p-devlog-by-id-id');
+    if (target) target.value = parsed.id;
+
+    const batchBody = $('b-devlog-batch');
+    if (batchBody) {
+      let body;
+      try {
+        body = JSON.parse(batchBody.value);
+      } catch {
+        body = { ids: [] };
+      }
+      body.ids = [...(body.ids ?? []), parsed.id];
+      batchBody.value = JSON.stringify(body, null, 2);
+    }
   }
 }
 

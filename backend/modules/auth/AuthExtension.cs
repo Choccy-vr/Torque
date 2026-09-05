@@ -1,7 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -39,21 +39,13 @@ public static class AuthExtension
             {
                 OnTokenValidated = context =>
                 {
-                    var token = (JwtSecurityToken)context.SecurityToken;
+                    var token = (JsonWebToken)context.SecurityToken;
                     var identity = (ClaimsIdentity)context.Principal!.Identity!;
 
-                    var metadataClaim = token.Payload.TryGetValue("user_metadata", out var raw)
-                        ? raw?.ToString()
-                        : null;
-
-                    if (!string.IsNullOrEmpty(metadataClaim))
+                    if (token.TryGetPayloadValue("user_metadata", out JsonElement metadata)
+                        && metadata.ValueKind == JsonValueKind.Object)
                     {
-                        using var doc = JsonDocument.Parse(metadataClaim);
-                        foreach (var prop in doc.RootElement.EnumerateObject())
-                        {
-                            if (prop.Value.ValueKind == JsonValueKind.String)
-                                identity.AddClaim(new Claim($"user_metadata:{prop.Name}", prop.Value.GetString()!));
-                        }
+                        AddClaimsFromJson(identity, "user_metadata", metadata);
                     }
 
                     return Task.CompletedTask;
@@ -62,5 +54,29 @@ public static class AuthExtension
         });
 
         return services;
+    }
+
+    private static void AddClaimsFromJson(ClaimsIdentity identity, string prefix, JsonElement element)
+    {
+        foreach (var prop in element.EnumerateObject())
+        {
+            var claimType = $"{prefix}:{prop.Name}";
+            switch (prop.Value.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    AddClaimsFromJson(identity, claimType, prop.Value);
+                    break;
+                case JsonValueKind.String:
+                    identity.AddClaim(new Claim(claimType, prop.Value.GetString()!));
+                    break;
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                    identity.AddClaim(new Claim(claimType, prop.Value.GetBoolean() ? "true" : "false"));
+                    break;
+                case JsonValueKind.Number:
+                    identity.AddClaim(new Claim(claimType, prop.Value.GetRawText()));
+                    break;
+            }
+        }
     }
 }

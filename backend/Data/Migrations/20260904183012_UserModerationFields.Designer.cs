@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Torque.Data;
@@ -11,9 +12,11 @@ using Torque.Data;
 namespace torque_backend.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260904183012_UserModerationFields")]
+    partial class UserModerationFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,59 +24,6 @@ namespace torque_backend.Data.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("Torque.Devlogs.Devlog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<bool>("Approved")
-                        .HasColumnType("boolean")
-                        .HasColumnName("approved");
-
-                    b.Property<Guid>("ApprovedByReviewerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("approved_by_reviewer_id");
-
-                    b.Property<float?>("ApprovedHours")
-                        .HasColumnType("real")
-                        .HasColumnName("approved_hours");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.PrimitiveCollection<string[]>("ImageUrls")
-                        .IsRequired()
-                        .HasColumnType("text[]")
-                        .HasColumnName("image_urls");
-
-                    b.Property<Guid>("OwnerUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("owner_user_id");
-
-                    b.Property<Guid>("ProjectId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("project_id");
-
-                    b.Property<string>("Text")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("text");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("title");
-
-                    b.HasKey("Id")
-                        .HasName("pk_devlogs");
-
-                    b.ToTable("devlogs", (string)null);
-                });
 
             modelBuilder.Entity("Torque.Projects.Project", b =>
                 {
@@ -106,10 +56,6 @@ namespace torque_backend.Data.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text")
                         .HasColumnName("description");
-
-                    b.PrimitiveCollection<string[]>("DevlogIds")
-                        .HasColumnType("text[]")
-                        .HasColumnName("devlog_ids");
 
                     b.PrimitiveCollection<string[]>("HackatimeProjectNames")
                         .HasColumnType("text[]")
