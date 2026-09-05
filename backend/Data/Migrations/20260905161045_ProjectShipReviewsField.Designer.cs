@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Torque.Data;
@@ -11,9 +12,11 @@ using Torque.Data;
 namespace torque_backend.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260905161045_ProjectShipReviewsField")]
+    partial class ProjectShipReviewsField
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -166,121 +169,6 @@ namespace torque_backend.Data.Migrations
                     b.ToTable("projects", (string)null);
                 });
 
-            modelBuilder.Entity("Torque.Shipments.Shipment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<float>("HourSnapshot")
-                        .HasColumnType("real")
-                        .HasColumnName("hour_snapshot");
-
-                    b.Property<float>("OverrideHours")
-                        .HasColumnType("real")
-                        .HasColumnName("override_hours");
-
-                    b.Property<int>("OverrideTier")
-                        .HasColumnType("integer")
-                        .HasColumnName("override_tier");
-
-                    b.Property<Guid>("ProjectId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("project_id");
-
-                    b.Property<Guid?>("ReviewId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("review_id");
-
-                    b.Property<DateTime>("ReviewedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("reviewed_at");
-
-                    b.Property<string>("ReviewerNote")
-                        .HasColumnType("text")
-                        .HasColumnName("reviewer_note");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
-                        .HasColumnName("status");
-
-                    b.Property<int>("TierSnapshot")
-                        .HasColumnType("integer")
-                        .HasColumnName("tier_snapshot");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<int>("VoltsGranted")
-                        .HasColumnType("integer")
-                        .HasColumnName("volts_granted");
-
-                    b.HasKey("Id")
-                        .HasName("pk_shipments");
-
-                    b.HasIndex("ProjectId")
-                        .HasDatabaseName("ix_shipments_project_id");
-
-                    b.ToTable("shipments", (string)null);
-                });
-
-            modelBuilder.Entity("Torque.Shipments.ShipmentReview", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Feedback")
-                        .HasColumnType("text")
-                        .HasColumnName("feedback");
-
-                    b.Property<bool>("HideReviewerName")
-                        .HasColumnType("boolean")
-                        .HasColumnName("hide_reviewer_name");
-
-                    b.Property<string>("InternalNote")
-                        .HasColumnType("text")
-                        .HasColumnName("internal_note");
-
-                    b.Property<string>("OverrideJustification")
-                        .HasColumnType("text")
-                        .HasColumnName("override_justification");
-
-                    b.Property<Guid>("ProjectId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("project_id");
-
-                    b.Property<Guid>("ReturnedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("returned_by");
-
-                    b.Property<Guid>("ReviewerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("reviewer_id");
-
-                    b.Property<Guid>("ShipmentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("shipment_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_shipment_reviews");
-
-                    b.ToTable("shipment_reviews", (string)null);
-                });
-
             modelBuilder.Entity("Torque.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -376,18 +264,6 @@ namespace torque_backend.Data.Migrations
                         .HasName("pk_users");
 
                     b.ToTable("users", (string)null);
-                });
-
-            modelBuilder.Entity("Torque.Shipments.Shipment", b =>
-                {
-                    b.HasOne("Torque.Projects.Project", "ProjectSnapshot")
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_shipments_projects_project_id");
-
-                    b.Navigation("ProjectSnapshot");
                 });
 #pragma warning restore 612, 618
         }
