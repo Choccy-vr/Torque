@@ -23,7 +23,7 @@ public record ReviewerProfileDto
     public string[]? Projects { get; init; }
 
 
-    public string Role { get; init; } = null!;
+    public string[]? Role { get; init; }
 
     public string SlackUserID { get; init; } = null!;
     public string HcUserID { get; init; } = null!;

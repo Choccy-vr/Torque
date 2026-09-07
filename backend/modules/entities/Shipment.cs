@@ -24,6 +24,7 @@ public class Shipment
 
     public int VoltsGranted { get; set; }
 
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
 }

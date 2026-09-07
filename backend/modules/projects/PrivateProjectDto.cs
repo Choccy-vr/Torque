@@ -32,6 +32,8 @@ public record PrivateProjectDto
 
     public int VoltsGranted { get; init; } = 0;
 
+    public bool Exceptional { get; set; } = false; // Black Market
+
 
 
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;

@@ -31,6 +31,8 @@ public class Project
 
     public int VoltsGranted { get; set; } = 0;
 
+    public bool Exceptional { get; set; } = false; // Black Market
+
 
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

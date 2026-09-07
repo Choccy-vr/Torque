@@ -13,7 +13,7 @@ public record OwnProfileDto
     public int Volts { get; init; }
     public string[]? Projects { get; init; }
     public string SlackUserID { get; init; } = null!;
-    public string Role { get; init; } = null!;
+    public string[]? Role { get; init; }
     public string HcUserID { get; init; } = null!;
     public string HackatimeID { get; init; } = null!;
     public bool YswsEligible { get; init; } = false;

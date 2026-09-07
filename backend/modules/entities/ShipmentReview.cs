@@ -16,6 +16,8 @@ public class ShipmentReview
 
     public string? OverrideJustification { get; set; }
 
+    public bool Exceptional { get; set; } = false;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
 }
