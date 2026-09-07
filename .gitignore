@@ -410,6 +410,9 @@ supabase/.branches/
 appsettings.Production.json
 appsettings.Secrets.json
 
+# Claude Code project instructions (local only)
+CLAUDE.md
+
 # Frontend & OS Artifacts
 dist/
 build/

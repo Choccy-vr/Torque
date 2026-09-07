@@ -33,7 +33,7 @@ public class ReviewController : ControllerBase
         var shipments = await _db.Shipments
             .Where(s => s.Status == ShipmentStatus.unreviewed)
             .OrderBy(s => s.CreatedAt)
-            .Select(s => new ReviewerShipmentDto
+            .Select(s => new AdminShipmentDto
             {
                 Id = s.Id,
                 UserId = s.UserId,
@@ -70,7 +70,7 @@ public class ReviewController : ControllerBase
 
         var shipment = await _db.Shipments
             .Where(s => s.Id == id)
-            .Select(s => new ReviewerShipmentDto
+            .Select(s => new AdminShipmentDto
             {
                 Id = s.Id,
                 UserId = s.UserId,

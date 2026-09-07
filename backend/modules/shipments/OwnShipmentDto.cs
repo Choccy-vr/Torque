@@ -1,24 +1,17 @@
-using Torque.Projects;
-
 namespace Torque.Shipments;
-// This is exposed to reviewers
-// endpoint: /admin/review
+// This is exposed to only the owner of the ship
 // Derived from Shipment.cs
-public record ReviewerShipmentDto
+public record OwnShipmentDto
 {
     public Guid Id { get; init; }
     public Guid UserId { get; init; }
     public Guid ProjectId { get; init; }
 
-    public string? ReviewerNote { get; init; }
-
     public ShipmentStatus Status { get; init; } = ShipmentStatus.unreviewed;
 
     public float HourSnapshot { get; init; }
     public float OverrideHours { get; init; }
-    public Project ProjectSnapshot { get; init; } = null!;
 
-    public int TierSnapshot { get; init; }
     public int OverrideTier { get; init; }
 
     public Guid? ReviewId { get; init; }

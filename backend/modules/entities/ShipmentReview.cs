@@ -1,4 +1,4 @@
-namespace Torque.Shipments;
+namespace Torque.Reviews;
 
 public class ShipmentReview
 {
