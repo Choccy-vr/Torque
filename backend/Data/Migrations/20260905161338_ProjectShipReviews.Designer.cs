@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Torque.Data;
@@ -11,9 +12,11 @@ using Torque.Data;
 namespace torque_backend.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260905161338_ProjectShipReviews")]
+    partial class ProjectShipReviews
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -110,10 +113,6 @@ namespace torque_backend.Data.Migrations
                     b.PrimitiveCollection<string[]>("DevlogIds")
                         .HasColumnType("text[]")
                         .HasColumnName("devlog_ids");
-
-                    b.Property<bool>("Exceptional")
-                        .HasColumnType("boolean")
-                        .HasColumnName("exceptional");
 
                     b.PrimitiveCollection<string[]>("HackatimeProjectNames")
                         .HasColumnType("text[]")
@@ -247,10 +246,6 @@ namespace torque_backend.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<bool>("Exceptional")
-                        .HasColumnType("boolean")
-                        .HasColumnName("exceptional");
-
                     b.Property<string>("Feedback")
                         .HasColumnType("text")
                         .HasColumnName("feedback");
@@ -349,8 +344,9 @@ namespace torque_backend.Data.Migrations
                         .HasColumnType("uuid[]")
                         .HasColumnName("projects");
 
-                    b.PrimitiveCollection<string[]>("Role")
-                        .HasColumnType("text[]")
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text")
                         .HasColumnName("role");
 
                     b.Property<string>("SlackUserID")

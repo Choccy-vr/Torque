@@ -113,6 +113,25 @@ const ENDPOINTS = [
       imageUrls: [],
     },
   },
+  {
+    id: 'ships-me',
+    group: 'ships',
+    method: 'GET',
+    path: '/api/ships/get/me',
+    auth: true,
+    desc: "The signed-in user's own shipments.",
+  },
+  {
+    id: 'ships-create',
+    group: 'ships',
+    method: 'POST',
+    path: '/api/ships/create',
+    auth: true,
+    desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped or Changes_Needed.',
+    body: {
+      projectId: '00000000-0000-0000-0000-000000000000',
+    },
+  },
 ];
 
 // Display order and labels for the groups above.
@@ -121,6 +140,7 @@ const GROUP_LABELS = {
   users: 'Users',
   projects: 'Projects',
   devlogs: 'Devlogs',
+  ships: 'Ships',
 };
 
 // ---------------------------------------------------------------- boot

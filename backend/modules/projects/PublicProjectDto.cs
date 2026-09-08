@@ -23,6 +23,8 @@ public record PublicProjectDto
 
     public string[]? DevlogIds { get; init; }
 
+    public bool Exceptional { get; init; } = false; // Black Market
+
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 
 }

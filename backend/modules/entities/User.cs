@@ -26,7 +26,7 @@ public class User
     public Guid[]? Projects { get; set; }
 
 
-    public string Role { get; set; } = null!;
+    public string[]? Role { get; set; }
 
     public string SlackUserID { get; set; } = null!;
     public string HcUserID { get; set; } = null!;

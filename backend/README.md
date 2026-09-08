@@ -30,3 +30,5 @@ requests to every endpoint below. See [testing/README.md](testing/README.md).
 | GET | `api/devlog/me` | YES | Get the authenticated user's own devlogs, newest first, capped at 30 |
 | POST | `api/devlog/batch` | No | Get up to 30 devlogs at once. Body (JSON): `ids` (string[], required, max 30) — feed it a project's `devlogIds` |
 | POST | `api/devlog/create` | YES | Create a new devlog, owned by the authenticated user, and appends its id to the owning project's `devlogIds`. Body (JSON): `projectId` (guid string, required), `title` (string, required), `text` (string, required), `imageUrls` (string[], optional) |
+| GET | `api/ships/get/me` | YES | Get the authenticated user's own shipments |
+| POST | `api/ships/create` | YES | Ship (submit for review) a project owned by the authenticated user. Only allowed while the project is `Unshipped` or `Changes_Needed`; snapshots the project's current hours/tier and flips it to `Unreviewed`. Body (JSON): `projectId` (guid string, required) |

@@ -43,7 +43,6 @@ public class EnsureUserExistsFilter : IAsyncActionFilter
                         Username = RealName,
                         Bio = "",
                         SlackUserID = SlackUserID,
-                        Role = "",
                         HackatimeID = "",
                         VerificationStatus = VerificationStatus,
                         YswsEligible = YswsEligible
