@@ -9,6 +9,7 @@ public class Shipment
     public Guid ProjectId { get; set; }
 
     public string? ReviewerNote { get; set; }
+    public string? Feedback { get; set; }
 
     public ShipmentStatus Status { get; set; } = ShipmentStatus.unreviewed;
 
@@ -33,6 +34,7 @@ public enum ShipmentStatus
     unreviewed,
     approved,
     rejected,
+    perm_rejected,
     needs_changes
 
 }

@@ -9,6 +9,7 @@ public record AdminShipmentDto
     public Guid ProjectId { get; init; }
 
     public string? ReviewerNote { get; init; }
+    public string? Feedback { get; init; }
 
     public ShipmentStatus Status { get; init; } = ShipmentStatus.unreviewed;
 

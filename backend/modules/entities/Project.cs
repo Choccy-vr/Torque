@@ -45,5 +45,6 @@ public enum ProjectStatus
     Claimed,
     Fraud_Pending,
     Changes_Needed,
-    Approved
+    Approved,
+    Perm_Rejected
 }

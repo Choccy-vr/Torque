@@ -46,6 +46,35 @@ public class ShipmentController : ControllerBase
         return Ok(shipments);
     }
 
+    // Get a single shipment by id (public view)
+    [Authorize]
+    [HttpGet("get/{id:guid}")]
+    public async Task<IActionResult> GetShip(Guid id)
+    {
+        var userId = this.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var shipment = await _db.Shipments
+            .Where(s => s.Id == id)
+            .Select(s => new PublicShipmentDto
+            {
+                Id = s.Id,
+                UserId = s.UserId,
+                ProjectId = s.ProjectId,
+                Status = s.Status,
+                HourSnapshot = s.HourSnapshot,
+                OverrideHours = s.OverrideHours,
+                OverrideTier = s.OverrideTier,
+                VoltsGranted = s.VoltsGranted,
+                CreatedAt = s.CreatedAt
+            })
+            .FirstOrDefaultAsync();
+
+        if (shipment is null) return NotFound();
+
+        return Ok(shipment);
+    }
+
     // Create a shipment (submit a project for review)
     [Authorize]
     [HttpPost("create")]

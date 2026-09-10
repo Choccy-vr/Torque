@@ -122,6 +122,15 @@ const ENDPOINTS = [
     desc: "The signed-in user's own shipments.",
   },
   {
+    id: 'ships-by-id',
+    group: 'ships',
+    method: 'GET',
+    path: '/api/ships/get/{id}',
+    auth: true,
+    desc: 'A single shipment (public view). 404 when no such shipment.',
+    params: [{ name: 'id', placeholder: 'shipment uuid' }],
+  },
+  {
     id: 'ships-create',
     group: 'ships',
     method: 'POST',
@@ -130,6 +139,40 @@ const ENDPOINTS = [
     desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped or Changes_Needed.',
     body: {
       projectId: '00000000-0000-0000-0000-000000000000',
+    },
+  },
+  {
+    id: 'review-pending',
+    group: 'review',
+    method: 'GET',
+    path: '/api/admin/review/get/pending',
+    auth: true,
+    desc: 'Reviewer-only. Shipments awaiting review, oldest first. 403 unless the signed-in user has the reviewer role.',
+  },
+  {
+    id: 'review-by-id',
+    group: 'review',
+    method: 'GET',
+    path: '/api/admin/review/get/{id}',
+    auth: true,
+    desc: 'Reviewer-only. A single shipment (reviewer view). 404 when no such shipment.',
+    params: [{ name: 'id', placeholder: 'shipment uuid' }],
+  },
+  {
+    id: 'review-create',
+    group: 'review',
+    method: 'POST',
+    path: '/api/admin/review/create',
+    auth: true,
+    desc: 'Reviewer-only. Reviews an unreviewed shipment. 400 if already reviewed or status is "returned" (not supported yet); 403 if reviewing your own shipment.',
+    body: {
+      shipmentId: '00000000-0000-0000-0000-000000000000',
+      status: 'approved',
+      feedback: 'Nice work!',
+      internalNote: '',
+      overrideJustification: '',
+      hideReviewerName: false,
+      exceptional: false,
     },
   },
 ];
@@ -141,6 +184,7 @@ const GROUP_LABELS = {
   projects: 'Projects',
   devlogs: 'Devlogs',
   ships: 'Ships',
+  review: 'Review',
 };
 
 // ---------------------------------------------------------------- boot

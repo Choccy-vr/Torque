@@ -7,6 +7,8 @@ public class ShipmentReview
     public Guid ShipmentId { get; set; }
     public Guid ReviewerId { get; set; }
 
+    public ShipmentReviewStatus Status { get; set; }
+
     public bool HideReviewerName { get; set; } = false;
 
     public Guid ReturnedBy { get; set; }
@@ -25,6 +27,7 @@ public enum ShipmentReviewStatus
 {
     approved,
     rejected,
+    perm_rejected,
     returned,
     changes_needed
 }

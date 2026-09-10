@@ -9,6 +9,8 @@ public record OwnShipmentDto
 
     public ShipmentStatus Status { get; init; } = ShipmentStatus.unreviewed;
 
+    public string? Feedback { get; init; }
+
     public float HourSnapshot { get; init; }
     public float OverrideHours { get; init; }
 

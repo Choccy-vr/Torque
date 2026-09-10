@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Torque.Database;
 using Torque.Auth;
 using Torque.Extensions;
@@ -11,6 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<EnsureUserExistsFilter>();
+}).AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 builder.Services.AddScoped<EnsureUserExistsFilter>();
 builder.Services.AddFrontendCors(builder.Configuration);
