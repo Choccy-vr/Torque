@@ -23,6 +23,7 @@ requests to every endpoint below. See [testing/README.md](testing/README.md).
 | GET | `api/health` | No | return JSON |
 | GET | `api/user/{id:guid}` | No | Get public profile (no PII) by user ID |
 | GET | `api/user/me` | YES | Get authenticated user's own profile |
+| GET | `api/user/me/banned` | YES | Get whether the authenticated user is currently banned. Reachable even while banned — unlike every other endpoint, which returns 403 for a banned user |
 | GET | `api/project/{id:guid}` | No | Get a project by ID |
 | GET | `api/project/me` | YES | Get the authenticated user's own projects |
 | POST | `api/project/create` | YES | Create a new project, owned by the authenticated user. Body (JSON): `title` (string, required), `description` (string, optional) |
@@ -36,3 +37,8 @@ requests to every endpoint below. See [testing/README.md](testing/README.md).
 | GET | `api/admin/review/get/pending` | YES | Reviewer-only. Get shipments awaiting review (`Unreviewed`), oldest first |
 | GET | `api/admin/review/get/{id:guid}` | YES | Reviewer-only. Get a single shipment by ID (reviewer view) |
 | POST | `api/admin/review/create` | YES | Reviewer-only. Review an `Unreviewed` shipment (approve/reject/perm_reject/changes_needed). Reviewer cannot review their own shipment. On approval flips the project to `Approved` (and sets `Exceptional` if requested); `perm_rejected` flips it to the terminal `Perm_Rejected` (not reshippable); otherwise to `Changes_Needed`. Body (JSON): `shipmentId` (guid, required), `status` (`approved`\|`rejected`\|`perm_rejected`\|`changes_needed`, required — `returned` not yet supported), `feedback`, `internalNote`, `overrideJustification` (strings, optional), `hideReviewerName`, `exceptional` (bool, optional), `returnedBy` (guid, optional) |
+| POST | `api/hackatime/start` | YES | Generates a Hackatime OAuth authorize URL and a `state` value the caller must hold onto and echo back in `callback`. Rate-limited to 10/min per user. 503 if `HACKATIME_CLIENT_ID`/`SECRET` aren't set |
+| POST | `api/hackatime/callback` | YES | Completes the Hackatime OAuth flow: verifies `state`, exchanges `code` for a token, and stores the connection on the authenticated user. 403 (and bans the account) if the linked Hackatime account has `trust_level: red`. Rate-limited to 10/min per user. Body (JSON): `code`, `state`, `storedState` (all strings, required) |
+| GET | `api/hackatime/projects` | YES | Get the authenticated user's Hackatime project names (for linking to a Torque project). Rate-limited to 15/min per user |
+| POST | `api/hackatime/hours` | YES | Get all-time hours (+ per-project breakdown) for a set of the authenticated user's linked Hackatime project names. Rate-limited to 15/min per user. Body (JSON): `projectNames` (string[], required) |
+| GET | `api/admin/project/{id:guid}/lapse` | YES | Reviewer-only. Get lapse.hackclub.com timelapses for a project's owner, filtered to the project's linked Hackatime project names |

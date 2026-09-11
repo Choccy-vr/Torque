@@ -1,4 +1,6 @@
 // Users/EnsureUserExistsFilter.cs
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using Torque.Data;
@@ -34,7 +36,7 @@ public class EnsureUserExistsFilter : IAsyncActionFilter
 
                 if (user is null)
                 {
-                    _db.Users.Add(new User
+                    user = new User
                     {
                         Id = userId,
                         Email = email,
@@ -46,7 +48,8 @@ public class EnsureUserExistsFilter : IAsyncActionFilter
                         HackatimeID = "",
                         VerificationStatus = VerificationStatus,
                         YswsEligible = YswsEligible
-                    });
+                    };
+                    _db.Users.Add(user);
                     await _db.SaveChangesAsync();
                 }
                 else
@@ -61,6 +64,23 @@ public class EnsureUserExistsFilter : IAsyncActionFilter
 
                     if (changed)
                         await _db.SaveChangesAsync();
+                }
+
+                // Bans (from the Hackatime connect-time trust check or the ownership check
+                // run before shipping) are stored as a "banned" entry in Role — no separate
+                // audit/session store to revoke, so this filter is what actually blocks a
+                // banned user from every [Authorize]'d endpoint, except ones explicitly
+                // marked [AllowBanned] (e.g. "am I banned?").
+                var allowsBanned = context.ActionDescriptor is ControllerActionDescriptor descriptor
+                    && descriptor.MethodInfo.GetCustomAttributes(typeof(AllowBannedAttribute), true).Length > 0;
+
+                if (!allowsBanned && user.Role?.Contains("banned") == true)
+                {
+                    context.Result = new ObjectResult(new { error = "This account has been banned." })
+                    {
+                        StatusCode = StatusCodes.Status403Forbidden
+                    };
+                    return;
                 }
             }
         }

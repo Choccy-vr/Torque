@@ -38,6 +38,14 @@ const ENDPOINTS = [
     desc: "The signed-in user's own profile, keyed off the token's `sub` claim.",
   },
   {
+    id: 'user-me-banned',
+    group: 'users',
+    method: 'GET',
+    path: '/api/user/me/banned',
+    auth: true,
+    desc: 'Whether the signed-in user is currently banned. Reachable even while banned — every other endpoint 403s for a banned user.',
+  },
+  {
     id: 'project-by-id',
     group: 'projects',
     method: 'GET',
@@ -175,6 +183,64 @@ const ENDPOINTS = [
       exceptional: false,
     },
   },
+  {
+    id: 'hackatime-login',
+    group: 'hackatime',
+    method: 'FLOW',
+    path: 'start → popup → callback',
+    auth: true,
+    bundle: true,
+    desc: 'One-click login: calls start, opens the authorize page in a popup, and completes callback automatically when Hackatime redirects back to HACKATIME_REDIRECT_URI. Needs that redirect URI pointed at this harness (see backend/.env) and a popup blocker exception.',
+  },
+  {
+    id: 'hackatime-start',
+    group: 'hackatime',
+    method: 'POST',
+    path: '/api/hackatime/start',
+    auth: true,
+    desc: 'Generates a Hackatime OAuth authorize URL and a state value to hold onto and echo back in callback. 503 if HACKATIME_CLIENT_ID/SECRET are not set.',
+  },
+  {
+    id: 'hackatime-callback',
+    group: 'hackatime',
+    method: 'POST',
+    path: '/api/hackatime/callback',
+    auth: true,
+    desc: 'Completes the Hackatime OAuth flow. 401 on bad/mismatched state or a failed code exchange. 403 (and bans the account) if the linked Hackatime account has trust_level "red".',
+    body: {
+      code: '',
+      state: '',
+      storedState: '',
+    },
+  },
+  {
+    id: 'hackatime-projects',
+    group: 'hackatime',
+    method: 'GET',
+    path: '/api/hackatime/projects',
+    auth: true,
+    desc: "The signed-in user's Hackatime project names. Empty array if not connected.",
+  },
+  {
+    id: 'hackatime-hours',
+    group: 'hackatime',
+    method: 'POST',
+    path: '/api/hackatime/hours',
+    auth: true,
+    desc: 'All-time hours + per-project breakdown for the given linked Hackatime project names.',
+    body: {
+      projectNames: ['my-project'],
+    },
+  },
+  {
+    id: 'lapse-project',
+    group: 'lapse',
+    method: 'GET',
+    path: '/api/admin/project/{id}/lapse',
+    auth: true,
+    desc: "Reviewer-only. lapse.hackclub.com timelapses for a project's owner, filtered to the project's linked Hackatime project names. 403 unless the signed-in user has the reviewer role.",
+    params: [{ name: 'id', placeholder: 'project uuid' }],
+  },
 ];
 
 // Display order and labels for the groups above.
@@ -185,6 +251,8 @@ const GROUP_LABELS = {
   devlogs: 'Devlogs',
   ships: 'Ships',
   review: 'Review',
+  hackatime: 'Hackatime',
+  lapse: 'Lapse',
 };
 
 // ---------------------------------------------------------------- boot
@@ -361,16 +429,25 @@ function buildEndpointRow(ep) {
     actions.append(input);
   }
 
-  const authLabel = document.createElement('label');
-  authLabel.className = 'check';
-  authLabel.innerHTML = `<input type="checkbox" id="a-${ep.id}" ${ep.auth ? 'checked' : ''}> auth`;
-
   const send = document.createElement('button');
   send.className = 'primary';
-  send.textContent = 'Send';
-  send.addEventListener('click', () => sendEndpoint(ep));
 
-  actions.append(authLabel, send);
+  if (ep.bundle) {
+    // A bundle drives multiple requests (plus a popup redirect) under one click,
+    // so there's no single auth checkbox or body to show — it always uses the
+    // signed-in session.
+    send.textContent = 'Log in';
+    send.addEventListener('click', () => runBundle(ep));
+    actions.append(send);
+  } else {
+    const authLabel = document.createElement('label');
+    authLabel.className = 'check';
+    authLabel.innerHTML = `<input type="checkbox" id="a-${ep.id}" ${ep.auth ? 'checked' : ''}> auth`;
+
+    send.textContent = 'Send';
+    send.addEventListener('click', () => sendEndpoint(ep));
+    actions.append(authLabel, send);
+  }
   head.append(actions);
   wrap.append(head);
 
@@ -413,6 +490,103 @@ function sendEndpoint(ep) {
   }
 
   send({ method: ep.method, path, body, auth: $(`a-${ep.id}`).checked, endpointId: ep.id });
+}
+
+// ---------------------------------------------------------------- bundles
+
+function runBundle(ep) {
+  if (ep.id === 'hackatime-login') return loginToHackatime();
+  return renderError(ep.id, `Unknown bundle "${ep.id}".`);
+}
+
+let hackatimeMessageHandler = null;
+
+function cleanupHackatimeListener() {
+  if (hackatimeMessageHandler) {
+    window.removeEventListener('message', hackatimeMessageHandler);
+    hackatimeMessageHandler = null;
+  }
+}
+
+async function loginToHackatime() {
+  const label = 'Hackatime login';
+  if (!session) return renderError(label, 'Not signed in — sign in first.');
+
+  cleanupHackatimeListener();
+
+  let start;
+  try {
+    const res = await fetch('/api/hackatime/start', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    const text = await res.text();
+    const parsed = safeJson(text);
+    if (!res.ok) {
+      renderResponse({ label: 'POST /api/hackatime/start', status: res.status, ms: 0, headers: res.headers, text, parsed });
+      return;
+    }
+    start = parsed;
+  } catch (err) {
+    return renderError(label, `Network error starting Hackatime OAuth: ${err.message}`);
+  }
+
+  if (!start?.url || !start?.state) {
+    return renderError(label, 'POST /api/hackatime/start did not return a url/state.');
+  }
+
+  const popup = window.open(start.url, 'hackatime-login', 'width=520,height=680');
+  if (!popup) return renderError(label, 'Popup blocked — allow popups for this page and try again.');
+
+  const closedPoll = setInterval(() => {
+    if (popup.closed && hackatimeMessageHandler) {
+      cleanupHackatimeListener();
+      clearInterval(closedPoll);
+      renderError(label, 'Hackatime popup was closed before completing sign-in.');
+    }
+  }, 500);
+
+  hackatimeMessageHandler = async (event) => {
+    if (event.origin !== location.origin || event.data?.source !== 'hackatime-callback') return;
+
+    cleanupHackatimeListener();
+    clearInterval(closedPoll);
+
+    const { code, state: returnedState, error } = event.data;
+    if (error) return renderError(label, `Hackatime returned an error: ${error}`);
+    if (!code || !returnedState) return renderError(label, 'Hackatime callback was missing code/state.');
+
+    const started = performance.now();
+    let res, text;
+    try {
+      res = await fetch('/api/hackatime/callback', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code, state: returnedState, storedState: start.state }),
+      });
+      text = await res.text();
+    } catch (err) {
+      return renderError(label, `Network error completing Hackatime OAuth: ${err.message}`);
+    }
+    const ms = Math.round(performance.now() - started);
+    const parsed = safeJson(text);
+
+    renderResponse({ label: 'POST /api/hackatime/callback', status: res.status, ms, headers: res.headers, text, parsed });
+    addHistory({ label, status: res.status, ms, text, parsed, headers: res.headers });
+  };
+
+  window.addEventListener('message', hackatimeMessageHandler);
+}
+
+function safeJson(text) {
+  try {
+    return text ? JSON.parse(text) : null;
+  } catch {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------- requests

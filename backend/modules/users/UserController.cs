@@ -64,4 +64,22 @@ public class UserController : ControllerBase
             CreatedAt = user.CreatedAt
         });
     }
+
+    // Whether the authenticated user is currently banned. [AllowBanned] exempts this
+    // one action from EnsureUserExistsFilter's blanket ban block, since its entire
+    // purpose is to be reachable while banned — otherwise a banned user gets nothing
+    // but an opaque 403 from every endpoint they try.
+    [Authorize]
+    [AllowBanned]
+    [HttpGet("me/banned")]
+    public async Task<IActionResult> GetBanStatus()
+    {
+        var userId = this.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var user = await _db.Users.FindAsync(userId);
+        if (user is null) return NotFound();
+
+        return Ok(new { banned = user.Role?.Contains("banned") == true });
+    }
 }

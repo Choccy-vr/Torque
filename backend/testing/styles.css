@@ -130,6 +130,7 @@ details.card .ep-list { margin-top: 12px; }
 }
 .method.GET { color: var(--info); border-color: #1f3a5c; }
 .method.POST { color: var(--ok); border-color: #1d4427; }
+.method.FLOW { color: var(--warn); border-color: #4a3a15; }
 .ep-path { font-size: 13px; }
 .ep-desc { font-size: 12px; color: var(--muted); margin-top: 6px; }
 .ep-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
