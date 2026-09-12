@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Torque.Database;
 using Torque.Auth;
+using Torque.Crypto;
 using Torque.Extensions;
 using Torque.Hackatime;
 using Torque.Lapse;
@@ -20,6 +21,7 @@ builder.Services.AddControllers(options =>
 });
 builder.Services.AddScoped<EnsureUserExistsFilter>();
 builder.Services.AddFrontendCors(builder.Configuration);
+builder.Services.AddTokenEncryption(builder.Configuration);
 builder.Services.AddAppDatabase(builder.Configuration);
 builder.Services.AddSupabaseAuth(builder.Configuration);
 builder.Services.AddHackatime(builder.Configuration);

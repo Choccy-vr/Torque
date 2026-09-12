@@ -173,6 +173,12 @@ public class HackatimeService
         _logger.LogInformation("Hackatime connected for user {UserId}", userId);
     }
 
+    public async Task<bool> IsConnectedAsync(Guid userId)
+    {
+        var user = await _db.Users.FindAsync(userId);
+        return !string.IsNullOrEmpty(user?.HackatimeToken);
+    }
+
     // Only project name strings are returned — no other Hackatime data is exposed.
     public async Task<string[]> GetProjectNamesAsync(Guid userId)
     {

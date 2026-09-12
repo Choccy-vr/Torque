@@ -58,6 +58,19 @@ public class HackatimeController : ControllerBase
         return Ok(new { success = true });
     }
 
+    // Whether the authenticated user currently has a Hackatime account connected.
+    [Authorize]
+    [EnableRateLimiting("hackatime-read")]
+    [HttpGet("status")]
+    public async Task<IActionResult> Status()
+    {
+        var userId = this.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var connected = await _hackatime.IsConnectedAsync(userId.Value);
+        return Ok(new { connected });
+    }
+
     // The authenticated user's Hackatime project names, for picking which ones to link to a project.
     [Authorize]
     [EnableRateLimiting("hackatime-read")]

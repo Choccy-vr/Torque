@@ -214,6 +214,14 @@ const ENDPOINTS = [
     },
   },
   {
+    id: 'hackatime-status',
+    group: 'hackatime',
+    method: 'GET',
+    path: '/api/hackatime/status',
+    auth: true,
+    desc: 'Whether the signed-in user currently has a Hackatime account connected.',
+  },
+  {
     id: 'hackatime-projects',
     group: 'hackatime',
     method: 'GET',

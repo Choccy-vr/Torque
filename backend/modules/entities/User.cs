@@ -20,7 +20,9 @@ public class User
     public string? Country { get; set; }
 
 
-    public string? HackatimeToken { get; set; } //encrypted
+    // Encrypted at rest (see Torque.Crypto.TokenEncryptor via AppDbContext) — never
+    // expose this on a DTO.
+    public string? HackatimeToken { get; set; }
 
 
     public Guid[]? Projects { get; set; }
