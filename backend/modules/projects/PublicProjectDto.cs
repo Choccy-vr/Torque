@@ -25,6 +25,8 @@ public record PublicProjectDto
 
     public bool Exceptional { get; init; } = false; // Black Market
 
+    public bool IsStaffPick { get; init; } = false;
+
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 
 }

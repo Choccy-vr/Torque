@@ -36,8 +36,112 @@ public class ProjectController : ControllerBase
             TotalHours = project.TotalHoursRaw,
             AiUse = project.AiUse,
             DevlogIds = project.DevlogIds,
+            Exceptional = project.Exceptional,
+            IsStaffPick = project.IsStaffPick,
             CreatedAt = project.CreatedAt
         });
+    }
+
+    // staff-picked projects, newest first
+    [HttpGet("staff-picks")]
+    public async Task<IActionResult> GetStaffPicks()
+    {
+        var projects = await _db.Projects
+            .Where(p => p.IsStaffPick)
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => new PublicProjectDto
+            {
+                Id = p.Id,
+                OwnerUserId = p.OwnerUserId.ToString(),
+                Title = p.Title,
+                Description = p.Description,
+                Tier = p.Tier,
+                RepoUrl = p.RepoUrl,
+                DemoUrl = p.DemoUrl,
+                ReadmeUrl = p.ReadmeUrl,
+                TotalHours = p.TotalHoursRaw,
+                AiUse = p.AiUse,
+                DevlogIds = p.DevlogIds,
+                Exceptional = p.Exceptional,
+                IsStaffPick = p.IsStaffPick,
+                CreatedAt = p.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(projects);
+    }
+
+    // keyword search over title/description, title matches ranked first, newest first within a tier
+    [HttpGet("search")]
+    public async Task<IActionResult> Search([FromQuery] string? q)
+    {
+        if (string.IsNullOrWhiteSpace(q)) return Ok(Array.Empty<SearchProjectDto>());
+
+        var pattern = $"%{q}%";
+        var prefixPattern = $"{q}%";
+
+        var results = await _db.Projects
+            .Where(p => EF.Functions.ILike(p.Title, pattern) ||
+                 (p.Description != null && EF.Functions.ILike(p.Description, pattern)))
+            .OrderBy(p =>
+                EF.Functions.ILike(p.Title, prefixPattern) ? 0 :
+                EF.Functions.ILike(p.Title, pattern) ? 1 : 2)
+            .ThenByDescending(p => p.CreatedAt)
+            .Take(25)
+            .Select(p => new SearchProjectDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Description = p.Description,
+                OwnerUserId = p.OwnerUserId.ToString(),
+                Status = p.Status,
+                CreatedAt = p.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(results);
+    }
+
+    // top projects by tracked hours
+    [HttpGet("leaderboard/hours")]
+    public async Task<IActionResult> GetHoursLeaderboard()
+    {
+        var projects = await _db.Projects
+            .Where(p => p.Status == ProjectStatus.Approved)
+            .OrderByDescending(p => p.TotalHoursRaw)
+            .Take(50)
+            .Select(p => new LeaderboardProjectDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                OwnerUserId = p.OwnerUserId.ToString(),
+                TotalHoursRaw = p.TotalHoursRaw,
+                VoltsGranted = p.VoltsGranted
+            })
+            .ToListAsync();
+
+        return Ok(projects);
+    }
+
+    // top projects by volts granted
+    [HttpGet("leaderboard/volts")]
+    public async Task<IActionResult> GetVoltsLeaderboard()
+    {
+        var projects = await _db.Projects
+            .Where(p => p.Status == ProjectStatus.Approved)
+            .OrderByDescending(p => p.VoltsGranted)
+            .Take(50)
+            .Select(p => new LeaderboardProjectDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                OwnerUserId = p.OwnerUserId.ToString(),
+                TotalHoursRaw = p.TotalHoursRaw,
+                VoltsGranted = p.VoltsGranted
+            })
+            .ToListAsync();
+
+        return Ok(projects);
     }
 
     // projects for the authenticated user

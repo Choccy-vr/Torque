@@ -33,7 +33,7 @@ public class Project
 
     public bool Exceptional { get; set; } = false; // Black Market
 
-
+    public bool IsStaffPick { get; set; } = false;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

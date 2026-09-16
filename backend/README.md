@@ -25,8 +25,13 @@ requests to every endpoint below. See [testing/README.md](testing/README.md).
 | GET | `api/user/me` | YES | Get authenticated user's own profile |
 | GET | `api/user/me/banned` | YES | Get whether the authenticated user is currently banned. Reachable even while banned — unlike every other endpoint, which returns 403 for a banned user |
 | GET | `api/project/{id:guid}` | No | Get a project by ID |
+| GET | `api/project/staff-picks` | No | Get staff-picked projects (any status), newest first |
+| GET | `api/project/search` | No | Search all projects (any status) by title/description, title matches ranked first, capped at 25. Query: `q` (string, required) |
+| GET | `api/project/leaderboard/hours` | No | Get the top 50 approved projects by tracked hours, descending |
+| GET | `api/project/leaderboard/volts` | No | Get the top 50 approved projects by volts granted, descending |
 | GET | `api/project/me` | YES | Get the authenticated user's own projects |
 | POST | `api/project/create` | YES | Create a new project, owned by the authenticated user. Body (JSON): `title` (string, required), `description` (string, optional) |
+| POST | `api/admin/project/{id:guid}/staff-pick` | YES | Admin-only. Mark/unmark a project as a staff pick. Body (JSON): `isStaffPick` (bool, required) |
 | GET | `api/devlog/{id:guid}` | No | Get a devlog by ID |
 | GET | `api/devlog/me` | YES | Get the authenticated user's own devlogs, newest first, capped at 30 |
 | POST | `api/devlog/batch` | No | Get up to 30 devlogs at once. Body (JSON): `ids` (string[], required, max 30) — feed it a project's `devlogIds` |
