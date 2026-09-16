@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing.jsx'
 import Home from './pages/Home.jsx'
+import Projects from './pages/Projects.jsx'
 import './App.css'
 
 function App() {
@@ -10,6 +11,7 @@ function App() {
         <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/home" element={<Home />} />
+            <Route path="/projects" element={<Projects />} />
         </Routes>
     </Router>
   )
