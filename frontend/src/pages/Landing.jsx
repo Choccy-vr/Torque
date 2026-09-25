@@ -5,6 +5,7 @@ import {ChevronDown, ChevronUp} from 'lucide-react'
 import {ReactLenis, useLenis } from 'lenis/react'
 import {useEffect, useState} from 'react'
 import '../App.css'
+import Footer from '../components/Footer'
 
 function handleSubmit() {
   console.log('Form submitted');
@@ -63,7 +64,7 @@ export default function Home() {
         </button>
       </div>
 
-      <div className="relative min-h-screen w-full">
+      <div id="top" className="relative min-h-screen w-full">
 
         <div className="font-phantom absolute top-0 left-0 right-0 flex items-center justify-center min-h-full z-20 pointer-events-none">
           <div className="w-full max-w-7xl mx-auto px-6 md:px-4 pointer-events-auto flex justify-center flex-col items-center">
@@ -96,7 +97,7 @@ export default function Home() {
 
       </div>
 
-      <section className="section1 w-full z-20 mb-48 pt-20">
+      <section id="how-it-works" className="section1 w-full z-20 mb-48 pt-20">
           <div className="font-phantom relative flex items-center justify-center flex-col pointer-events-auto z-20">
             <h1 className="text-4xl md:text-6xl font-bold text-white z-20">How It Works</h1>
             <div className="grid grid-cols-1 mt-20 md:grid-cols-2 lg:grid-cols-4 gap-8 px-20 md:gap-16 max-w-screen-2xl mx-auto">
@@ -120,7 +121,7 @@ export default function Home() {
           </div>
       </section>
 
-      <section className="section2 w-full z-20 mt-10 pt-20">
+      <section id="faq" className="section2 w-full z-20 mt-10 pt-20">
         <div className="font-phantom relative flex items-center justify-center flex-col pointer-events-auto z-20">
           <h1 className="text-4xl md:text-6xl font-bold text-white z-20">FAQ</h1>
           <div className="text-white w-full max-w-2xl px-10 m-20 mx-auto gap-5 flex flex-col">
@@ -145,10 +146,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="bg-transparent text-white w-full flex flex-col gap-1 items-center justify-center z-50 relative h-32 mt-20 text-black">
-        <h1 className="text-xl text-[#FFB703]">Made with &lt;3 by the <a href="https://hackclub.com/" target="_blank" rel="noopener noreferrer" className="text-[#FFB703] transition-all duration-500 ease hover:opacity-70">Hack Club</a> community</h1>
-        <h1 className="text-md text-[#FFB703]">Sponsored by <a href="https://hackclub.enterprise.slack.com/team/U06P62WGWAV" target="_blank" rel="noopener noreferrer" className="text-[#FFB703] transition-all duration-500 ease hover:opacity-70">@Meghana</a></h1>
-      </footer>
+      <Footer />
     </>
   )
 }
