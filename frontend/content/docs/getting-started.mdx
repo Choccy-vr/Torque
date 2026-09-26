@@ -1,0 +1,68 @@
+---
+title: Getting started
+description: Go from idea to a shipped hardware project.
+---
+
+<Callout title="Before you start">
+  You'll need a Hack Club account and a [Hackatime](https://hackatime.hackclub.com) account to track your hours.
+</Callout>
+
+<Steps>
+<Step>
+
+### Create a project
+
+Head to **Projects** and give your project a title and a short description.
+
+</Step>
+<Step>
+
+### Log devlogs as you build
+
+Post a devlog whenever you make progress: what you did, what broke, and pictures.
+
+</Step>
+<Step>
+
+### Ship it
+
+When your design is ready, ship it for review. A reviewer will approve it or ask for changes.
+
+</Step>
+</Steps>
+
+## What counts?
+
+<Callout type="warn" title="Placeholder">
+  Example table only. Replace it with the real rules for which hours count.
+</Callout>
+
+| Counts | Doesn't count |
+| --- | --- |
+| TODO | TODO |
+
+<Tabs items={['Arduino', 'MicroPython']}>
+  <Tab value="Arduino">
+
+```cpp
+void setup() {
+  pinMode(9, OUTPUT);
+}
+
+void loop() {
+  analogWrite(9, 128); // half-speed motor
+}
+```
+
+  </Tab>
+  <Tab value="MicroPython">
+
+```python
+from machine import Pin, PWM
+
+motor = PWM(Pin(9))
+motor.duty_u16(32768)  # half-speed motor
+```
+
+  </Tab>
+</Tabs>

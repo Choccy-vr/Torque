@@ -1,6 +1,81 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+@config '../tailwind.config.js';
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+/* Design tokens (Blueprint theme) */
+:root {
+  --bg: #0D3B66;
+  --grid: #FFFFFF26;
+  --card: #134A7C;
+  --accent: #FAF0CA;
+  --text: #FFFFFF;
+  --heading: #FFFFFF;
+  --overlay: 0.2;
+  --btn-bg: #FAF0CA;
+  --btn-text: #0D3B66;
+  --btn-border: #FAF0CA;
+  --radius: 9999px;
+  --card-radius: 1.75rem;
+  --heading-font: 'Phantom Sans', sans-serif;
+}
+
+/* Page background: blueprint grid (major + minor lines) */
+.t-bg {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 2px, transparent 2px),
+    linear-gradient(90deg, var(--grid) 2px, transparent 2px),
+    linear-gradient(color-mix(in srgb, var(--grid) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--grid) 45%, transparent) 1px, transparent 1px);
+  background-size: 110px 110px, 110px 110px, 22px 22px, 22px 22px;
+  background-position: -1px -1px;
+}
+
+/* Cards (How It Works boxes, FAQ items, navbar, footer) */
+.t-card {
+  background: var(--card);
+  color: var(--accent);
+  border-radius: var(--card-radius);
+  border: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  transition: all 300ms ease;
+}
+
+/* Buttons */
+.t-btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: 2px solid var(--btn-border);
+}
+
+/* Big headings (hero, section titles, footer wordmark) */
+.t-heading {
+  font-family: var(--heading-font);
+  color: var(--heading);
+}
+
+/* Hover effect for buttons and clickable cards */
+.t-hover { transition: all 300ms ease; }
+.t-hover:hover { opacity: 0.8; }
 
 @font-face {
   font-family: 'Phantom Sans';
@@ -34,4 +109,46 @@
   font-weight: bold;
   font-style: normal;
   font-display: swap;
+}
+
+/* ------------------------------------------------------------------
+   Docs (/docs, Fumadocs). Fumadocs colors everything via --color-fd-*;
+   point those at the Torque tokens above so the docs follow the theme.
+   Set on :root (not just the docs wrapper) because Fumadocs popovers
+   render in a portal outside it; .dark / #nd-sidebar repeat it to beat
+   Fumadocs' own dark-mode defaults.
+   ------------------------------------------------------------------ */
+:root,
+.dark,
+.dark #nd-sidebar {
+  --color-fd-background: var(--bg);
+  --color-fd-foreground: var(--text);
+  --color-fd-card: var(--card);
+  --color-fd-card-foreground: var(--text);
+  --color-fd-popover: var(--card);
+  --color-fd-popover-foreground: var(--text);
+  --color-fd-muted: var(--card);
+  --color-fd-muted-foreground: color-mix(in srgb, var(--text) 65%, transparent);
+  --color-fd-secondary: var(--card);
+  --color-fd-secondary-foreground: var(--text);
+  --color-fd-accent: color-mix(in srgb, var(--accent) 15%, transparent);
+  --color-fd-accent-foreground: var(--accent);
+  --color-fd-primary: var(--accent);
+  --color-fd-primary-foreground: var(--bg);
+  --color-fd-border: color-mix(in srgb, var(--text) 12%, transparent);
+  --color-fd-ring: var(--accent);
+}
+
+.torque-docs :is(h1, h2, h3, h4) {
+  font-family: var(--heading-font);
+}
+
+/* The Tailwind v3 border-color compat rule at the top of this file would
+   otherwise override Fumadocs' default border color inside the docs. */
+@layer base {
+  .torque-docs *,
+  .torque-docs ::after,
+  .torque-docs ::before {
+    border-color: var(--color-fd-border);
+  }
 }

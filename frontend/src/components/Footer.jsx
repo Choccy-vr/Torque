@@ -27,7 +27,7 @@ const columns = [
     },
 ];
 
-const linkClass = "text-white transition-all duration-300 ease hover:opacity-75";
+const linkClass = "text-(--text) transition-all duration-300 ease hover:opacity-75";
 
 function FooterLink({ name, href }) {
     const external = href.startsWith("http");
@@ -45,7 +45,7 @@ function FooterLink({ name, href }) {
 export default function Footer() {
     return (
         <footer className="font-phantom relative z-20 w-full px-6 md:px-20 pb-10 mt-20">
-            <div className="max-w-screen-2xl mx-auto bg-[#25282A] text-[#FFB703] rounded-xl p-8 md:p-12">
+            <div className="t-card max-w-(--breakpoint-2xl) mx-auto p-8 md:p-12">
                 <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
                     <div className="flex flex-col gap-4 max-w-md">
                         <a
@@ -56,20 +56,20 @@ export default function Footer() {
                         >
                             <img src={flag} alt="Hack Club Flag" className="h-16" />
                         </a>
-                        <h2 className="text-5xl md:text-6xl font-bold">TORQUE</h2>
-                        <p className="text-lg text-white">
+                        <h2 className="t-heading text-5xl md:text-6xl font-bold">TORQUE</h2>
+                        <p className="text-lg text-(--text)">
                             Made with &lt;3 by the{" "}
                             <a
                                 href="https://hackclub.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[#FFB703] transition-all duration-300 ease hover:opacity-75"
+                                className="text-(--accent) transition-all duration-300 ease hover:opacity-75"
                             >
                                 Hack Club
                             </a>{" "}
                             community
                         </p>
-                        <p className="text-white">
+                        <p className="text-(--text)">
                             Sponsored by @Meghana
                         </p>
                     </div>
@@ -88,7 +88,7 @@ export default function Footer() {
                     ))}
                 </div>
 
-                <p className="mt-10 pt-6 border-t border-[#FFB703]/20 text-sm text-white/50">
+                <p className="mt-10 pt-6 border-t border-(--grid) text-sm text-(--text) opacity-60">
                     © {new Date().getFullYear()} Hack Club. Registered under The Hack Foundation, a 501(c)(3) nonprofit (EIN: 81-2908499).
                 </p>
             </div>

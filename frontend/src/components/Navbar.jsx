@@ -5,11 +5,12 @@ export default function Navbar() {
         {name: "Dashboard", path: "/home"},
         {name: "Projects", path: "/projects"},
         {name: "Explore", path: "/explore"},
+        {name: "Docs", path: "/docs"},
     ]
 
     return (
     <>
-        <aside className="fixed top-10 bottom-10 bg-[#25282A] text-[#FFB703] left-3 w-[clamp(6rem,18vw,18rem)] md:top-14 md:bottom-14 md:left-6 p-4 sm:p-6 md:p-10 rounded-xl flex flex-col justify-center items-center gap-6 md:gap-10">
+        <aside className="t-card fixed top-10 bottom-10 left-3 w-[clamp(6rem,18vw,18rem)] md:top-14 md:bottom-14 md:left-6 p-4 sm:p-6 md:p-10 flex flex-col justify-center items-center gap-6 md:gap-10">
             <nav className="flex flex-col text-center gap-6 text-base sm:text-xl md:text-4xl">
                 {links.map((link) => (
                     <NavLink
