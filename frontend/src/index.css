@@ -22,18 +22,18 @@
   }
 }
 
-/* Design tokens (Blueprint theme) */
+/* Design tokens (Tachometer theme) */
 :root {
-  --bg: #0D3B66;
+  --bg: #454A54;
   --grid: #FFFFFF26;
-  --card: #134A7C;
-  --accent: #FAF0CA;
+  --card: #535965;
+  --accent: #FF7A5C;
   --text: #FFFFFF;
   --heading: #FFFFFF;
   --overlay: 0.2;
-  --btn-bg: #FAF0CA;
-  --btn-text: #0D3B66;
-  --btn-border: #FAF0CA;
+  --btn-bg: #FF7A5C;
+  --btn-text: #454A54;
+  --btn-border: #FF7A5C;
   --radius: 9999px;
   --card-radius: 1.75rem;
   --heading-font: 'Phantom Sans', sans-serif;

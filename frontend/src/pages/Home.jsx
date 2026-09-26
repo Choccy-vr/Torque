@@ -19,7 +19,7 @@ export default function Home() {
                             </div>
                             <div className=" flex flex-col items-center justify-center text-center grow space-y-4 md:space-y-6">
                                 <p className="text-2xl">No Current Projects</p>
-                                <button className="t-hover bg-(--accent) text-(--card) px-11 py-2.5 rounded-(--radius) text-xl">+ Add Project</button>
+                                <button className="t-btn t-hover px-11 py-2.5 rounded-(--radius) text-xl">+ Add Project</button>
                             </div>
                         </div>
                     </div>
