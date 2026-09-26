@@ -1,4 +1,12 @@
 {
   "title": "Torque Docs",
-  "pages": ["index", "getting-started", "faq"]
+  "pages": [
+    "index",
+    "getting-started",
+    "faq",
+    "hardware-docs",
+    "projects",
+    "shipping",
+    "rewards"
+  ]
 }

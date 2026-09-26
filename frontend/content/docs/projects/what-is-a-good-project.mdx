@@ -1,0 +1,91 @@
+---
+title: What Makes a Good Project?
+description: How to design and build a project you're actually proud to ship.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+A good project is something you **genuinely wanted to build**, executed well enough that you would proudly show it off anywhere. That is what makes a good project.
+
+You shouldn't just be building something to claim a grant or hit an hour requirement. By the time you ship, your project should feel intentional, functional, and uniquely yours.
+
+---
+
+## What "Good" Really Means
+
+The strongest hardware projects start with genuine curiosity or a concrete frustration:
+* *"I want an automated blind puller because morning light wakes me up at 6 AM."*
+* *"I want an RC drift trike with a custom steering linkage because commercial kits are boring."*
+* *"I saw an inverted pendulum on YouTube and wanted to tune my own PID control loop."*
+
+If someone searches your name two years from now and finds your build log, repository, and demo video, you should be proud of it.
+
+<Callout type="warn" title="Ask yourself: Why am I building this?">
+  If your only answer is *"I wanted to earn Volts"* or *"I just wanted free parts,"* pause and rethink the concept. The best builds come from wanting the physical mechanism to exist in the real world.
+</Callout>
+
+---
+
+## The Difference at a Glance
+
+| Quality | What we love to see | What falls short |
+| :--- | :--- | :--- |
+| **Origin** | An idea built to solve a problem or explore a mechanism | Cloned schematics or copy-pasted 3D models with zero changes |
+| **Execution** | Secure wiring, thought-out mounting, tuned motion | Dangling Dupont wires, hot-glued motors, loose gears |
+| **Identity** | Distinct name, documented purpose, real demo | Vague concepts (*"Smart AI Car"*, *"IoT Motor"*) |
+| **Scope** | Small, dialed-in mechanism with polish | Massive sci-fi concept that barely turns on |
+
+---
+
+## The Three Pillars of a Great Build
+
+### 1. Be Specific
+Broad ideas lead to half-baked projects. Specific constraints make engineering fun:
+* **Vague:** *"A smart motorized lock."*
+* **Specific:** *"A deadbolt actuator triggered by an RFID ring, with a physical manual override lever."*
+* **Vague:** *"An RC rover."*
+* **Specific:** *"A dual-motor differential drive rover using a custom laser-cut chassis to map my hallway."*
+
+### 2. Make It Feel Finished
+Hardware doesn't need to look factory-molded, but it must look **intentional**:
+
+- **Route your wiring:** Secure wire runs with zip ties, heat shrink, or 3D-printed clips. Loose jumper wires rattling next to rotating pinions cause short circuits and just don't look good.
+- **Rigid mounting:** Design brackets or print mounts. Motors exert real torque—double-sided tape and hot glue won't hold under stall loads. Your Project should last.
+- **Proper documentation:** A clear `README.md` with a bill of materials (BOM), wiring diagram/schematic, pictures, and a short video demo video.
+
+### 3. Build It Yourself
+You do not need to invent brushless motors or write PID algorithms from scratch. However:
+
+<Callout type="error" title="Never submit direct clones">
+  Downloading someone else's complete CAD assembly and 3D printing it is **not** a good project. Reviewers check this. If you rely heavily on reference designs or libraries, give explicit credit in your README and clearly explain **what parts you engineered yourself**.
+</Callout>
+
+---
+
+## Avoiding Generic Builds (And How to Fix Them)
+
+Most beginner hardware traps suffer from lack of personality or overscoping. Here is how to upgrade common starting points:
+
+<Tabs items={['Motorized Trap', 'The Upgrade']}>
+  <Tab value="Motorized Trap">
+    * **The Stock Arduino Robot:** A generic blue 2WD chassis kit running boilerplate sweep code.
+    * **The Basic Servo Alarm:** An SG90 micro servo taped to a light switch with no enclosure.
+    * **The "Smart" Fan:** A relay and DC motor that just turns on when room temp hits 75°F.
+    * **The Ambiguous "AI Robot":** An oversized machine trying to do computer vision, robotic arms, and speech before the wheels even spin.
+  </Tab>
+  <Tab value="The Upgrade">
+    * **Custom Drivetrain:** Design your own plate chassis in CAD, tune proper motor drivers, and add encoder feedback for straight-line tracking.
+    * **Mechanical Whack-a-Mole:** Mount the alarm in an enclosure where turning it off requires knocking down mechanical targets driven by solenoids.
+    * **Oscillating Air Cannon:** Use a geared stepper to sweep angles, custom ducting, and dynamic speed profiling based on distance.
+    * **Scope Small, Nail the Polish:** Ditch the vague "AI" tag. Make a rock-solid line follower or a self-balancing pendulum where the mechanical tolerances are dialed in.
+  </Tab>
+</Tabs>
+
+
+---
+
+<Callout type="info" title="Still stuck?">
+  Share what you are thinking in [#torque](https://hackclub.enterprise.slack.com/archives/C0BHGT33JHH) on the Hack Club Slack. The community will help you figure out something you can do for a project.
+</Callout>
