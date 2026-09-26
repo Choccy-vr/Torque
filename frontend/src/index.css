@@ -39,6 +39,28 @@
   --heading-font: 'Phantom Sans', sans-serif;
 }
 
+/* Page background behind every route, so a page swap or the docs chunk
+   loading never flashes the browser's default white. */
+html, body {
+  background-color: var(--bg);
+}
+
+/* Fade each section (landing / app / docs) in when you switch between them.
+   Opacity only: a transform here would break the pages' position: fixed
+   backgrounds and navbar while it runs. */
+.t-page {
+  animation: t-page-in 300ms ease both;
+}
+
+@keyframes t-page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-page { animation: none; }
+}
+
 /* Page background: blueprint grid (major + minor lines) */
 .t-bg {
   background-color: var(--bg);
