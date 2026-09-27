@@ -1,0 +1,52 @@
+---
+title: Design
+description: Resources, tools, and communities for designing your motor project.
+---
+
+import { Card, Cards } from 'fumadocs-ui/components/card';
+
+Designing your own hardware is *hard*, and every step is connected: a bigger motor means a bigger driver, which means a bigger power supply, which means a bigger enclosure. Expect to loop through these pages more than once.
+
+<Cards>
+  <Card title="Design Tips" href="/docs/design/design-tips" description="CAD, PCB, and mechanical tips for designing for real life." />
+  <Card title="Part Sourcing" href="/docs/design/part-sourcing" description="Where to buy parts and how to stretch your grant." />
+</Cards>
+
+---
+
+## Resource collection
+
+The most useful habit you can build is **searching things up**. There are *so* many resources out there, and this list only covers a few.
+
+### Project inspiration
+- [Adafruit Learn](https://learn.adafruit.com/guides/latest) has hundreds of projects, many with motors and full wiring guides.
+- [Hackaday](https://hackaday.com) posts cool hardware hacks every day.
+- [Printables](https://www.printables.com/) and [Thingiverse](https://www.thingiverse.com/) for mechanism ideas (for reference, not for copying; see the [guidelines](/docs/projects/project-guidelines)).
+
+### Motor control
+- [SimpleFOC](https://simplefoc.com/) is an open-source library for controlling BLDC and stepper motors with field-oriented control. Great for Level 3–4 builds.
+- [AccelStepper](https://www.airspayce.com/mikem/arduino/AccelStepper/) is the go-to Arduino library for smooth stepper acceleration.
+- [ODrive docs](https://docs.odriverobotics.com/) are a great read on high-performance BLDC control, even if you don't use an ODrive.
+
+### Software
+
+- **CAD:** [Onshape](https://www.onshape.com/) (browser, free for education) or Fusion 360.
+- **PCB:** [KiCad](https://www.kicad.org/), free and open source, works everywhere.
+- **Sketching:** [Excalidraw](https://excalidraw.com/) for quick diagrams that still look good.
+
+### 3D models & footprints
+- [GrabCAD library](https://grabcad.com/library) has a model of basically any motor, bearing, or extrusion.
+- [SnapEDA](https://www.snapeda.com/) for footprints and symbols (though making your own is a great skill).
+- Most motor sellers publish STEP files: always grab the real model before designing a mount.
+
+### Communities
+First and foremost, the [Hack Club Slack](https://hackclub.com/slack/) and [#torque](https://hackclub.enterprise.slack.com/archives/C0BHGT33JHH). Beyond that:
+
+- [KiCad Discord](https://www.kicad.org/community/chat/) for PCB help
+- and more!
+
+---
+
+<Callout type="info" title="Credit">
+  This page is adapted from the resource collection in the [Hardware Codex](https://github.com/qcoral/hardware-docs) by alex (qcoral).
+</Callout>

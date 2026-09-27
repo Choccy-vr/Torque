@@ -7,10 +7,27 @@ import defaultMdxComponents from "fumadocs-ui/mdx";
 import { Callout } from "fumadocs-ui/components/callout";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
+import { File, Files, Folder } from "fumadocs-ui/components/files";
+import { ImageZoom } from "fumadocs-ui/components/image-zoom";
 import { source } from "../lib/source.js";
 
 // Components available inside every .mdx file without importing them.
-const mdxComponents = { ...defaultMdxComponents, Callout, Tab, Tabs, Step, Steps };
+const mdxComponents = {
+    ...defaultMdxComponents,
+    Callout,
+    Tab,
+    Tabs,
+    Step,
+    Steps,
+    Accordion,
+    Accordions,
+    File,
+    Files,
+    Folder,
+    // Click any image in the docs to zoom it.
+    img: (props) => <ImageZoom {...props} />,
+};
 
 export default function Docs() {
     const { "*": splat = "" } = useParams();
@@ -53,7 +70,7 @@ function DocContent({ page }) {
         <DocsPage toc={page.data.toc}>
             <title>{`${page.data.title} | Torque Docs`}</title>
             <DocsTitle>{page.data.title}</DocsTitle>
-            <DocsDescription>{page.data.description}</DocsDescription>
+            {page.data.description && <DocsDescription>{page.data.description}</DocsDescription>}
             <DocsBody>
                 <MDX components={mdxComponents} />
             </DocsBody>

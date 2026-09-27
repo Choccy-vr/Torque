@@ -1,12 +1,19 @@
 {
   "title": "Torque Docs",
   "pages": [
+    "---[Rocket]Start Here---",
     "index",
     "getting-started",
     "faq",
-    "hardware-docs",
+    "---[Cog]Your Project---",
     "projects",
+    "design",
+    "journaling",
+    "building",
+    "---[Flag]Finishing Up---",
     "shipping",
-    "rewards"
+    "rewards",
+    "---[BookOpen]Resources---",
+    "hardware-docs"
   ]
 }

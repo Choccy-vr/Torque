@@ -1,3 +1,8 @@
 {
-  "title": "Shipping"
+  "title": "Shipping",
+  "icon": "Package",
+  "pages": [
+    "index",
+    "shipping-guidelines"
+  ]
 }

@@ -1,3 +1,11 @@
 {
-  "title": "Projects"
+  "title": "Projects",
+  "icon": "Lightbulb",
+  "pages": [
+    "index",
+    "paths",
+    "what-is-a-good-project",
+    "levels",
+    "project-guidelines"
+  ]
 }

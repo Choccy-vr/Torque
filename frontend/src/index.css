@@ -174,3 +174,120 @@ html, body {
     border-color: var(--color-fd-border);
   }
 }
+
+/* ------------------------------------------------------------------
+   Docs polish: blueprint grid, accent headings, steps, cards, tables,
+   and sidebar section labels.
+   ------------------------------------------------------------------ */
+
+/* Faint blueprint grid behind the docs, same pattern as .t-bg */
+.torque-docs #nd-docs-layout {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--grid) 35%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--grid) 35%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+  background-attachment: fixed;
+}
+
+.torque-docs ::selection {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Page title gets a short accent "redline" underneath */
+.torque-docs #nd-page > h1:first-of-type::after {
+  content: '';
+  display: block;
+  width: 3.5rem;
+  height: 4px;
+  margin-top: 0.6rem;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+
+/* Section headings: accent tick on the left */
+.torque-docs .prose h2 {
+  position: relative;
+  padding-left: 0.9rem;
+}
+.torque-docs .prose h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.2em;
+  bottom: 0.2em;
+  width: 4px;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+
+/* Links: bold accent, underline on hover (like the Hardware Codex) */
+.torque-docs .prose a:not(.not-prose a, [data-card]) {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.torque-docs .prose a:not(.not-prose a, [data-card]):hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Thick fading divider for --- */
+.torque-docs .prose hr {
+  height: 3px;
+  border: 0;
+  margin: 2.5rem 0;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 0%, transparent));
+  opacity: 0.6;
+}
+
+/* Inline code picks up the accent */
+.torque-docs .prose :not(pre) > code {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* Tables: accent-tinted header, zebra rows */
+.torque-docs .prose table thead th {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--heading);
+}
+.torque-docs .prose table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+/* Steps: filled accent number bubbles on an accent rail */
+.torque-docs .fd-steps {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.torque-docs .fd-step::before {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+}
+
+/* Cards lift and glow on hover */
+.torque-docs .prose a[data-card] {
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+.torque-docs .prose a[data-card]:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px -12px var(--accent);
+}
+.torque-docs [data-card] svg {
+  color: var(--accent);
+}
+
+/* Sidebar section labels ("---Start Here---" separators) */
+.torque-docs #nd-sidebar p {
+  font-family: var(--heading-font);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .torque-docs .prose a[data-card] { transition: none; }
+}

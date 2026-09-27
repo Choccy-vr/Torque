@@ -1,3 +1,102 @@
 ---
 title: Levels
+description: How levels work in Torque
 ---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+In Torque, every build is assigned a **Project Level (1–4)** based on its mechanical and electrical complexity. 
+
+Your level determines your **Volts payout rate** when you ship your completed project.
+
+<Callout type="warn" title="Reviewers determine and adjust your level">
+  When submitting your project, you'll propose what level you are aiming for, but **reviewers make the final call**. 
+
+  Reviewers can adjust your level up or down based on your actual execution, mechanical ambition, and custom design work. If you started with a simple plan but went above and beyond (like designing a custom enclosure and tuning custom code), reviewers can bump you up!
+</Callout>
+
+---
+
+## Level Breakdown at a Glance
+
+| Level | Target Builder | Scope & Requirements | Base Rate | Max Rate (with Streak) |
+| :---: | :--- | :--- | :---: | :---: |
+| **1** | First motor project / beginner | Simple motor motion using basic off-the-shelf parts | 35 Volts/hr | 40 Volts/hr |
+| **2** | 2nd or 3rd hardware build | Dedicated single motor setup or combining motors with basic electronics | 40 Volts/hr | 50 Volts/hr |
+| **3** | Experienced maker | High mechanical or electronic polish; **enclosure required** | 45 Volts/hr | 55 Volts/hr |
+| **4** | Advanced hacker | Outstanding electromechanical integration; product-grade finish | 55 Volts/hr | 65 Volts/hr |
+
+---
+
+## Detailed Scopes & Examples
+
+<Tabs items={['Level 1', 'Level 2', 'Level 3', 'Level 4']}>
+  <Tab value="Level 1">
+    ### Level 1: The Starter Build
+    * **Who it's for:** Beginners who have never built hardware or worked with motors before.
+    * **Focus:** Getting a basic motor moving using standard microcontrollers and off-the-shelf components.
+    * **Payout:** **35 – 40 Volts/hr**
+
+    #### Example Project: The Desk Flag
+    A servo motor mounted to a small stand that waves a physical red or green flag whenever your build fails or succeeds in GitHub, controlled via an ESP32 or Arduino.
+  </Tab>
+
+  <Tab value="Level 2">
+    ### Level 2: The Stepping Stone
+    * **Who it's for:** Builders on their second or third hardware project ready for more nuance.
+    * **Focus:** Doing one motor well (steppers, basic ESCs) or blending standard motors with secondary electronics (sensors, small OLED screens, buttons).
+    * **Payout:** **40 – 50 Volts/hr**
+
+    #### Example Project: Smart Motorized Blinds
+    A NEMA 17 stepper motor mounted with a 3D-printed bracket to your window blind chain, featuring homing limit switches and an ambient light sensor that automatically rolls the blinds down when it gets too bright.
+  </Tab>
+
+  <Tab value="Level 3">
+    ### Level 3: The Polished Mechanism
+    * **Who it's for:** Experienced makers confident with CAD, mechanisms, and firmware.
+    * **Focus:** Mastering either advanced motor control or custom electronics while cleanly tying both together into a usable tool.
+    * **Requirement:** Must have an intentional enclosure or rigid custom frame (3D printed, laser cut, or aluminum).
+    * **Payout:** **45 – 55 Volts/hr**
+
+    #### Example Project: 2-Axis Motorized Camera Slider
+    A rigid aluminum extrusion slider with a belt-driven carriage and rotating panning head, driven by silent TMC stepper drivers, an OLED menu interface to program waypoints, and a custom 3D-printed enclosure hiding all the wiring.
+  </Tab>
+
+  <Tab value="Level 4">
+    ### Level 4: The Flagship Engineering Project
+    * **Who it's for:** Advanced builders looking to ship production-grade electromechanical hardware.
+    * **Focus:** Combines complex motor control (custom FOC algorithms, high-power ESCs, closed-loop encoders), custom PCB design, and robust mechanical engineering into one outstanding machine.
+    * **Payout:** **55 – 65 Volts/hr**
+
+    #### Example Project: Reaction-Wheel Inverted Pendulum
+    A desktop self-balancing stick powered by a high-torque brushless gimbal motor, featuring a custom-designed PCB running field-oriented control (FOC), precision magnetic encoder feedback, high-rate IMU filtering, and a CNC/machined aluminum frame.
+  </Tab>
+</Tabs>
+
+---
+
+## How Payouts & Streaks Work
+
+<Cards>
+  <Card
+    title="Hardware Grant Funding"
+    description="On the Funding Path, approved design hours earn grants to purchase components for your build at a fixed rate of $5/hr, regardless of level."
+  />
+  <Card
+    title="Volts for the Shop"
+    description="Unclaimed grant hours (or all hours on the No Funding path) convert directly into Volts upon shipping your finished build."
+  />
+</Cards>
+
+### Daily Streak Multiplier
+
+Consistency pays off. Logging at least **1 hour per day** via Hackatime / Lapse boosts your Volts rate:
+
+* Each active day with 1+ hour logged adds **+0.01x** to your multiplier.
+* Your streak can scale your hourly earnings from the base rate all the way up to your level's maximum cap.
+
+<Callout type="info" title="Not sure which level your idea fits?">
+  Share your project concept, rough CAD sketches, or part list in [#torque](https://hackclub.enterprise.slack.com/archives/C0BHGT33JHH) on Slack! Reviewers and other builders will give feedback on how to dial in your scope before you submit.
+</Callout>
