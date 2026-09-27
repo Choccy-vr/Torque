@@ -4,6 +4,7 @@ import Landing from './pages/Landing.jsx'
 import Home from './pages/Home.jsx'
 import Projects from './pages/Projects.jsx'
 import Explore from './pages/Explore.jsx'
+import { AuthProvider, RequireAuth } from './lib/auth.jsx'
 import './App.css'
 
 // Fumadocs + shiki are heavy, so the docs only load when visited.
@@ -38,8 +39,8 @@ function AppRoutes() {
         <div key={section} className="t-page">
             <Routes>
                 <Route path="/" element={<Landing />} />
-                <Route path="/home" element={<Home />} />
-                <Route path="/projects" element={<Projects />} />
+                <Route path="/home" element={<RequireAuth><Home /></RequireAuth>} />
+                <Route path="/projects" element={<RequireAuth><Projects /></RequireAuth>} />
                 {/*<Route path="/projects/:id" element={<Projects />} /*/}
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/docs/*" element={<Suspense fallback={<div className="min-h-screen" />}><Docs /></Suspense>} />
@@ -51,9 +52,11 @@ function AppRoutes() {
 function App() {
 
   return (
-    <Router>
-        <AppRoutes />
-    </Router>
+    <AuthProvider>
+        <Router>
+            <AppRoutes />
+        </Router>
+    </AuthProvider>
   )
 }
 

@@ -175,6 +175,15 @@ html, body {
   }
 }
 
+/* Tailwind v4's preflight resets buttons to cursor: default; restore the pointer. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 /* ------------------------------------------------------------------
    Docs polish: blueprint grid, accent headings, steps, cards, tables,
    and sidebar section labels.

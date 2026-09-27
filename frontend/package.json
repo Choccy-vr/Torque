@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
     "@types/mdx": "^2.0.14",
     "fumadocs-core": "^16.15.14",
     "fumadocs-mdx": "^15.4.5",

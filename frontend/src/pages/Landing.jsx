@@ -6,6 +6,8 @@ import {ReactLenis, useLenis } from 'lenis/react'
 import {useEffect, useState} from 'react'
 import '../App.css'
 import Footer from '../components/Footer'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../lib/useAuth.js'
 
 function handleSubmit() {
   console.log('Form submitted');
@@ -15,6 +17,13 @@ export default function Home() {
 
   const [hideArrow, setHideArrow] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+  const { session, signIn } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogIn = () => {
+    if (session) navigate('/home');
+    else signIn('/home');
+  };
 
   const faq = [
     {question: "What is Torque?", answer: "Torque is a program where you build hardware projects with motors, and get funding and prizes for your projects."},
@@ -59,8 +68,8 @@ export default function Home() {
           onClick={() => window.open('https://hackclub.com', '_blank')}
         />
 
-        <button className="t-btn t-hover rounded-(--radius) font-bold text-lg fixed top-12 right-14 z-50 px-11 py-1.5">
-          Log In
+        <button onClick={handleLogIn} className="t-btn t-hover rounded-(--radius) font-bold text-lg fixed top-12 right-14 z-50 px-11 py-1.5">
+          {session ? 'Dashboard' : 'Log In'}
         </button>
       </div>
 
