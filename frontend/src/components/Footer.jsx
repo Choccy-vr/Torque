@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 const flag = "https://assets.hackclub.com/flag-standalone.png";
 
 const columns = [
@@ -6,6 +8,7 @@ const columns = [
         links: [
             { name: "How It Works", href: "#how-it-works" },
             { name: "FAQ", href: "#faq" },
+            { name: "Docs", href: "/docs" },
         ],
     },
     {
@@ -30,6 +33,13 @@ const columns = [
 const linkClass = "text-(--text) transition-all duration-300 ease hover:opacity-75";
 
 function FooterLink({ name, href }) {
+    if (href.startsWith("/")) {
+        return (
+            <Link to={href} className={linkClass}>
+                {name}
+            </Link>
+        );
+    }
     const external = href.startsWith("http");
     return (
         <a

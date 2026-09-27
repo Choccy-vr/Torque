@@ -56,6 +56,7 @@ export default function Home() {
 
   return (
     <>
+      <title>Torque</title>
       <ReactLenis root/>
       <div className="t-bg fixed inset-0 z-0" />
       <div className="fixed inset-0 z-0 bg-black opacity-(--overlay) transition-opacity duration-300" />

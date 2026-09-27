@@ -68,7 +68,7 @@ function DocContent({ page }) {
 
     return (
         <DocsPage toc={page.data.toc}>
-            <title>{`${page.data.title} | Torque Docs`}</title>
+            <title>{`Torque - ${page.data.title}`}</title>
             <DocsTitle>{page.data.title}</DocsTitle>
             {page.data.description && <DocsDescription>{page.data.description}</DocsDescription>}
             <DocsBody>
