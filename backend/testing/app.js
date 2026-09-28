@@ -217,7 +217,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/admin/review/create',
     auth: true,
-    desc: 'Reviewer-only. Reviews an unreviewed shipment. 400 if already reviewed or status is "returned" (not supported yet); 403 if reviewing your own shipment.',
+    desc: 'Reviewer-only. Reviews an unreviewed shipment. 400 if already reviewed or status is "returned" (not supported yet); Approving moves the project to Fraud_Pending; the Airtable row is pushed by a background worker within ~60s.',
     body: {
       shipmentId: '00000000-0000-0000-0000-000000000000',
       status: 'approved',
@@ -229,12 +229,42 @@ const ENDPOINTS = [
     },
   },
   {
+    id: 'ship-flow',
+    group: 'review',
+    method: 'FLOW',
+    path: 'project → ship → review → Airtable',
+    auth: true,
+    bundle: true,
+    buttonLabel: 'Run',
+    desc: 'End-to-end ship test as the signed-in user (needs the reviewer role): creates a project from `project` below (a unique suffix is added to the title and URLs so reruns never collide), ships it, reviews the shipment with `review`, then forces an Airtable push pass via the dev-only /testing/airtable/push route and reports the record id. Stops at the first failing step. hackatimeProjectNames must be unused by other projects.',
+    body: {
+      project: {
+        title: 'Airtable flow test',
+        description: 'created by the ship-flow bundle',
+        tier: 1,
+        repoUrl: 'https://github.com/example/torque-test',
+        demoUrl: 'https://example.com/torque-test',
+        readmeUrl: 'https://github.com/example/torque-test#readme',
+        hackatimeProjectNames: [],
+      },
+      review: {
+        status: 'approved',
+        feedback: 'Looks good!',
+        internalNote: 'ship-flow bundle',
+        overrideJustification: 'Test run from the harness ship-flow bundle.',
+        hideReviewerName: false,
+        exceptional: false,
+      },
+    },
+  },
+  {
     id: 'hackatime-login',
     group: 'hackatime',
     method: 'FLOW',
     path: 'start → popup → callback',
     auth: true,
     bundle: true,
+    buttonLabel: 'Log in',
     desc: 'One-click login: calls start, opens the authorize page in a popup, and completes callback automatically when Hackatime redirects back to HACKATIME_REDIRECT_URI. Needs that redirect URI pointed at this harness (see backend/.env) and a popup blocker exception.',
   },
   {
@@ -489,7 +519,7 @@ function buildEndpointRow(ep) {
     // A bundle drives multiple requests (plus a popup redirect) under one click,
     // so there's no single auth checkbox or body to show — it always uses the
     // signed-in session.
-    send.textContent = 'Log in';
+    send.textContent = ep.buttonLabel ?? 'Run';
     send.addEventListener('click', () => runBundle(ep));
     actions.append(send);
   } else {
@@ -549,7 +579,68 @@ function sendEndpoint(ep) {
 
 function runBundle(ep) {
   if (ep.id === 'hackatime-login') return loginToHackatime();
+  if (ep.id === 'ship-flow') return runShipFlow(ep);
   return renderError(ep.id, `Unknown bundle "${ep.id}".`);
+}
+
+// One authenticated JSON request as a bundle step: shows up in the response panel and
+// history like a normal call. Returns the parsed body, or null (after rendering the
+// failing response) so the caller can stop.
+async function bundleStep(method, path, body) {
+  const label = `${method} ${path}`;
+  const headers = { Authorization: `Bearer ${session.access_token}` };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+
+  const started = performance.now();
+  let res, text;
+  try {
+    res = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    text = await res.text();
+  } catch (err) {
+    renderError(label, `Network error: ${err.message}`);
+    return null;
+  }
+  const ms = Math.round(performance.now() - started);
+  const parsed = safeJson(text);
+
+  renderResponse({ label, status: res.status, ms, headers: res.headers, text, parsed });
+  addHistory({ label, status: res.status, ms, text, parsed, headers: res.headers });
+  return res.ok ? (parsed ?? {}) : null;
+}
+
+async function runShipFlow(ep) {
+  const label = 'Ship → review → Airtable';
+  if (!session) return renderError(label, 'Not signed in — sign in first.');
+
+  let input;
+  try {
+    input = JSON.parse($(`b-${ep.id}`).value);
+  } catch (err) {
+    return renderError(label, `Body is not valid JSON: ${err.message}`);
+  }
+
+  // Project create rejects duplicate repo/demo/readme URLs, so make every run unique.
+  const suffix = Date.now().toString(36);
+  const project = { ...(input.project ?? {}) };
+  project.title = `${project.title ?? 'Airtable flow test'} ${suffix}`;
+  for (const key of ['repoUrl', 'demoUrl', 'readmeUrl']) {
+    if (!project[key]) continue;
+    const [base, hash] = project[key].split('#');
+    project[key] = `${base}-${suffix}${hash ? `#${hash}` : ''}`;
+  }
+
+  const created = await bundleStep('POST', '/api/project/create', project);
+  if (!created?.id) return;
+
+  const shipment = await bundleStep('POST', '/api/ships/create', { projectId: created.id });
+  if (!shipment?.id) return;
+
+  const review = await bundleStep('POST', '/api/admin/review/create', { ...(input.review ?? {}), shipmentId: shipment.id });
+  if (!review) return;
+
+  if ((input.review?.status ?? 'approved') !== 'approved') return; // only approvals go to Airtable
+
+  await bundleStep('POST', `/testing/airtable/push/${shipment.id}`);
 }
 
 let hackatimeMessageHandler = null;

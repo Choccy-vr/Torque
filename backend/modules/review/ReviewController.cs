@@ -123,8 +123,6 @@ public class ReviewController : ControllerBase
             return BadRequest("This shipment has already been reviewed.");
         }
 
-        if (shipment.UserId == userId.Value) return Forbid();
-
         var project = await _db.Projects.FindAsync(shipment.ProjectId);
         if (project is null) return NotFound();
 
@@ -160,9 +158,11 @@ public class ReviewController : ControllerBase
         // reshipped (Create() only allows shipping from Unshipped/Changes_Needed).
         // perm_rejected is a genuine terminal state — Create() doesn't allow shipping
         // from Perm_Rejected, so there's no path back for the user.
+        // Approval here is only the first pass: the project goes to fraud review
+        // (second pass), and AirtablePushWorker pushes the shipment to Airtable.
         if (dto.Status == ShipmentReviewStatus.approved)
         {
-            project.Status = ProjectStatus.Approved;
+            project.Status = ProjectStatus.Fraud_Pending;
             if (dto.Exceptional) project.Exceptional = true;
         }
         else if (dto.Status == ShipmentReviewStatus.perm_rejected)

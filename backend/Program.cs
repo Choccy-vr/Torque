@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Torque.Airtable;
 using Torque.Database;
 using Torque.Auth;
 using Torque.Crypto;
@@ -26,6 +27,7 @@ builder.Services.AddAppDatabase(builder.Configuration);
 builder.Services.AddSupabaseAuth(builder.Configuration);
 builder.Services.AddHackatime(builder.Configuration);
 builder.Services.AddLapse(builder.Configuration);
+builder.Services.AddAirtable(builder.Configuration);
 
 var app = builder.Build();
 

@@ -25,6 +25,10 @@ public class Shipment
 
     public int VoltsGranted { get; set; }
 
+    // Set once the shipment has been pushed to Airtable (see AirtablePushWorker);
+    // null means not pushed yet, so it's never pushed twice.
+    public string? AirtableRecordId { get; set; }
+    public DateTime? AirtablePushedAt { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
