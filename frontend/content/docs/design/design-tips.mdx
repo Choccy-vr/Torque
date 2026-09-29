@@ -1,0 +1,62 @@
+---
+title: Design Tips
+description: CAD, PCB, and mechanical tips for designing things that work in real life.
+---
+
+A collection of tips for designing your project, in no particular order.
+
+## Designing for real life
+
+What fits perfectly on screen often doesn't fit in your hands. Watch out for these:
+
+- Add **~0.2 mm of tolerance** to any 3D printed part that touches another part. Printers aren't perfect. **Your parts _will not_ fit otherwise.**
+- **Motor shafts need real couplers.** Press-fitting a printed gear onto a round shaft will slip under load. Use a D-shaft, a set screw, a clamping hub, or a flexible coupler.
+- **Motors vibrate.** Screws loosen over time, so use threadlocker (removable blue) or nylon lock nuts on anything near a motor.
+- **Leave room for wires.** Every motor, driver, and connector needs a path for its cable, plus room for fingers to plug it in.
+- **Think about how it's made.** Tiny details may not print or cut well. Design with your actual manufacturing method in mind.
+- You can **print your PCB on paper at 1:1** (KiCad supports this) to check its size before ordering.
+
+---
+
+## Mechanical
+
+- **Belts vs. lead screws vs. gears:** belts (GT2) are fast and cheap, lead screws are slow but strong and self-locking, and gears give you torque in a small space.
+- **Bearings everywhere something rotates.** A shaft spinning directly in a printed hole wears out fast. 608 (skateboard) bearings are cheap and everywhere.
+- **Don't put radial load on the motor shaft** if you can avoid it. Support heavy wheels and arms with their own bearings.
+- **Heat-set inserts** make printed parts that can be screwed together many times without stripping.
+
+### Measurements that just work
+
+These values (mostly from the VORON team's designs) work well for 3D printed parts:
+
+| Feature | Size |
+| :--- | :--- |
+| M3 screw head clearance (SHCS & BHCS) | 6 mm diameter |
+| M3 heat-set insert hole | 4.7 mm OD, 4 mm deep |
+| M3 screw threading directly into plastic | 2.9 mm hole |
+| M2 screw threading directly into plastic | 1.9 mm hole |
+| M3 SHCS head depth | 3.1 mm |
+| M3 BHCS head depth | 1.8 mm |
+| NEMA 17 mounting holes | 31 mm square, M3 |
+| NEMA 17 center boss | 22 mm diameter |
+
+---
+
+## PCBs
+
+- **Round the corners** of your board. It looks better and it won't cut you.
+- **Wide traces for motor current.** Use a trace width calculator (KiCad has one built in). Motor power traces often need to be 1 mm+ wide.
+- **Keep motor power and logic apart** on the board, and give the motor driver a solid ground pour.
+- If you're choosing between 30 functionally identical capacitors, start from the CAD and work backwards to see what physically fits and looks best.
+
+## CAD
+
+- **Use variables/parameters** (Fusion, Onshape). When your motor changes, the whole design updates instead of you redoing it.
+- **Render instead of screenshotting.** A quick render in Fusion looks way better in your README than the default gray viewport.
+- **Model the whole assembly,** including motors, screws, and the PCB, to catch collisions before you print anything.
+
+---
+
+<Callout type="info" title="Credit">
+  Adapted from the design tips in the [Hardware Codex](https://github.com/qcoral/hardware-docs) by alex (qcoral), with motor-specific additions for Torque.
+</Callout>

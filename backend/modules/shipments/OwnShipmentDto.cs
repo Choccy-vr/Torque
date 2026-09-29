@@ -21,6 +21,9 @@ public record OwnShipmentDto
 
     public int VoltsGranted { get; init; }
 
+    public bool IsBuildComplete { get; init; }
+    public int RequestedFunding { get; init; }
+
 
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 

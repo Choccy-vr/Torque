@@ -25,6 +25,18 @@ public class Shipment
 
     public int VoltsGranted { get; set; }
 
+    // Answered by the shipper when shipping. false = design ship, true = build ship
+    // (Airtable "Design or build").
+    public bool IsBuildComplete { get; set; }
+    public int RequestedFunding { get; set; }
+    public string? HowDidYouHear { get; set; }
+    public string? WhatAreWeDoingWell { get; set; }
+    public string? HowCanWeImprove { get; set; }
+
+    // Set once the shipment has been pushed to Airtable (see AirtablePushWorker);
+    // null means not pushed yet, so it's never pushed twice.
+    public string? AirtableRecordId { get; set; }
+    public DateTime? AirtablePushedAt { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

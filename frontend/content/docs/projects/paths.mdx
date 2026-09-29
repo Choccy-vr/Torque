@@ -1,0 +1,69 @@
+---
+title: Paths
+description: The two ways to take part in Torque, and how each one pays out.
+icon: Route
+---
+
+import { Card, Cards } from 'fumadocs-ui/components/card';
+
+Every Torque project follows one of two paths. Both are hardware projects built around a motor; the difference is **when you ship** and **how your hours get paid out**.
+
+| | Funding path | No-funding path |
+| :--- | :--- | :--- |
+| **Best for** | You need parts to build your design | You already have the parts (or are paying yourself) |
+| **When you first ship** | Once the design is done | Once the build is done and working |
+| **Grant** | $5/hr for the hours you claim | None |
+| **Volts** | Only for hours you *don't* claim as grant | For every hour |
+| **Must show a working build?** | Yes, at your final ship | Yes, at your only ship |
+
+---
+
+<Tabs items={["Funding path", "No-funding path"]}>
+  <Tab value="Funding path">
+    ### Design first, get a grant, then build
+
+    <Steps>
+      <Step>
+        **Design your project.** CAD, schematics, PCB, firmware, and a BOM, all presentable and documented. Track every hour.
+      </Step>
+      <Step>
+        **Ship the design.** Submit it and claim hours for a grant at **$5/hr**. You don't have to claim all of them; hours you leave unclaimed can become Volts later.
+      </Step>
+      <Step>
+        **Build it.** Order your parts and assemble the project, still tracking time and journaling as you go.
+      </Step>
+      <Step>
+        **Need more?** If something needs fixing (a v2 PCB, a stronger motor, a redesigned mount), you can claim more of your hours as grant.
+      </Step>
+      <Step>
+        **Ship the finished build.** Show it working. Any hours you never claimed as grant are converted into **Volts** at your level's rate.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab value="No-funding path">
+    ### Build it yourself, turn every hour into Volts
+
+    <Steps>
+      <Step>
+        **Design and build your project** using parts you already have or buy yourself, tracking time and journaling the whole way.
+      </Step>
+      <Step>
+        **Ship the completed, working build.** You only ship once, and it has to work.
+      </Step>
+      <Step>
+        **All of your approved hours** are converted into **Volts** at your level's rate.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+<Callout type="info" title="Grants vs. Volts">
+  Grants are a flat **$5/hr** no matter your level. Volts depend on your [project level](/docs/projects/levels) and your streak, and higher levels can be worth more per hour than the grant.
+</Callout>
+
+---
+
+<Cards>
+  <Card title="Project Levels" href="/docs/projects/levels" description="See which level your project fits and what it pays." />
+  <Card title="Shipping Guidelines" href="/docs/shipping/shipping-guidelines" description="What a shippable project needs to include." />
+</Cards>

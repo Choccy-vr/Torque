@@ -1,0 +1,119 @@
+---
+title: Journaling Your Progress
+description: How to log your build sessions, keep your streak alive, and export your journey.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+A journal entry is a quick write-up of a chunk of work, backed by a photo or two and the time you spent. 
+
+In Torque, you post journal entries directly on the website as you build. Your journals do three major things:
+1. **Logs your time:** Captures the hours you spent designing, fabricating, or soldering.
+2. **Maintains your streak:** Keeps your daily streak alive to maximize your Volts multiplier.
+3. **Serves as proof:** Acts as the primary evidence reviewers evaluate when approving grant hours and shipping your build.
+
+<Callout type="info" title="Journaling on the Web + Export to Markdown">
+  You will write and publish your entries directly using the **Torque web dashboard**. 
+  
+  Whenever you want a permanent copy for your GitHub repository or personal portfolio, click **Export JOURNAL.md** from your dashboard to download your entire log as a clean Markdown file with frontmatter ready to drop into your repo root!
+</Callout>
+
+---
+
+## What Goes into an Entry?
+
+When submitting a journal entry on the platform, each post requires:
+
+| Field | Requirement | Details |
+| :--- | :--- | :--- |
+| **Title** | Required (≤ 75 chars) | A punchy summary of what you tackled (e.g., *"Tuning PID loop on the pitch axis"*). |
+| **Content** | Required (≥ 100 chars) | An honest breakdown of what you did, why you did it, and what roadblocks you hit. |
+| **Media / Photos** | Required | Clear photos or screenshots showing work-in-progress intermediates. |
+| **Hours Logged** | Required (0.1–20 hrs) | The time spent during that specific session. If a build session exceeds 20 hours, break it up. |
+
+<Callout type="error" title="Strictly No AI-Generated Journals">
+  Reviewers read every journal. AI-generated entries are obvious, lack authentic troubleshooting details, and are grounds for **immediate rejection**. Honest, messy, and brief human writing always beats polished robotic fluff.
+</Callout>
+
+---
+
+## How to Write a Solid Entry
+
+A great journal entry reads like a build log, not a sterile checklist. Answer three questions every time:
+1. **What did you build or change?**
+2. **Why did you choose that approach?**
+3. **What failed, and how did you resolve it?**
+
+### The Hardware Evidence Ratio
+Hardware projects live and die by visual proof:
+* Aim for roughly **one photo or screenshot per 3–5 hours of work**.
+* A single picture of a closed plastic box cannot verify 15 hours of internal wiring. Show the messy wiring harness, the misaligned motor mounts, the burned driver boards, and the scope traces.
+* **Videos & Timelapses:** For testing mechanisms or showing motor motion, upload short clips or link unlisted YouTube timelapses directly in your entry body.
+
+---
+
+## Real Examples: Bad vs. Good
+
+<Tabs items={["Bad Example", "Good Example"]}>
+  <Tab value="Bad Example">
+    ```markdown
+    I added a buck converter and wired it up. I did CAD and added a case. 
+    I soldered everything together and it worked!
+    ```
+
+    **Why reviewers bounce this back:**
+
+    - *Why* did you need a buck converter? What voltage are you stepping down from/to?
+    - What mounting features or clearances did the CAD case require?
+    - How did you test the motor under load?
+    - There is zero insight into your engineering choices.
+  </Tab>
+  <Tab value="Good Example">
+    ```markdown
+    ### Got the closed-loop encoder reading correctly!
+
+    I spent the afternoon wiring the AS5600 magnetic encoder to the rear of the BLDC gimbal motor. 
+    Originally, the I2C bus was hanging whenever the motor spun up. After probing the lines, 
+    I realized the motor phase wires were routed right next to the SDA/SCL lines, inducing 
+    massive inductive noise.
+
+    I redesigned the 3D-printed end-cap to route the encoder ribbon cable out the back through 
+    a separate channel and added external 4.7kΩ pull-up resistors on the 3.3V rail. Once flashed, 
+    the angle readings stayed stable at 1000 RPM!
+    ```
+
+    **Why this passes:**
+
+    - Explains the exact problem (I2C bus hanging from inductive motor noise).
+    - Documents the physical iteration (rerouted cables + redesigned 3D mount + pull-ups).
+    - Shows tangible proof of progress.
+  </Tab>
+</Tabs>
+
+---
+
+## Dos and Don'ts
+
+| Do | Don't |
+| :--- | :--- |
+| **Log frequently:** One entry per day or milestone keeps your streak intact. | **Batch dumps:** Waiting two weeks and dumping a single 30-hour entry without photos. |
+| **Document failures:** Burned out a driver? Stripped a gear? Tell the story! | **Hide mistakes:** Submitting only the final pristine product looks like a kit build. |
+| **Show intermediate progress:** Screenshot CAD sketches, wiring diagrams, and test benches. | **Vague summaries:** Writing *"worked on code"* or *"did some 3D modeling"*. |
+| **Write like yourself:** Grammatical perfection doesn't matter; authentic details do. | **Use LLMs to summarize:** AI-generated text will flag review filters. |
+
+---
+
+<Cards>
+  <Card
+    title="Ready to log a session?"
+    href="/dashboard"
+    description="Head over to the Torque dashboard to post your latest update and keep your daily streak going."
+  />
+  <Card
+    title="Need to export your log?"
+    href="/dashboard"
+    description="Download your full JOURNAL.md file anytime to push into your GitHub repo or personal documentation."
+  />
+</Cards>

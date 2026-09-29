@@ -5,6 +5,9 @@ import {ChevronDown, ChevronUp} from 'lucide-react'
 import {ReactLenis, useLenis } from 'lenis/react'
 import {useEffect, useState} from 'react'
 import '../App.css'
+import Footer from '../components/Footer'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../lib/useAuth.js'
 
 function handleSubmit() {
   console.log('Form submitted');
@@ -14,6 +17,13 @@ export default function Home() {
 
   const [hideArrow, setHideArrow] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+  const { session, signIn } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogIn = () => {
+    if (session) navigate('/home');
+    else signIn('/home');
+  };
 
   const faq = [
     {question: "What is Torque?", answer: "Torque is a program where you build hardware projects with motors, and get funding and prizes for your projects."},
@@ -46,9 +56,10 @@ export default function Home() {
 
   return (
     <>
+      <title>Torque</title>
       <ReactLenis root/>
-      <div className="fixed inset-0 z-0 bg-[#0B0C10] [background-image:linear-gradient(#FFB70330_1px,transparent_1px),linear-gradient(90deg,#FFB70330_1px,transparent_1px)] [background-size:55px_55px]" />
-      <div className="fixed inset-0 z-0 bg-black opacity-20" />
+      <div className="t-bg fixed inset-0 z-0" />
+      <div className="fixed inset-0 z-0 bg-black opacity-(--overlay) transition-opacity duration-300" />
 
       <div>
         <img
@@ -58,22 +69,22 @@ export default function Home() {
           onClick={() => window.open('https://hackclub.com', '_blank')}
         />
 
-        <button className="bg-white text-[#0B0C10] font-bold text-lg fixed top-12 right-14 z-50 rounded-md px-11 py-1.5 text-black transition-all duration-300 ease hover:opacity-80">
-          Log In
+        <button onClick={handleLogIn} className="t-btn t-hover rounded-(--radius) font-bold text-lg fixed top-12 right-14 z-50 px-11 py-1.5">
+          {session ? 'Dashboard' : 'Log In'}
         </button>
       </div>
 
-      <div className="relative min-h-screen w-full">
+      <div id="top" className="relative min-h-screen w-full">
 
         <div className="font-phantom absolute top-0 left-0 right-0 flex items-center justify-center min-h-full z-20 pointer-events-none">
           <div className="w-full max-w-7xl mx-auto px-6 md:px-4 pointer-events-auto flex justify-center flex-col items-center">
             {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 items-center px-10"> */}
               {/* <div className="space-y-4 md:space-y-5 text-center  md:text-left"> */}
-                <h1 className="text-7xl md:text-9xl font-phantom font-bold text-white">TORQUE</h1>
-                <p className="text-xl md:text-2xl my-6 text-center text-white">Build hardware projects with motors. Get funding and prizes.</p>
+                <h1 className="t-heading text-7xl md:text-9xl font-bold">TORQUE</h1>
+                <p className="text-xl md:text-2xl my-6 text-center text-(--text)">Build hardware projects with motors. Get funding and prizes.</p>
                 <form onSubmit={handleSubmit} className="flex items-stretch pt-2">
-                  <input type="text" placeholder="orpheus@hackclub.com" className="font-semibold pr-4 pl-4 sm:pl-6 rounded-r-none border-r-2 border-black py-[0.60rem] rounded-lg text-black placeholder:text-gray-500 focus:outline-none"></input>
-                  <input type="submit" value="Get Started" className="outline-none px-2 md:px-4 rounded-l-none rounded-lg z-50 bg-white text-black font-semibold cursor-pointer hover:opacity-80 transition-all duration-300 ease"></input>
+                  <input type="text" placeholder="orpheus@hackclub.com" className="bg-white font-semibold pr-4 pl-4 sm:pl-6 rounded-l-(--radius) border-r-2 border-black py-[0.60rem] text-black placeholder:text-gray-500 focus:outline-hidden"></input>
+                  <input type="submit" value="Get Started" className="t-btn t-hover outline-hidden px-2 md:px-4 rounded-r-(--radius) z-50 font-semibold cursor-pointer"></input>
                 </form>
               </div>
               {/* <div className="justify-center hidden md:flex md:justify-end group z-10 wobble-1">
@@ -85,7 +96,7 @@ export default function Home() {
       
         <div className="absolute bottom-4 left-0 right-0">
           <ChevronDown 
-            className={`mx-auto w-16 h-16 text-white animate-bounce transition-all duration-300 ease ${hideArrow ? "opacity-0 pointer-events-none" : "opacity-100 hover:opacity-80 cursor-pointer"}`} 
+            className={`mx-auto w-16 h-16 text-(--text) animate-bounce transition-all duration-300 ease ${hideArrow ? "opacity-0 pointer-events-none" : "opacity-100 hover:opacity-80 cursor-pointer"}`} 
             onClick={() => {
               const section = document.querySelector('.section1');
               section?.scrollIntoView({ behavior: 'smooth', block: "center" });
@@ -96,23 +107,23 @@ export default function Home() {
 
       </div>
 
-      <section className="section1 w-full z-20 mb-48 pt-20">
+      <section id="how-it-works" className="section1 w-full z-20 mb-48 pt-20">
           <div className="font-phantom relative flex items-center justify-center flex-col pointer-events-auto z-20">
-            <h1 className="text-4xl md:text-6xl font-bold text-white z-20">How It Works</h1>
-            <div className="grid grid-cols-1 mt-20 md:grid-cols-2 lg:grid-cols-4 gap-8 px-20 md:gap-16 max-w-screen-2xl mx-auto">
-              <div className="bg-[#25282A] rounded-xl p-6 md:p-8 text-center text-[#FFB703]">
+            <h1 className="t-heading text-4xl md:text-6xl font-bold z-20">How It Works</h1>
+            <div className="grid grid-cols-1 mt-20 md:grid-cols-2 lg:grid-cols-4 gap-8 px-20 md:gap-16 max-w-(--breakpoint-2xl) mx-auto">
+              <div className="t-card t-hover p-6 md:p-8 text-center">
                 <h1 className="md:text-3xl mb-4 font-bold">Design</h1>
                 <p className="md:text-lg">Design your hardware project — pick a motor-powered idea and plan how it'll work.</p>
               </div>
-              <div className="p-6 rounded-xl md:p-8 text-center bg-[#25282A] text-[#FFB703]">
+              <div className="t-card t-hover p-6 md:p-8 text-center">
                 <h1 className="md:text-3xl mb-4 font-bold">Build</h1>
                 <p className="md:text-lg">Get a grant to pay for the parts, then build your design into something real.</p>
               </div>
-              <div className="p-6 rounded-xl md:p-8 text-center bg-[#25282A] text-[#FFB703]">
+              <div className="t-card t-hover p-6 md:p-8 text-center">
                 <h1 className="md:text-3xl mb-4 font-bold">Revise</h1>
                 <p className="md:text-lg">Test what you built and make any revisions it needs to work better.</p>
               </div>
-              <div className="p-6 rounded-xl md:p-8 text-center bg-[#25282A] text-[#FFB703]">
+              <div className="t-card t-hover p-6 md:p-8 text-center">
                 <h1 className="md:text-3xl mb-4 font-bold">Ship</h1>
                 <p className="md:text-lg">Ship a finished, working project and unlock more prizes in the shop.</p>
               </div>
@@ -120,14 +131,14 @@ export default function Home() {
           </div>
       </section>
 
-      <section className="section2 w-full z-20 mt-10 pt-20">
+      <section id="faq" className="section2 w-full z-20 mt-10 pt-20">
         <div className="font-phantom relative flex items-center justify-center flex-col pointer-events-auto z-20">
-          <h1 className="text-4xl md:text-6xl font-bold text-white z-20">FAQ</h1>
+          <h1 className="t-heading text-4xl md:text-6xl font-bold z-20">FAQ</h1>
           <div className="text-white w-full max-w-2xl px-10 m-20 mx-auto gap-5 flex flex-col">
             {faq.map((item, index) => (
               <div key={index} className="w-full">
                 <div 
-                  className="bg-[#25282A] text-[#FFB703] font-bold rounded-md p-4 flex w-full flex-col cursor-pointer transition-all duration-300 ease hover:opacity-85"
+                  className="t-card t-hover font-bold p-4 flex w-full flex-col cursor-pointer"
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}  
                 >
                   <div className="flex flex-row w-full items-center justify-between transition-all duration-300 ease">
@@ -145,10 +156,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="bg-transparent text-white w-full flex flex-col gap-1 items-center justify-center z-50 relative h-32 mt-20 text-black">
-        <h1 className="text-xl text-[#FFB703]">Made with &lt;3 by the <a href="https://hackclub.com/" target="_blank" rel="noopener noreferrer" className="text-[#FFB703] transition-all duration-500 ease hover:opacity-70">Hack Club</a> community</h1>
-        <h1 className="text-md text-[#FFB703]">Sponsored by <a href="https://hackclub.enterprise.slack.com/team/U06P62WGWAV" target="_blank" rel="noopener noreferrer" className="text-[#FFB703] transition-all duration-500 ease hover:opacity-70">@Meghana</a></h1>
-      </footer>
+      <Footer />
     </>
   )
 }

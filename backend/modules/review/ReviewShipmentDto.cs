@@ -16,6 +16,11 @@ public record ReviewShipmentDto
 
     public string? OverrideJustification { get; init; }
 
+    public string? ScreenshotUrl { get; init; }
+    public string? TechnicalFeatures { get; init; }
+    public string? DeflationJustification { get; init; }
+    public string? AdditionalJustification { get; init; }
+
     public bool Exceptional { get; init; } = false;
 
 }

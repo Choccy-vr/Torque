@@ -182,9 +182,17 @@ namespace torque_backend.Data.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
+                    b.Property<string>("AdditionalJustification")
+                        .HasColumnType("text")
+                        .HasColumnName("additional_justification");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("DeflationJustification")
+                        .HasColumnType("text")
+                        .HasColumnName("deflation_justification");
 
                     b.Property<bool>("Exceptional")
                         .HasColumnType("boolean")
@@ -218,6 +226,10 @@ namespace torque_backend.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("reviewer_id");
 
+                    b.Property<string>("ScreenshotUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("screenshot_url");
+
                     b.Property<Guid>("ShipmentId")
                         .HasColumnType("uuid")
                         .HasColumnName("shipment_id");
@@ -225,6 +237,10 @@ namespace torque_backend.Data.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
+
+                    b.Property<string>("TechnicalFeatures")
+                        .HasColumnType("text")
+                        .HasColumnName("technical_features");
 
                     b.HasKey("Id")
                         .HasName("pk_shipment_reviews");
@@ -240,6 +256,14 @@ namespace torque_backend.Data.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
+                    b.Property<DateTime?>("AirtablePushedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("airtable_pushed_at");
+
+                    b.Property<string>("AirtableRecordId")
+                        .HasColumnType("text")
+                        .HasColumnName("airtable_record_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -252,6 +276,18 @@ namespace torque_backend.Data.Migrations
                         .HasColumnType("real")
                         .HasColumnName("hour_snapshot");
 
+                    b.Property<string>("HowCanWeImprove")
+                        .HasColumnType("text")
+                        .HasColumnName("how_can_we_improve");
+
+                    b.Property<string>("HowDidYouHear")
+                        .HasColumnType("text")
+                        .HasColumnName("how_did_you_hear");
+
+                    b.Property<bool>("IsBuildComplete")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_build_complete");
+
                     b.Property<float>("OverrideHours")
                         .HasColumnType("real")
                         .HasColumnName("override_hours");
@@ -263,6 +299,10 @@ namespace torque_backend.Data.Migrations
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid")
                         .HasColumnName("project_id");
+
+                    b.Property<int>("RequestedFunding")
+                        .HasColumnType("integer")
+                        .HasColumnName("requested_funding");
 
                     b.Property<Guid?>("ReviewId")
                         .HasColumnType("uuid")
@@ -291,6 +331,10 @@ namespace torque_backend.Data.Migrations
                     b.Property<int>("VoltsGranted")
                         .HasColumnType("integer")
                         .HasColumnName("volts_granted");
+
+                    b.Property<string>("WhatAreWeDoingWell")
+                        .HasColumnType("text")
+                        .HasColumnName("what_are_we_doing_well");
 
                     b.HasKey("Id")
                         .HasName("pk_shipments");

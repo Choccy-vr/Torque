@@ -1,6 +1,103 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+@config '../tailwind.config.js';
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+/* Design tokens (Tachometer theme) */
+:root {
+  --bg: #454A54;
+  --grid: #FFFFFF26;
+  --card: #535965;
+  --accent: #FF7A5C;
+  --text: #FFFFFF;
+  --heading: #FFFFFF;
+  --overlay: 0.2;
+  --btn-bg: #FF7A5C;
+  --btn-text: #454A54;
+  --btn-border: #FF7A5C;
+  --radius: 9999px;
+  --card-radius: 1.75rem;
+  --heading-font: 'Phantom Sans', sans-serif;
+}
+
+/* Page background behind every route, so a page swap or the docs chunk
+   loading never flashes the browser's default white. */
+html, body {
+  background-color: var(--bg);
+}
+
+/* Fade each section (landing / app / docs) in when you switch between them.
+   Opacity only: a transform here would break the pages' position: fixed
+   backgrounds and navbar while it runs. */
+.t-page {
+  animation: t-page-in 300ms ease both;
+}
+
+@keyframes t-page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-page { animation: none; }
+}
+
+/* Page background: blueprint grid (major + minor lines) */
+.t-bg {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 2px, transparent 2px),
+    linear-gradient(90deg, var(--grid) 2px, transparent 2px),
+    linear-gradient(color-mix(in srgb, var(--grid) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--grid) 45%, transparent) 1px, transparent 1px);
+  background-size: 110px 110px, 110px 110px, 22px 22px, 22px 22px;
+  background-position: -1px -1px;
+}
+
+/* Cards (How It Works boxes, FAQ items, navbar, footer) */
+.t-card {
+  background: var(--card);
+  color: var(--accent);
+  border-radius: var(--card-radius);
+  border: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  transition: all 300ms ease;
+}
+
+/* Buttons */
+.t-btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: 2px solid var(--btn-border);
+}
+
+/* Big headings (hero, section titles, footer wordmark) */
+.t-heading {
+  font-family: var(--heading-font);
+  color: var(--heading);
+}
+
+/* Hover effect for buttons and clickable cards */
+.t-hover { transition: all 300ms ease; }
+.t-hover:hover { opacity: 0.8; }
 
 @font-face {
   font-family: 'Phantom Sans';
@@ -34,4 +131,172 @@
   font-weight: bold;
   font-style: normal;
   font-display: swap;
+}
+
+/* ------------------------------------------------------------------
+   Docs (/docs, Fumadocs). Fumadocs colors everything via --color-fd-*;
+   point those at the Torque tokens above so the docs follow the theme.
+   Set on :root (not just the docs wrapper) because Fumadocs popovers
+   render in a portal outside it; .dark / #nd-sidebar repeat it to beat
+   Fumadocs' own dark-mode defaults.
+   ------------------------------------------------------------------ */
+:root,
+.dark,
+.dark #nd-sidebar {
+  --color-fd-background: var(--bg);
+  --color-fd-foreground: var(--text);
+  --color-fd-card: var(--card);
+  --color-fd-card-foreground: var(--text);
+  --color-fd-popover: var(--card);
+  --color-fd-popover-foreground: var(--text);
+  --color-fd-muted: var(--card);
+  --color-fd-muted-foreground: color-mix(in srgb, var(--text) 65%, transparent);
+  --color-fd-secondary: var(--card);
+  --color-fd-secondary-foreground: var(--text);
+  --color-fd-accent: color-mix(in srgb, var(--accent) 15%, transparent);
+  --color-fd-accent-foreground: var(--accent);
+  --color-fd-primary: var(--accent);
+  --color-fd-primary-foreground: var(--bg);
+  --color-fd-border: color-mix(in srgb, var(--text) 12%, transparent);
+  --color-fd-ring: var(--accent);
+}
+
+.torque-docs :is(h1, h2, h3, h4) {
+  font-family: var(--heading-font);
+}
+
+/* The Tailwind v3 border-color compat rule at the top of this file would
+   otherwise override Fumadocs' default border color inside the docs. */
+@layer base {
+  .torque-docs *,
+  .torque-docs ::after,
+  .torque-docs ::before {
+    border-color: var(--color-fd-border);
+  }
+}
+
+/* Tailwind v4's preflight resets buttons to cursor: default; restore the pointer. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Docs polish: blueprint grid, accent headings, steps, cards, tables,
+   and sidebar section labels.
+   ------------------------------------------------------------------ */
+
+/* Faint blueprint grid behind the docs, same pattern as .t-bg */
+.torque-docs #nd-docs-layout {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--grid) 35%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--grid) 35%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+  background-attachment: fixed;
+}
+
+.torque-docs ::selection {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Page title gets a short accent "redline" underneath */
+.torque-docs #nd-page > h1:first-of-type::after {
+  content: '';
+  display: block;
+  width: 3.5rem;
+  height: 4px;
+  margin-top: 0.6rem;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+
+/* Section headings: accent tick on the left */
+.torque-docs .prose h2 {
+  position: relative;
+  padding-left: 0.9rem;
+}
+.torque-docs .prose h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.2em;
+  bottom: 0.2em;
+  width: 4px;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+
+/* Links: bold accent, underline on hover (like the Hardware Codex) */
+.torque-docs .prose a:not(.not-prose a, [data-card]) {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.torque-docs .prose a:not(.not-prose a, [data-card]):hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Thick fading divider for --- */
+.torque-docs .prose hr {
+  height: 3px;
+  border: 0;
+  margin: 2.5rem 0;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 0%, transparent));
+  opacity: 0.6;
+}
+
+/* Inline code picks up the accent */
+.torque-docs .prose :not(pre) > code {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* Tables: accent-tinted header, zebra rows */
+.torque-docs .prose table thead th {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--heading);
+}
+.torque-docs .prose table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+/* Steps: filled accent number bubbles on an accent rail */
+.torque-docs .fd-steps {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.torque-docs .fd-step::before {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+}
+
+/* Cards lift and glow on hover */
+.torque-docs .prose a[data-card] {
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+.torque-docs .prose a[data-card]:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px -12px var(--accent);
+}
+.torque-docs [data-card] svg {
+  color: var(--accent);
+}
+
+/* Sidebar section labels ("---Start Here---" separators) */
+.torque-docs #nd-sidebar p {
+  font-family: var(--heading-font);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .torque-docs .prose a[data-card] { transition: none; }
 }

@@ -1,0 +1,121 @@
+---
+title: Shipping Guidelines
+description: A step-by-step checklist for getting your project ready to submit.
+---
+
+Done designing (or building)? Here's how to get your project organized and ready to ship.
+
+<Steps>
+  <Step>
+    ### Get every file into your repo
+
+    Your repository needs **everything** someone would need to rebuild your project:
+
+    - A full CAD assembly as **.STEP** (plus the source file if you can)
+    - **STL** files for every printed part
+    - PCB source files (KiCad project) and **Gerbers**, if you made a PCB
+    - Your **firmware** source code
+  </Step>
+  <Step>
+    ### Organize it
+
+    Split files into clear folders. Something like this:
+
+    <Files>
+      <Folder name="my-torque-project" defaultOpen>
+        <Folder name="cad" defaultOpen>
+          <File name="assembly.step" />
+          <Folder name="stl">
+            <File name="motor-mount.stl" />
+            <File name="enclosure-top.stl" />
+          </Folder>
+        </Folder>
+        <Folder name="pcb">
+          <File name="driver-board.kicad_pro" />
+          <File name="gerbers.zip" />
+        </Folder>
+        <Folder name="firmware">
+          <File name="main.cpp" />
+        </Folder>
+        <Folder name="images" />
+        <File name="BOM.csv" />
+        <File name="README.md" />
+      </Folder>
+    </Files>
+  </Step>
+  <Step>
+    ### Make a Bill of Materials (BOM)
+
+    List **every** part and material needed to build your project, stored as a **.csv** (plain text, works everywhere). For a motor project, be specific about motor models, driver boards, screws, bearings, and belts.
+
+    Every item needs a short **why**: what it does in your project and why you picked it. Reviewers use this to check that each part is actually needed.
+
+    | Item                    | Why you need it                                      | Qty | Unit price |  Total | Link                    |
+    | :---------------------- | :--------------------------------------------------- | :-: | ---------: | -----: | :---------------------- |
+    | NEMA 17 stepper, 1.2 A  | Drives the slider carriage and the pan axis          |  2  |      $9.50 | $19.00 | *link to exact listing* |
+    | TMC2209 driver          | Runs each stepper quietly so it doesn't ruin video   |  2  |      $3.20 |  $6.40 | *link*                  |
+    | GT2 belt, 2 m + pulleys | Turns motor rotation into movement along the rail    |  1  |      $5.80 |  $5.80 | *link*                  |
+    | M3 screw kit            | Holds the printed mounts, motors, and PCB together   |  1  |      $6.00 |  $6.00 | *link*                  |
+    | Shipping + tax          |                                                      |     |            |  $8.30 |                         |
+    | **Total**               |                                                      |     |            | **$45.50** |                     |
+
+    Always include shipping and tax, and a **total** at the bottom so reviewers can see the full cost at a glance.
+  </Step>
+  <Step>
+    ### Write a README.md
+
+    The README ties it all together. It should include:
+
+    - What the project is, **why** you made it, and how it works
+    - Renders or photos of the design
+    - A **wiring diagram or schematic** (it makes review much faster)
+    - How to build and run it
+    - Credits for any reference designs or libraries you used
+
+    If you have a PCB, you can add this badge so people can view it in the browser:
+
+    ```md
+    [![View PCB on KiCanvas](https://hack.club/pcb-badge)](https://kicanvas.org/?repo=https://github.com/<OWNER>/<REPOSITORY>/tree/main/pcb)
+    ```
+  </Step>
+  <Step>
+    ### Record a demo (build ships)
+
+    For a build ship, record a short video of your project **powered on, moving under its own power, and doing its job**. Link it in your README.
+  </Step>
+  <Step>
+    ### Submit!
+
+    Make sure your journal is up to date, then submit from the Torque dashboard.
+
+    Not your last ship? If you need more funding for a v2 later, come back and **repeat these steps**: update your files, BOM, and README, keep journaling, and ship again.
+  </Step>
+</Steps>
+
+---
+
+## Pre-ship checklist
+
+<Tabs items={['Design ship', 'Build ship']}>
+  <Tab value="Design ship">
+    - [ ] Public GitHub repo with organized folders
+    - [ ] Full CAD assembly (.STEP) including motors and electronics
+    - [ ] Schematic / wiring diagram
+    - [ ] PCB files + Gerbers (if applicable)
+    - [ ] Firmware (at least a first version)
+    - [ ] BOM.csv with links, prices, and shipping
+    - [ ] README with renders and an explanation
+    - [ ] Journal entries covering your hours
+  </Tab>
+  <Tab value="Build ship">
+    - [ ] Everything from the design ship, updated to match what you actually built
+    - [ ] Photos of the finished build
+    - [ ] Demo video of it working under its own power
+    - [ ] Journal entries covering your build hours
+    - [ ] README updated with build notes and lessons learned
+  </Tab>
+</Tabs>
+
+<Callout type="info" title="Credit">
+  The step-by-step structure is adapted from "Shipping step-by-step" in the [Hardware Codex](https://github.com/qcoral/hardware-docs) by alex (qcoral).
+</Callout>

@@ -1,0 +1,65 @@
+---
+title: Project Guidelines
+description: What qualifies as a valid build, what reviewers look for, and how to ship.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+
+If you're wondering what you are allowed to build in Torque, here is a breakdown of what reviewers look for! 
+
+Keep in mind that these are guidelines—if you ever have an unconventional idea, ask in [#torque](https://hackclub.enterprise.slack.com/archives/C0BHGT33JHH) on Slack before starting.
+
+Above all, the baseline rule is simple: **build something awesome that you would proudly keep in your room for the next five years, and something you're excited to show off.**
+
+---
+
+## Core Criteria
+
+Regardless of your project level or whether you are on the Funding or No-Funding path, every submission must meet these standards:
+
+### 1. Originality & Reference vs. Copying
+Almost every idea has been tackled before. What matters is that **the engineering work is yours**:
+
+* ❌ **Do not** directly clone someone else's complete CAD assemblies or 3D models (using standard reference hardware like motor step files, screws, or bearings is fine).
+* ❌ **Do not** copy-paste complete schematics or PCB layouts verbatim.
+* ❌ **Do not** grab entire repos or boilerplate firmware without writing your own application logic.
+* ❌ **Do not** submit multiple near-identical builds (e.g., swapping a motor bracket and calling it a new project). Doing so will result in reduced Volts or rejection.
+
+> **The golden rule:** Use existing projects for inspiration and reference, but design and route the implementation yourself.
+
+### 2. Aim for a "Product", Not a Loose Prototype
+Your build does not need injection-molded plastic or commercial marketing, but it must be functional and intentional:
+
+* **No loose breadboards on bare motors:** Motors produce mechanical vibrations and torque. Jumper wires rattling loose next to moving parts will not pass review.
+* **Rigid mounting:** Mount your motors, drivers, and controllers securely.
+* **Level 3 & 4 requirement:** An enclosure or structural frame (3D printed, laser cut, or machined) is required.
+
+---
+
+## What Does "Shipping" Mean?
+
+Shipping isn't just finishing your CAD or getting a motor to spin once on your workbench. **Shipping means making your build usable and reproducible by anyone else in the world.**
+
+A fully shipped project must include:
+
+<Cards>
+  <Card title="Comprehensive README">
+    Explains what the machine does, how it works, and step-by-step instructions for anyone to build and run it from scratch.
+  </Card>
+  <Card title="Bill of Materials (BOM)">
+    A complete list of parts with links, hardware sizes (e.g. M3 bolts, pulleys, belts), and electrical specs.
+  </Card>
+  <Card title="Open Design Files & Code">
+    All CAD files (STLs/STEPs), PCB files (Gerbers/KiCad), and firmware cleanly organized in your repository.
+  </Card>
+  <Card title="Working Video Demo (Build Ships)">
+    A short video showing the device powered up, moving under its own load, and fulfilling its intended purpose.
+  </Card>
+</Cards>
+
+---
+
+<Callout type="info" title="Have an idea you want to sanity check?">
+  Share your rough concept, sketches, or questions in [#torque](https://hackclub.enterprise.slack.com/archives/C0BHGT33JHH) on the Hack Club Slack to get quick feedback from reviewers and other builders!
+</Callout>

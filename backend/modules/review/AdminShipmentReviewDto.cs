@@ -19,6 +19,11 @@ public record AdminShipmentReviewDto
 
     public string? OverrideJustification { get; init; }
 
+    public string? ScreenshotUrl { get; init; }
+    public string? TechnicalFeatures { get; init; }
+    public string? DeflationJustification { get; init; }
+    public string? AdditionalJustification { get; init; }
+
     public bool Exceptional { get; init; } = false;
 
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;

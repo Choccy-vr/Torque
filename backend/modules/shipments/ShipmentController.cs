@@ -39,6 +39,8 @@ public class ShipmentController : ControllerBase
                 ReviewId = s.ReviewId,
                 ReviewedAt = s.ReviewedAt,
                 VoltsGranted = s.VoltsGranted,
+                IsBuildComplete = s.IsBuildComplete,
+                RequestedFunding = s.RequestedFunding,
                 CreatedAt = s.CreatedAt
             })
             .ToListAsync();
@@ -88,6 +90,15 @@ public class ShipmentController : ControllerBase
             return BadRequest("ProjectId is required!");
         }
 
+        if (dto.IsBuildComplete is null) return BadRequest("IsBuildComplete is required!");
+        if (dto.RequestedFunding is null or < 0) return BadRequest("RequestedFunding is required and can't be negative!");
+        if (string.IsNullOrWhiteSpace(dto.HowDidYouHear)
+            || string.IsNullOrWhiteSpace(dto.WhatAreWeDoingWell)
+            || string.IsNullOrWhiteSpace(dto.HowCanWeImprove))
+        {
+            return BadRequest("HowDidYouHear, WhatAreWeDoingWell and HowCanWeImprove are required!");
+        }
+
         var project = await _db.Projects.FindAsync(projectId);
         if (project is null) return BadRequest("ProjectId does not reference an existing project.");
 
@@ -105,7 +116,12 @@ public class ShipmentController : ControllerBase
             Status = ShipmentStatus.unreviewed,
             HourSnapshot = project.TotalHoursRaw,
             TierSnapshot = project.Tier,
-            ProjectSnapshot = project
+            ProjectSnapshot = project,
+            IsBuildComplete = dto.IsBuildComplete.Value,
+            RequestedFunding = dto.RequestedFunding.Value,
+            HowDidYouHear = dto.HowDidYouHear.Trim(),
+            WhatAreWeDoingWell = dto.WhatAreWeDoingWell.Trim(),
+            HowCanWeImprove = dto.HowCanWeImprove.Trim()
         };
 
         _db.Shipments.Add(shipment);
@@ -124,6 +140,8 @@ public class ShipmentController : ControllerBase
             ReviewId = shipment.ReviewId,
             ReviewedAt = shipment.ReviewedAt,
             VoltsGranted = shipment.VoltsGranted,
+            IsBuildComplete = shipment.IsBuildComplete,
+            RequestedFunding = shipment.RequestedFunding,
             CreatedAt = shipment.CreatedAt
         });
     }

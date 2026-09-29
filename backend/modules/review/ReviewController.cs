@@ -49,6 +49,11 @@ public class ReviewController : ControllerBase
                 ReviewId = s.ReviewId,
                 ReviewedAt = s.ReviewedAt,
                 VoltsGranted = s.VoltsGranted,
+                IsBuildComplete = s.IsBuildComplete,
+                RequestedFunding = s.RequestedFunding,
+                HowDidYouHear = s.HowDidYouHear,
+                WhatAreWeDoingWell = s.WhatAreWeDoingWell,
+                HowCanWeImprove = s.HowCanWeImprove,
                 CreatedAt = s.CreatedAt
             })
             .ToListAsync();
@@ -86,6 +91,11 @@ public class ReviewController : ControllerBase
                 ReviewId = s.ReviewId,
                 ReviewedAt = s.ReviewedAt,
                 VoltsGranted = s.VoltsGranted,
+                IsBuildComplete = s.IsBuildComplete,
+                RequestedFunding = s.RequestedFunding,
+                HowDidYouHear = s.HowDidYouHear,
+                WhatAreWeDoingWell = s.WhatAreWeDoingWell,
+                HowCanWeImprove = s.HowCanWeImprove,
                 CreatedAt = s.CreatedAt
             })
             .FirstOrDefaultAsync();
@@ -115,6 +125,21 @@ public class ReviewController : ControllerBase
             return BadRequest("Status 'returned' is not supported yet.");
         }
 
+        var screenshotUrl = string.IsNullOrWhiteSpace(dto.ScreenshotUrl) ? null : dto.ScreenshotUrl.Trim();
+        if (screenshotUrl is not null
+            && !(Uri.TryCreate(screenshotUrl, UriKind.Absolute, out var screenshotUri)
+                 && (screenshotUri.Scheme == Uri.UriSchemeHttp || screenshotUri.Scheme == Uri.UriSchemeHttps)))
+        {
+            return BadRequest("ScreenshotUrl must be an http(s) URL.");
+        }
+
+        // Approval pushes to Airtable, which needs these to justify the grant.
+        if (dto.Status == ShipmentReviewStatus.approved
+            && (screenshotUrl is null || string.IsNullOrWhiteSpace(dto.TechnicalFeatures)))
+        {
+            return BadRequest("ScreenshotUrl and TechnicalFeatures are required when approving.");
+        }
+
         var shipment = await _db.Shipments.FindAsync(dto.ShipmentId);
         if (shipment is null) return BadRequest("ShipmentId does not reference an existing shipment.");
 
@@ -122,8 +147,6 @@ public class ReviewController : ControllerBase
         {
             return BadRequest("This shipment has already been reviewed.");
         }
-
-        if (shipment.UserId == userId.Value) return Forbid();
 
         var project = await _db.Projects.FindAsync(shipment.ProjectId);
         if (project is null) return NotFound();
@@ -140,6 +163,10 @@ public class ReviewController : ControllerBase
             Feedback = dto.Feedback,
             InternalNote = dto.InternalNote,
             OverrideJustification = dto.OverrideJustification,
+            ScreenshotUrl = screenshotUrl,
+            TechnicalFeatures = dto.TechnicalFeatures,
+            DeflationJustification = dto.DeflationJustification,
+            AdditionalJustification = dto.AdditionalJustification,
             Exceptional = dto.Exceptional
         };
         _db.ShipmentReviews.Add(review);
@@ -160,9 +187,11 @@ public class ReviewController : ControllerBase
         // reshipped (Create() only allows shipping from Unshipped/Changes_Needed).
         // perm_rejected is a genuine terminal state — Create() doesn't allow shipping
         // from Perm_Rejected, so there's no path back for the user.
+        // Approval here is only the first pass: the project goes to fraud review
+        // (second pass), and AirtablePushWorker pushes the shipment to Airtable.
         if (dto.Status == ShipmentReviewStatus.approved)
         {
-            project.Status = ProjectStatus.Approved;
+            project.Status = ProjectStatus.Fraud_Pending;
             if (dto.Exceptional) project.Exceptional = true;
         }
         else if (dto.Status == ShipmentReviewStatus.perm_rejected)
@@ -188,6 +217,10 @@ public class ReviewController : ControllerBase
             Feedback = review.Feedback,
             InternalNote = review.InternalNote,
             OverrideJustification = review.OverrideJustification,
+            ScreenshotUrl = review.ScreenshotUrl,
+            TechnicalFeatures = review.TechnicalFeatures,
+            DeflationJustification = review.DeflationJustification,
+            AdditionalJustification = review.AdditionalJustification,
             Exceptional = review.Exceptional,
             CreatedAt = review.CreatedAt
         });
