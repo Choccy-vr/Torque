@@ -1,5 +1,5 @@
 import Navbar from "../components/Navbar.jsx";
-import Drone from "../assets/drone.png";
+// import Drone from "../assets/drone.png";
 
 export default function Home() {
     return (
