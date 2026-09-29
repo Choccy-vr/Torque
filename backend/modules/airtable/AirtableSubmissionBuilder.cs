@@ -9,9 +9,9 @@ using Torque.Users;
 namespace Torque.Airtable;
 
 // Maps a first-pass-approved shipment to a "YSWS Project Submission" row. Column names
-// must match the Airtable table exactly. Screenshot, Link to JOURNAL.md, Requested
-// funding and Design or build have no source in Torque yet, and Automation/Loops
-// columns belong to Airtable automations, so none of those are sent.
+// must match the Airtable table exactly. Link to JOURNAL.md has no source in Torque yet,
+// Optional - Override Hours Spent Justification is deliberately left blank, and
+// Automation/Loops columns belong to Airtable automations, so none of those are sent.
 public class AirtableSubmissionBuilder
 {
     private readonly HackatimeService _hackatime;
@@ -54,6 +54,10 @@ public class AirtableSubmissionBuilder
             ["Playable URL"] = project.DemoUrl,
             ["Tier"] = (shipment.OverrideTier > 0 ? shipment.OverrideTier : shipment.TierSnapshot).ToString(),
             ["Review Status"] = "Fraud Pending",
+            ["Design or build"] = shipment.IsBuildComplete ? "Build" : "Design",
+            ["Requested funding"] = shipment.RequestedFunding,
+            // Attachment field: Airtable downloads the file from the URL.
+            ["Screenshot"] = string.IsNullOrEmpty(review?.ScreenshotUrl) ? null : new[] { new { url = review.ScreenshotUrl } },
 
             ["First Name"] = firstName,
             ["Last Name"] = lastName,
@@ -72,7 +76,6 @@ public class AirtableSubmissionBuilder
             // 0 means Hackatime was unreachable or nothing is linked — leave it blank.
             ["Hours spent (self reported)"] = hours > 0 ? hours : null,
             ["Optional - Override Hours Spent"] = shipment.OverrideHours > 0 ? shipment.OverrideHours : null,
-            ["Optional - Override Hours Spent Justification"] = review?.OverrideJustification,
 
             ["Justification - Hackatime Project Name(s) + Date Range(s)"] = names.Length == 0
                 ? null
@@ -80,6 +83,14 @@ public class AirtableSubmissionBuilder
             ["Justification - Submitter Hackatime ID"] = user.HackatimeID,
             // Lapse playback URLs may be rotating signed links; good enough as a pointer.
             ["Justification - Lapse Links, comma-separated"] = string.Join(", ", timelapses.Select(t => t.PlaybackUrl)),
+            ["Justification - Specific Technical Features"] = review?.TechnicalFeatures,
+            ["Justification - Deflation Justification"] = review?.DeflationJustification,
+            ["Justification - Additional Justification"] = review?.AdditionalJustification,
+
+            // Shipper's answers to the ship-time feedback questions.
+            ["How did you hear about this?"] = shipment.HowDidYouHear,
+            ["What are we doing well?"] = shipment.WhatAreWeDoingWell,
+            ["How can we improve?"] = shipment.HowCanWeImprove,
         };
 
         // Template convention: never send empty values (Airtable rejects some, and blank

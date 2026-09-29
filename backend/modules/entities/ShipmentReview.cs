@@ -18,6 +18,12 @@ public class ShipmentReview
 
     public string? OverrideJustification { get; set; }
 
+    // Filled in by the reviewer, pushed to Airtable on approval.
+    public string? ScreenshotUrl { get; set; }
+    public string? TechnicalFeatures { get; set; }
+    public string? DeflationJustification { get; set; }
+    public string? AdditionalJustification { get; set; }
+
     public bool Exceptional { get; set; } = false;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

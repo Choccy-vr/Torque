@@ -189,9 +189,14 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/ships/create',
     auth: true,
-    desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped or Changes_Needed.',
+    desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped or Changes_Needed, or if any of isBuildComplete, requestedFunding (>= 0) or the three feedback answers are missing.',
     body: {
       projectId: '00000000-0000-0000-0000-000000000000',
+      isBuildComplete: false,
+      requestedFunding: 50,
+      howDidYouHear: 'Slack',
+      whatAreWeDoingWell: 'Clear docs',
+      howCanWeImprove: 'More examples',
     },
   },
   {
@@ -217,13 +222,17 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/admin/review/create',
     auth: true,
-    desc: 'Reviewer-only. Reviews an unreviewed shipment. 400 if already reviewed or status is "returned" (not supported yet); Approving moves the project to Fraud_Pending; the Airtable row is pushed by a background worker within ~60s.',
+    desc: 'Reviewer-only. Reviews an unreviewed shipment. status is approved | rejected | perm_rejected | changes_needed. 400 if already reviewed, status is "returned" (not supported yet), screenshotUrl isn\'t http(s), or approving without screenshotUrl + technicalFeatures. Approving moves the project to Fraud_Pending; the Airtable row is pushed by a background worker within ~60s.',
     body: {
       shipmentId: '00000000-0000-0000-0000-000000000000',
       status: 'approved',
       feedback: 'Nice work!',
       internalNote: '',
       overrideJustification: '',
+      screenshotUrl: 'https://placehold.co/800x600.png',
+      technicalFeatures: 'Custom motor driver PCB',
+      deflationJustification: '',
+      additionalJustification: '',
       hideReviewerName: false,
       exceptional: false,
     },
@@ -236,7 +245,7 @@ const ENDPOINTS = [
     auth: true,
     bundle: true,
     buttonLabel: 'Run',
-    desc: 'End-to-end ship test as the signed-in user (needs the reviewer role): creates a project from `project` below (a unique suffix is added to the title and URLs so reruns never collide), ships it, reviews the shipment with `review`, then forces an Airtable push pass via the dev-only /testing/airtable/push route and reports the record id. Stops at the first failing step. hackatimeProjectNames must be unused by other projects.',
+    desc: 'End-to-end ship test as the signed-in user (needs the reviewer role): creates a project from `project` below (a unique suffix is added to the title and URLs so reruns never collide), ships it with `ship`, reviews the shipment with `review`, then forces an Airtable push pass via the dev-only /testing/airtable/push route and reports the record id. Stops at the first failing step. hackatimeProjectNames must be unused by other projects.',
     body: {
       project: {
         title: 'Airtable flow test',
@@ -247,11 +256,22 @@ const ENDPOINTS = [
         readmeUrl: 'https://github.com/example/torque-test#readme',
         hackatimeProjectNames: [],
       },
+      ship: {
+        isBuildComplete: false,
+        requestedFunding: 50,
+        howDidYouHear: 'Slack',
+        whatAreWeDoingWell: 'ship-flow bundle',
+        howCanWeImprove: 'ship-flow bundle',
+      },
       review: {
         status: 'approved',
         feedback: 'Looks good!',
         internalNote: 'ship-flow bundle',
-        overrideJustification: 'Test run from the harness ship-flow bundle.',
+        overrideJustification: '',
+        screenshotUrl: 'https://placehold.co/800x600.png',
+        technicalFeatures: 'Test run from the harness ship-flow bundle.',
+        deflationJustification: '',
+        additionalJustification: '',
         hideReviewerName: false,
         exceptional: false,
       },
@@ -632,7 +652,7 @@ async function runShipFlow(ep) {
   const created = await bundleStep('POST', '/api/project/create', project);
   if (!created?.id) return;
 
-  const shipment = await bundleStep('POST', '/api/ships/create', { projectId: created.id });
+  const shipment = await bundleStep('POST', '/api/ships/create', { ...(input.ship ?? {}), projectId: created.id });
   if (!shipment?.id) return;
 
   const review = await bundleStep('POST', '/api/admin/review/create', { ...(input.review ?? {}), shipmentId: shipment.id });

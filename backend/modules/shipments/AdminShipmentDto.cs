@@ -25,6 +25,12 @@ public record AdminShipmentDto
 
     public int VoltsGranted { get; init; }
 
+    public bool IsBuildComplete { get; init; }
+    public int RequestedFunding { get; init; }
+    public string? HowDidYouHear { get; init; }
+    public string? WhatAreWeDoingWell { get; init; }
+    public string? HowCanWeImprove { get; init; }
+
 
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 }
