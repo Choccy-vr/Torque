@@ -1,17 +1,27 @@
-import React from 'react'
 import flag from '../assets/flag-orpheus-top.png'
-import drone from '../assets/drone.png'
-import {ChevronDown, ChevronUp} from 'lucide-react'
-import {ReactLenis, useLenis } from 'lenis/react'
-import {useEffect, useState} from 'react'
+import { ChevronDown } from 'lucide-react'
+import { ReactLenis } from 'lenis/react'
+import { useEffect, useState } from 'react'
 import '../App.css'
 import Footer from '../components/Footer'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/useAuth.js'
 
-function handleSubmit() {
-  console.log('Form submitted');
-}
+const steps = [
+  { title: "Design", text: "Design your hardware project — pick a motor-powered idea and plan how it'll work." },
+  { title: "Build", text: "Get a grant to pay for the parts, then build your design into something real." },
+  { title: "Revise", text: "Test what you built and make any revisions it needs to work better." },
+  { title: "Ship", text: "Ship a finished, working project and unlock more prizes in the shop." },
+]
+
+const faq = [
+  { question: "What is Torque?", answer: "Torque is a program where you build hardware projects with motors, and get funding and prizes for your projects." },
+  { question: "Who can participate?", answer: "You have to be a teen, ages 13–18." },
+  { question: "Can I join if I'm a beginner?", answer: "Yes! You don't need prior hardware experience to join. We have guides and a helpful community." },
+  { question: "Is this free?", answer: "Yes, Torque is completely free to join." },
+  { question: "What is Hack Club?", answer: "Hack Club is a 501(c)(3) nonprofit and network of 100k+ technical high schoolers who believe you learn best by building." },
+  { question: "How many projects can I build?", answer: "There's no limit to the number of projects you can build! We encourage you to explore your creativity and build as many projects as you want." },
+]
 
 export default function Home() {
 
@@ -24,23 +34,6 @@ export default function Home() {
     if (session) navigate('/home');
     else signIn('/home');
   };
-
-  const faq = [
-    {question: "What is Torque?", answer: "Torque is a program where you build hardware projects with motors, and get funding and prizes for your projects."},
-    {question: "Who can participate?", answer: "You have to be a teen, ages 13-18."},
-    {question: "Can I join if I'm a beginner?", answer: "Yes! You don't need prior hardware experience to join. We have guides and a helpful community."},
-    {question: "Is this free?", answer: "Yes, Torque is completely free to join."},
-    {question: "What is Hack Club?", answer: "Hack Club is a 501(c)(3) nonprofit and network of 100k+ technical high schoolers who believe you learn best by building."},
-    {question: "How many projects can I build?", answer: "There's no limit to the number of projects you can build! We encourage you to explore your creativity and build as many projects as you want."},
-  ]
-
-  const handleAnswerClick = () => {
-    setHideAnswer(!hideAnswer);
-  }
-
-  const lenis = useLenis((lenis) => {
-    console.log(window.scrollY);
-  })
 
   useEffect(() => {
     const handleScroll = () => {
@@ -55,108 +48,120 @@ export default function Home() {
   }, []);
 
   return (
-    <>
+    <div className="t-landing">
       <title>Torque</title>
       <ReactLenis root/>
       <div className="t-bg fixed inset-0 z-0" />
       <div className="fixed inset-0 z-0 bg-black opacity-(--overlay) transition-opacity duration-300" />
 
-      <div>
-        <img
-          src={flag}
-          alt="Hack Club Flag"
-          className="fixed top-0 left-6 z-50 h-20 hover:opacity-75 cursor-pointer transition-all duration-300 ease"
-          onClick={() => window.open('https://hackclub.com', '_blank')}
-        />
+      <a
+        href="https://hackclub.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed top-0 left-4 md:left-6 z-50 transition-all duration-300 ease hover:opacity-75"
+      >
+        <img src={flag} alt="Hack Club" className="h-16 md:h-20" />
+      </a>
 
-        <button onClick={handleLogIn} className="t-btn t-hover rounded-(--radius) font-bold text-lg fixed top-12 right-14 z-50 px-11 py-1.5">
-          {session ? 'Dashboard' : 'Log In'}
-        </button>
-      </div>
+      <button
+        onClick={handleLogIn}
+        className="t-btn t-hover rounded-(--radius) font-bold text-lg fixed top-6 right-4 md:top-12 md:right-14 z-50 min-h-11 px-8 md:px-11"
+      >
+        {session ? 'Dashboard' : 'Log in'}
+      </button>
 
       <div id="top" className="relative min-h-screen w-full">
 
-        <div className="font-phantom absolute top-0 left-0 right-0 flex items-center justify-center min-h-full z-20 pointer-events-none">
-          <div className="w-full max-w-7xl mx-auto px-6 md:px-4 pointer-events-auto flex justify-center flex-col items-center">
-            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 items-center px-10"> */}
-              {/* <div className="space-y-4 md:space-y-5 text-center  md:text-left"> */}
-                <h1 className="t-heading text-7xl md:text-9xl font-bold">TORQUE</h1>
-                <p className="text-xl md:text-2xl my-6 text-center text-(--text)">Build hardware projects with motors. Get funding and prizes.</p>
-                <form onSubmit={handleSubmit} className="flex items-stretch pt-2">
-                  <input type="text" placeholder="orpheus@hackclub.com" className="bg-white font-semibold pr-4 pl-4 sm:pl-6 rounded-l-(--radius) border-r-2 border-black py-[0.60rem] text-black placeholder:text-gray-500 focus:outline-hidden"></input>
-                  <input type="submit" value="Get Started" className="t-btn t-hover outline-hidden px-2 md:px-4 rounded-r-(--radius) z-50 font-semibold cursor-pointer"></input>
-                </form>
-              </div>
-              {/* <div className="justify-center hidden md:flex md:justify-end group z-10 wobble-1">
-                <img src={drone} alt="Drone" className="drone select-none w-auto h-auto transition-all duration-300 ease group-hover:scale-105"/>
-              </div> */}
-            {/* </div> */}
-          {/* </div> */}
+        <div className="absolute inset-0 flex items-center justify-center z-20">
+          <div className="w-full max-w-7xl mx-auto px-6 md:px-4 flex flex-col items-center text-center">
+            <h1 className="t-heading text-7xl md:text-8xl font-bold leading-none tracking-[0.02em]">TORQUE</h1>
+            <p className="text-xl md:text-2xl leading-snug my-6 max-w-[22ch] sm:max-w-none text-(--text) [text-wrap:balance]">
+              Build hardware projects with motors. Get funding and prizes.
+            </p>
+            <form className="flex w-full max-w-md items-stretch pt-2">
+              <label htmlFor="hero-email" className="sr-only">Email address</label>
+              <input
+                id="hero-email"
+                type="text"
+                placeholder="orpheus@hackclub.com"
+                className="min-w-0 flex-1 bg-white font-semibold pl-4 pr-2 sm:pl-6 sm:pr-4 rounded-l-(--radius) border-r-2 border-black min-h-11 text-black placeholder:text-gray-600"
+              />
+              <input
+                type="submit"
+                value="Get Started"
+                className="t-btn t-hover shrink-0 px-3 sm:px-4 md:px-6 rounded-r-(--radius) font-bold"
+              />
+            </form>
+          </div>
         </div>
-      
-        <div className="absolute bottom-4 left-0 right-0">
-          <ChevronDown 
-            className={`mx-auto w-16 h-16 text-(--text) animate-bounce transition-all duration-300 ease ${hideArrow ? "opacity-0 pointer-events-none" : "opacity-100 hover:opacity-80 cursor-pointer"}`} 
+
+        <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center">
+          <button
+            aria-label="Scroll to How It Works"
+            tabIndex={hideArrow ? -1 : 0}
             onClick={() => {
-              const section = document.querySelector('.section1');
-              section?.scrollIntoView({ behavior: 'smooth', block: "center" });
-              console.log("clicked");
+              document.querySelector('#how-it-works')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }}
-          />
+            className={`rounded-full p-1 text-(--text) transition-all duration-300 ease ${hideArrow ? "opacity-0 pointer-events-none" : "opacity-100 hover:opacity-80"}`}
+          >
+            <ChevronDown aria-hidden="true" className="size-16 motion-safe:animate-bounce" />
+          </button>
         </div>
 
       </div>
 
-      <section id="how-it-works" className="section1 w-full z-20 mb-48 pt-20">
-          <div className="font-phantom relative flex items-center justify-center flex-col pointer-events-auto z-20">
-            <h1 className="t-heading text-4xl md:text-6xl font-bold z-20">How It Works</h1>
-            <div className="grid grid-cols-1 mt-20 md:grid-cols-2 lg:grid-cols-4 gap-8 px-20 md:gap-16 max-w-(--breakpoint-2xl) mx-auto">
-              <div className="t-card t-hover p-6 md:p-8 text-center">
-                <h1 className="md:text-3xl mb-4 font-bold">Design</h1>
-                <p className="md:text-lg">Design your hardware project — pick a motor-powered idea and plan how it'll work.</p>
-              </div>
-              <div className="t-card t-hover p-6 md:p-8 text-center">
-                <h1 className="md:text-3xl mb-4 font-bold">Build</h1>
-                <p className="md:text-lg">Get a grant to pay for the parts, then build your design into something real.</p>
-              </div>
-              <div className="t-card t-hover p-6 md:p-8 text-center">
-                <h1 className="md:text-3xl mb-4 font-bold">Revise</h1>
-                <p className="md:text-lg">Test what you built and make any revisions it needs to work better.</p>
-              </div>
-              <div className="t-card t-hover p-6 md:p-8 text-center">
-                <h1 className="md:text-3xl mb-4 font-bold">Ship</h1>
-                <p className="md:text-lg">Ship a finished, working project and unlock more prizes in the shop.</p>
-              </div>
-            </div>
-          </div>
+      <section id="how-it-works" aria-labelledby="how-it-works-title" className="relative z-20 w-full py-20 md:py-28">
+        <h2 id="how-it-works-title" className="t-heading text-center text-4xl md:text-6xl font-bold">How It Works</h2>
+        <ol className="grid grid-cols-1 mt-12 md:mt-16 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 lg:gap-10 px-6 sm:px-10 lg:px-20 max-w-(--breakpoint-2xl) mx-auto">
+          {steps.map((step) => (
+            <li key={step.title} className="t-card p-6 md:p-8 text-center">
+              <h3 className="text-2xl md:text-3xl font-bold text-(--text) mb-3 md:mb-4">{step.title}</h3>
+              <p className="md:text-lg leading-relaxed text-(--text)/80">{step.text}</p>
+            </li>
+          ))}
+        </ol>
       </section>
 
-      <section id="faq" className="section2 w-full z-20 mt-10 pt-20">
-        <div className="font-phantom relative flex items-center justify-center flex-col pointer-events-auto z-20">
-          <h1 className="t-heading text-4xl md:text-6xl font-bold z-20">FAQ</h1>
-          <div className="text-white w-full max-w-2xl px-10 m-20 mx-auto gap-5 flex flex-col">
-            {faq.map((item, index) => (
-              <div key={index} className="w-full">
-                <div 
-                  className="t-card t-hover font-bold p-4 flex w-full flex-col cursor-pointer"
-                  onClick={() => setOpenFaq(openFaq === index ? null : index)}  
+      <section id="faq" aria-labelledby="faq-title" className="relative z-20 w-full py-20 md:py-28">
+        <h2 id="faq-title" className="t-heading text-center text-4xl md:text-6xl font-bold">FAQ</h2>
+        <div className="w-full max-w-2xl px-6 sm:px-10 mt-12 md:mt-16 mx-auto flex flex-col gap-4">
+          {faq.map((item, index) => {
+            const open = openFaq === index;
+            return (
+              <div key={item.question} className="t-card">
+                <h3>
+                  <button
+                    id={`faq-q-${index}`}
+                    aria-expanded={open}
+                    aria-controls={`faq-a-${index}`}
+                    onClick={() => setOpenFaq(open ? null : index)}
+                    className="t-hover flex w-full min-h-14 items-center justify-between gap-4 rounded-(--card-radius) px-5 py-3 text-left font-bold md:text-lg text-(--text)"
+                  >
+                    {item.question}
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={`size-6 shrink-0 motion-safe:transition-transform motion-safe:duration-300 ${open ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                </h3>
+                <div
+                  id={`faq-a-${index}`}
+                  role="region"
+                  aria-labelledby={`faq-q-${index}`}
+                  inert={!open}
+                  className={`grid motion-safe:transition-[grid-template-rows,opacity] motion-safe:duration-500 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
                 >
-                  <div className="flex flex-row w-full items-center justify-between transition-all duration-300 ease">
-                    <h1>{item.question}</h1>
-                    {openFaq === index ? <ChevronUp /> : <ChevronDown />}
+                  <div className="overflow-hidden">
+                    <p className="px-5 pb-5 leading-relaxed text-(--text)/80">{item.answer}</p>
                   </div>
-
-
-                  <p className={`transition-all duration-500 ease text-md ${openFaq === index ? 'max-h-20 opacity-50 mt-4 ' : 'mt-0 opacity-0 max-h-0 overflow-hidden'}`}>{item.answer}</p>
-
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </section>
 
       <Footer />
-    </>
+    </div>
   )
 }

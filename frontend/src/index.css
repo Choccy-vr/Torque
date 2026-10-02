@@ -105,14 +105,14 @@ html, body {
 .t-hover { transition: all 300ms ease; }
 .t-hover:not(.t-btn):hover { opacity: 0.8; }
 
-/* App shell (Dashboard / Projects / Explore): one focus ring for every control.
+/* App shell and landing page: one focus ring for every control.
    Chalk White rather than coral, because coral is only 2.74:1 against the card. */
-.t-shell :is(a, button, input, select, textarea, [tabindex]:not(main)):focus-visible {
+:is(.t-shell, .t-landing) :is(a, button, input, select, textarea, [tabindex]:not(main)):focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 3px;
 }
 .t-shell main:focus { outline: none; }
-.t-shell ::selection {
+:is(.t-shell, .t-landing) ::selection {
   background: color-mix(in srgb, var(--accent) 45%, transparent);
 }
 

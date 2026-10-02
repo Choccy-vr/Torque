@@ -54,7 +54,7 @@ function FooterLink({ name, href }) {
 
 export default function Footer() {
     return (
-        <footer className="font-phantom relative z-20 w-full px-6 md:px-20 pb-10 mt-20">
+        <footer className="relative z-20 w-full px-6 md:px-20 pb-10 mt-20">
             <div className="t-card max-w-(--breakpoint-2xl) mx-auto p-8 md:p-12">
                 <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
                     <div className="flex flex-col gap-4 max-w-md">
@@ -67,13 +67,13 @@ export default function Footer() {
                             <img src={flag} alt="Hack Club Flag" className="h-16" />
                         </a>
                         <h2 className="t-heading text-5xl md:text-6xl font-bold">TORQUE</h2>
-                        <p className="text-lg text-(--text)">
+                        <p className="text-lg leading-relaxed text-(--text)">
                             Made with &lt;3 by the{" "}
                             <a
                                 href="https://hackclub.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-(--accent) transition-all duration-300 ease hover:opacity-75"
+                                className="font-semibold text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 transition-all duration-300 ease hover:opacity-75"
                             >
                                 Hack Club
                             </a>{" "}
@@ -86,7 +86,7 @@ export default function Footer() {
 
                     {columns.map((col) => (
                         <div key={col.title} className="flex flex-col gap-4">
-                            <h3 className="text-2xl font-bold">{col.title}</h3>
+                            <h3 className="text-xl md:text-2xl font-bold text-(--text)">{col.title}</h3>
                             <ul className="flex flex-col gap-3 text-lg">
                                 {col.links.map((link) => (
                                     <li key={link.name}>
