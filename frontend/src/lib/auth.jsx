@@ -8,7 +8,27 @@ export function AuthProvider({ children }) {
     const [session, setSession] = useState(null)
     const [loading, setLoading] = useState(true)
 
+    const DEV_MODE = import.meta.env.DEV;
+
     useEffect(() => {
+        if (DEV_MODE) {
+            const devLoggedIn = sessionStorage.getItem('dev-login')
+
+            if (devLoggedIn === 'true') {
+                setSession({
+                    user: {
+                        id: 'dev-user',
+                        email: 'dev@example.com',
+                        user_metadata: {
+                            full_name: 'Dev User',
+                        },
+                    },
+                })
+            }
+            setLoading(false)
+            return
+        }
+
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, next) => {
             setSession(next)
         })
@@ -26,7 +46,7 @@ export function AuthProvider({ children }) {
         })
 
         return () => subscription.unsubscribe()
-    }, [])
+    }, [DEV_MODE])
 
     const value = {
         session,
@@ -37,7 +57,25 @@ export function AuthProvider({ children }) {
                 provider: config.oidcProvider,
                 options: { redirectTo: window.location.origin + redirectPath },
             }),
-        signOut: () => supabase.auth.signOut(),
+
+        signOut: () => {
+            if (DEV_MODE) {
+                sessionStorage.removeItem('dev-login')
+                setSession(null)
+                window.location.href = '/'
+                return
+            }
+
+            return supabase.auth.signOut()
+        },
+
+        devLogin: (redirectPath = '/home') => {
+            if (!DEV_MODE) return
+
+            sessionStorage.setItem('dev-login', 'true')
+
+            window.location.href = redirectPath
+        },
     }
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

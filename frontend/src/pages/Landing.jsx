@@ -27,7 +27,7 @@ export default function Home() {
 
   const [hideArrow, setHideArrow] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
-  const { session, signIn } = useAuth();
+  const { session, signIn, devLogin } = useAuth();
   const navigate = useNavigate();
 
   const handleLogIn = () => {
@@ -92,6 +92,15 @@ export default function Home() {
                 className="t-btn t-hover shrink-0 px-3 sm:px-4 md:px-6 rounded-r-(--radius) font-bold"
               />
             </form>
+
+            {import.meta.env.DEV && (
+                <a
+                    onClick={() => devLogin('/home')}
+                    className="mt-4 text-lg transition-all duration-300 ease hover:opacity-75 hover:cursor-pointer"
+                >
+                    Dev Login
+                </a>
+            )}
           </div>
         </div>
 
