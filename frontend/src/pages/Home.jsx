@@ -1,31 +1,40 @@
-import Navbar from "../components/Navbar.jsx";
+import { Link } from "react-router-dom";
+import { Plus } from "lucide-react";
+import AppShell, { PageTitle } from "../components/AppShell.jsx";
 
 export default function Home() {
     return (
-        <div className="min-h-screen bg-(--bg)">
-            <div className="t-bg fixed inset-0 z-0" />
-            <div className="fixed inset-0 z-0 bg-black/20 opacity-(--overlay)" />
+        <AppShell title="Dashboard">
+            <PageTitle>Dashboard</PageTitle>
 
-            <div className="relative z-10 grid grid-cols-[clamp(6rem,18vw,18rem)_minmax(0,1fr)] gap-6 px-10 md:px-10 py-14">
+            <section
+                aria-labelledby="your-projects"
+                className="t-card relative mt-6 flex min-h-72 flex-col gap-6 px-5 py-6 sm:px-8 md:mt-8 md:min-h-84 lg:px-12"
+            >
+                <h2 id="your-projects" className="text-2xl font-bold text-(--text)">Your projects</h2>
 
-                <title>Torque - Dashboard</title>
-                <Navbar />
-
-                <main className="py-10 col-start-2 min-w-0">
-                    <div className="mx-auto w-full max-w-6xl p-4">
-                        <h1 className="text-2xl md:text-6xl text-(--accent) [font-family:var(--heading-font)]">Dashboard</h1>
-                        <div className="space-y-4 px-12 py-6 t-card min-h-72 md:min-h-84 h-full relative flex flex-col mt-10">
-                            <div>
-                                <h1 className="text-4xl">Your Projects</h1>
-                            </div>
-                            <div className=" flex flex-col items-center justify-center text-center grow space-y-4 md:space-y-6">
-                                <p className="text-2xl">No Current Projects</p>
-                                <button className="t-btn t-hover px-11 py-2.5 rounded-(--radius) text-xl">+ Add Project</button>
-                            </div>
-                        </div>
+                <div className="flex grow flex-col items-center justify-center gap-3 text-center text-(--text)">
+                    <p className="text-xl font-bold">No projects yet</p>
+                    <p className="max-w-md leading-relaxed text-(--text)/80 [text-wrap:balance]">
+                        Any hardware project that uses a motor counts. Set up Lapse and Hackatime first, so every hour gets tracked.
+                    </p>
+                    <div className="mt-3 flex flex-col items-center gap-3 sm:flex-row">
+                        <button
+                            type="button"
+                            className="t-btn t-hover inline-flex min-h-11 items-center gap-2 rounded-(--radius) px-8 text-lg font-bold"
+                        >
+                            <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                            Add project
+                        </button>
+                        <Link
+                            to="/docs/getting-started"
+                            className="inline-flex min-h-11 items-center rounded-(--radius) border-2 border-(--accent)/55 px-8 text-lg font-bold text-(--text) transition-all duration-300 ease hover:border-(--accent) hover:bg-(--accent)/15"
+                        >
+                            Read the setup guide
+                        </Link>
                     </div>
-                </main>
-            </div>
-        </div>
-    )
+                </div>
+            </section>
+        </AppShell>
+    );
 }

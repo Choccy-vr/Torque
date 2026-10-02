@@ -32,7 +32,9 @@
   --heading: #FFFFFF;
   --overlay: 0.2;
   --btn-bg: #FF7A5C;
-  --btn-text: #454A54;
+  --btn-bg-hover: #FF9478;
+  /* Ink Slate: darker than --bg so button labels clear 4.5:1 on coral (5.24:1, 6.25:1 on hover). */
+  --btn-text: #2B2F36;
   --btn-border: #FF7A5C;
   --radius: 9999px;
   --card-radius: 1.75rem;
@@ -82,11 +84,15 @@ html, body {
   transition: all 300ms ease;
 }
 
-/* Buttons */
+/* Buttons. Hover lightens the coral instead of fading it, so the label keeps its contrast. */
 .t-btn {
   background: var(--btn-bg);
   color: var(--btn-text);
   border: 2px solid var(--btn-border);
+}
+.t-btn:hover {
+  background: var(--btn-bg-hover);
+  border-color: var(--btn-bg-hover);
 }
 
 /* Big headings (hero, section titles, footer wordmark) */
@@ -97,15 +103,26 @@ html, body {
 
 /* Hover effect for buttons and clickable cards */
 .t-hover { transition: all 300ms ease; }
-.t-hover:hover { opacity: 0.8; }
+.t-hover:not(.t-btn):hover { opacity: 0.8; }
+
+/* App shell (Dashboard / Projects / Explore): one focus ring for every control.
+   Chalk White rather than coral, because coral is only 2.74:1 against the card. */
+.t-shell :is(a, button, input, select, textarea, [tabindex]:not(main)):focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+.t-shell main:focus { outline: none; }
+.t-shell ::selection {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
 
 @font-face {
   font-family: 'Phantom Sans';
   src:
-    url('https://assets.hackclub.com/fonts/Phantom_Sans_0.7/Regular.woff')
-      format('woff'),
     url('https://assets.hackclub.com/fonts/Phantom_Sans_0.7/Regular.woff2')
-      format('woff2');
+      format('woff2'),
+    url('https://assets.hackclub.com/fonts/Phantom_Sans_0.7/Regular.woff')
+      format('woff');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -113,10 +130,10 @@ html, body {
 @font-face {
   font-family: 'Phantom Sans';
   src:
-    url('https://assets.hackclub.com/fonts/Phantom_Sans_0.7/Italic.woff')
-      format('woff'),
     url('https://assets.hackclub.com/fonts/Phantom_Sans_0.7/Italic.woff2')
-      format('woff2');
+      format('woff2'),
+    url('https://assets.hackclub.com/fonts/Phantom_Sans_0.7/Italic.woff')
+      format('woff');
   font-weight: normal;
   font-style: italic;
   font-display: swap;
@@ -124,10 +141,10 @@ html, body {
 @font-face {
   font-family: 'Phantom Sans';
   src:
-    url('https://assets.hackclub.com/fonts/Phantom_Sans_0.7/Bold.woff')
-      format('woff'),
     url('https://assets.hackclub.com/fonts/Phantom_Sans_0.7/Bold.woff2')
-      format('woff2');
+      format('woff2'),
+    url('https://assets.hackclub.com/fonts/Phantom_Sans_0.7/Bold.woff')
+      format('woff');
   font-weight: bold;
   font-style: normal;
   font-display: swap;
