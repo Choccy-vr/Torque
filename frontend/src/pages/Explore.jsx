@@ -5,7 +5,7 @@ export default function Home() {
     return (
         <AppShell title="Explore">
             <PageTitle>Explore</PageTitle>
-            <input className="w-full mt-6 py-2 pl-5 rounded-(--radius) bg-(--card) outline-hidden border-2 border-(--accent)/55 text-(--text) placeholder:text-(--text)/60 transition-all duration-300 ease focus:border-(--accent)"
+            <input className="w-full mt-6 py-2 pl-5 rounded-(--radius) bg-(--card) border-2 border-(--accent)/55 text-(--text) placeholder:text-(--text)/60 transition-all duration-300 ease focus:outline-none focus:ring-0 focus:shadow-none focus:border-(--accent)"
                    type="text"
                    placeholder="Search"
                    aria-label="Search projects"
