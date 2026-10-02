@@ -11,6 +11,7 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 import { File, Files, Folder } from "fumadocs-ui/components/files";
 import { ImageZoom } from "fumadocs-ui/components/image-zoom";
 import { source } from "../lib/source.js";
+import { ReactLenis, useLenis } from "lenis/react";
 
 // Components available inside every .mdx file without importing them.
 const mdxComponents = {
@@ -38,6 +39,7 @@ export default function Docs() {
         // Fumadocs' own light/dark switching is off: colors come from Torque's
         // theme tokens instead (see the .torque-docs block in index.css).
         <div className="torque-docs dark">
+            <ReactLenis root/>
             <RootProvider theme={{ enabled: false }} search={{ enabled: false }}>
                 <DocsLayout
                     tree={source.pageTree}
