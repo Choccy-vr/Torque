@@ -84,7 +84,7 @@ export default function Home() {
                 id="hero-email"
                 type="text"
                 placeholder="orpheus@hackclub.com"
-                className="min-w-0 flex-1 bg-white font-semibold pl-4 pr-2 sm:pl-6 sm:pr-4 rounded-l-(--radius) border-r-2 border-black min-h-11 text-black placeholder:text-gray-600"
+                className="min-w-0 outline-none flex-1 bg-white font-semibold pl-4 pr-2 sm:pl-6 sm:pr-4 rounded-l-(--radius) border-r-2 border-black min-h-11 text-black placeholder:text-gray-600"
               />
               <input
                 type="submit"

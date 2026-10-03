@@ -4,6 +4,7 @@ import Landing from './pages/Landing.jsx'
 import Home from './pages/Home.jsx'
 import Projects from './pages/Projects.jsx'
 import Explore from './pages/Explore.jsx'
+import Profile from './pages/Profile.jsx'
 import { AuthProvider, RequireAuth } from './lib/auth.jsx'
 import './App.css'
 
@@ -44,6 +45,7 @@ function AppRoutes() {
                 {/*<Route path="/projects/:id" element={<Projects />} /*/}
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/docs/*" element={<Suspense fallback={<div className="min-h-screen" />}><Docs /></Suspense>} />
+                <Route path={"/profile/*"} element={<Profile />} />
             </Routes>
         </div>
     )

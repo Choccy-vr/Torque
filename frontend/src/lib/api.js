@@ -4,6 +4,7 @@ import { config } from './config.js'
 // fetch() against the backend, with the current access token attached.
 // getSession() refreshes the token first if it's expired, so callers never
 // need to touch or hold onto the token themselves.
+
 export async function apiFetch(path, options = {}) {
     const { data: { session } } = await supabase.auth.getSession()
 

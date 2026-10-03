@@ -1,6 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
 import { BookOpen, Compass, FolderOpen, Gauge, LogIn, LogOut } from "lucide-react";
 import { useAuth } from "../lib/useAuth.js";
+import Drone from "../assets/img.png";
 
 const links = [
     { name: "Dashboard", path: "/home", icon: Gauge },
@@ -24,7 +25,6 @@ export default function Navbar() {
 
     return (
         <>
-            {/* Phone: wordmark + account action in the page flow */}
             <header className="flex items-center justify-between py-4 md:hidden">
                 <Link to="/" className="t-heading text-2xl font-bold tracking-wide">
                     TORQUE
@@ -38,7 +38,6 @@ export default function Navbar() {
                 </button>
             </header>
 
-            {/* Phone: bottom tab bar, in thumb reach */}
             <div
                 aria-hidden="true"
                 className="fixed inset-x-0 bottom-0 z-20 h-28 bg-linear-to-b from-transparent to-(--bg) to-40% md:hidden"
@@ -61,9 +60,9 @@ export default function Navbar() {
                 ))}
             </nav>
 
-            {/* Tablet and up: fixed sidebar */}
             <aside className="t-card fixed top-14 bottom-14 left-6 hidden w-(--sidebar-w) flex-col gap-6 p-4 md:flex lg:p-5">
-                <nav aria-label="Main" className="flex flex-col gap-1.5">
+                <nav aria-label="Main" className="flex flex-col gap-1.5 mt-10">
+                    <h1 className="t-heading text-4xl text-center md:text-5xl font-bold mb-6">TORQUE</h1>
                     {links.map(({ name, path, icon: Icon }) => (
                         <NavLink
                             key={path}
@@ -77,9 +76,16 @@ export default function Navbar() {
                         </NavLink>
                     ))}
                 </nav>
+                <NavLink to="/profile" className={`mt-auto flex flex-row items-center gap-3 px-3 text-left text-base font-medium transition-all duration-300 ease hover:opacity-75`}>
+                    <img src={Drone} alt="User PFP" className={"w-14 rounded-xl"} />
+                    <div className={`mt-auto text-white flex flex-col items-center gap-1`}>
+                        <h1>John Doe</h1>
+                        <h1>100 Hours</h1>
+                    </div>
+                </NavLink>
                 <button
                     onClick={onAuth}
-                    className={`mt-auto flex items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-left text-base font-medium transition-all duration-300 ease ${stateClass(false)}`}
+                    className={`flex items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-left text-base font-medium transition-all duration-300 ease ${stateClass(false)}`}
                 >
                     <AuthIcon aria-hidden="true" className="size-5 shrink-0" />
                     {authLabel}
