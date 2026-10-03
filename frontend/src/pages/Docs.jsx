@@ -12,6 +12,7 @@ import { File, Files, Folder } from "fumadocs-ui/components/files";
 import { ImageZoom } from "fumadocs-ui/components/image-zoom";
 import { source } from "../lib/source.js";
 import { ReactLenis, useLenis } from "lenis/react";
+import {useEffect} from "react";
 
 // Components available inside every .mdx file without importing them.
 const mdxComponents = {
@@ -31,7 +32,7 @@ const mdxComponents = {
 };
 
 export default function Docs() {
-    const { "*": splat = "" } = useParams();
+    const {"*": splat = ""} = useParams();
     const slugs = splat.split("/").filter(Boolean);
     const page = source.getPage(slugs);
 
@@ -39,30 +40,43 @@ export default function Docs() {
         // Fumadocs' own light/dark switching is off: colors come from Torque's
         // theme tokens instead (see the .torque-docs block in index.css).
         <div className="torque-docs dark">
-            <ReactLenis root/>
-            <RootProvider theme={{ enabled: false }} search={{ enabled: false }}>
-                <DocsLayout
-                    tree={source.pageTree}
-                    nav={{ title: <span className="t-heading text-lg">Torque Docs</span>, url: "/docs" }}
-                    themeSwitch={{ enabled: false }}
-                    searchToggle={{ enabled: false }}
-                    sidebar={{
-                        banner: (
-                            <Link
-                                to="/home"
-                                className="t-btn t-hover flex items-center justify-center gap-2 rounded-(--radius) px-4 py-2 font-bold"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                                Back to Home
-                            </Link>
-                        ),
-                    }}
-                >
-                    {page ? <DocContent page={page} /> : <NotFound />}
-                </DocsLayout>
-            </RootProvider>
+            <ReactLenis root>
+                <ScrollTop />
+                <RootProvider theme={{ enabled: false }} search={{ enabled: false }}>
+                    <DocsLayout
+                        tree={source.pageTree}
+                        nav={{ title: <span className="t-heading text-lg">Torque Docs</span>, url: "/docs" }}
+                        themeSwitch={{ enabled: false }}
+                        searchToggle={{ enabled: false }}
+                        sidebar={{
+                            banner: (
+                                <Link
+                                    to="/home"
+                                    className="t-btn t-hover flex items-center justify-center gap-2 rounded-(--radius) px-4 py-2 font-bold"
+                                >
+                                    <ArrowLeft className="w-4 h-4" />
+                                    Back to Home
+                                </Link>
+                            ),
+                        }}
+                    >
+                        {page ? <DocContent page={page} /> : <NotFound />}
+                    </DocsLayout>
+                </RootProvider>
+            </ReactLenis>
         </div>
     );
+}
+
+function ScrollTop() {
+    const {"*": splat = ""} = useParams();
+    const lenis = useLenis();
+
+    useEffect(() => {
+        lenis?.scrollTo(0, { immediate: true });
+    }, [splat, lenis]);
+
+    return null
 }
 
 function DocContent({ page }) {
