@@ -6,10 +6,10 @@ export default function Profile() {
         <AppShell title="Profile">
             <PageTitle>Account</PageTitle>
             <section
-                aria-labelledby="your-projects"
+                aria-labelledby="your-profile"
                 className="t-card relative mt-6 flex min-h-72 flex-col gap-2 px-5 py-6 sm:px-8 md:mt-8 md:min-h-84 lg:px-12"
             >
-                <h2 id="your-projects" className="text-2xl font-bold text-(--text)">Profile</h2>
+                <h2 id="your-profile" className="text-2xl font-bold text-(--text)">Profile</h2>
 
                 <div className="w-full h-0.5 bg-white opacity-50"></div>
 

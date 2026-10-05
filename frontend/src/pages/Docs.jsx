@@ -13,6 +13,7 @@ import { ImageZoom } from "fumadocs-ui/components/image-zoom";
 import { source } from "../lib/source.js";
 import { ReactLenis, useLenis } from "lenis/react";
 import {useEffect} from "react";
+import logo from "../assets/logo.png";
 
 // Components available inside every .mdx file without importing them.
 const mdxComponents = {
