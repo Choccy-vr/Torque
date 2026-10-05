@@ -2,11 +2,112 @@
 
 The backend for Torque written in C#.
 
-## Instructions
+## Setup (do this once) (Written by Claude)
 
-1. Get supabase and write most recent migration
-2. Copy example.env and rename it .env and put in all your env vars
-3. Run dotnet watch
+### 1. Install the tools
+
+| Tool | Why | How |
+|---|---|---|
+| .NET 10 SDK | Builds and runs the backend | [Download page](https://dotnet.microsoft.com/download) |
+| EF Core CLI | Applies database migrations | `dotnet tool install --global dotnet-ef` |
+| Docker | Supabase runs locally in Docker containers | [Docker Desktop](https://docs.docker.com/desktop/) or [Docker Engine](https://docs.docker.com/engine/install/) on Linux. Make sure the daemon is running (`docker ps` shouldn't error) |
+| Supabase CLI | Runs the local database and auth | [Installing the Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started#installing-the-supabase-cli) |
+| Node.js + npm | Only for the [testing harness](#testing) | [nodejs.org](https://nodejs.org) or your package manager |
+
+### 2. Start Supabase
+
+From the **repo root** (where the `supabase/` folder is):
+
+```bash
+supabase start
+```
+
+The first run downloads the Docker images and takes a few minutes. Later runs
+take a few seconds. When it's done, print every value you'll need for `.env`:
+
+```bash
+supabase status -o env
+```
+
+Supabase Studio (a web UI for the database) is at <http://127.0.0.1:54323>.
+
+### 3. Create `backend/.env`
+
+```bash
+cp backend/example.env backend/.env
+```
+
+Then fill it in. The backend **won't start** without the required ones.
+
+#### Required
+
+| Variable | What to put | Where it comes from |
+|---|---|---|
+| `DB_CONNECTION_STRING` | `Host=127.0.0.1;Port=54322;Database=postgres;Username=postgres;Password=postgres` | The local Supabase Postgres (`DB_URL` in `supabase status -o env`). Local Postgres has no SSL, so leave out the `SSL Mode`/`Trust Server Certificate` parts from `example.env` |
+| `SUPABASE_URL` | `http://127.0.0.1:54321` | `API_URL` in `supabase status -o env` |
+| `SUPABASE_JWT_SECRET` | the long secret string | `JWT_SECRET` in `supabase status -o env`. Used to verify users' login tokens |
+| `FRONTEND_URL` | `http://localhost:5173` | Where the frontend runs (`npm run dev` in `frontend/` uses port 5173). Only this origin is allowed through CORS |
+| `TOKEN_ENCRYPTION_KEY` | a random base64 key | Generate one with `openssl rand -base64 32`. Encrypts stored tokens, so don't change it later or the saved Hackatime connections become unreadable |
+
+#### Needed for the testing harness / Airtable
+
+| Variable | What to put | Where it comes from |
+|---|---|---|
+| `SUPABASE_ANON_KEY` | a key starting with `eyJ` | `ANON_KEY` in `supabase status -o env` |
+| `SUPABASE_SERVICE_ROLE_KEY` | a key starting with `eyJ` | `SERVICE_ROLE_KEY` in `supabase status -o env`. Server-only, never put it in the frontend |
+| `TESTING_OIDC_PROVIDER` | `custom:hackclub-auth` | The OIDC provider name configured in Supabase auth |
+
+#### Optional integrations
+
+Leave these blank to switch the feature off. The rest of the backend still works.
+
+| Variable | What to put | Where it comes from |
+|---|---|---|
+| `HACKATIME_CLIENT_ID`, `HACKATIME_CLIENT_SECRET` | OAuth app credentials | Create an OAuth app on [Hackatime](https://hackatime.hackclub.com). Without these, the `api/hackatime/*` endpoints return 503 |
+| `HACKATIME_REDIRECT_URI` | `http://localhost:5267/auth/hackatime/callback` | Must exactly match the redirect URI registered on the Hackatime OAuth app |
+| `HACKATIME_BASE_URL` | `https://hackatime.hackclub.com` | Leave as is |
+| `LAPSE_PROGRAM_KEY` | program key | Ask a Lapse admin. Lets reviewers see a project's timelapses |
+| `LAPSE_BASE_URL` | `https://lapse.hackclub.com` | Leave as is |
+| `AIRTABLE_API_KEY` | personal access token (`pat...`) | Create one at [airtable.com/create/tokens](https://airtable.com/create/tokens) with the `data.records:write` scope and access to the base |
+| `AIRTABLE_BASE_ID` | `app...` | The `app...` part of the base's URL in Airtable |
+| `AIRTABLE_TABLE_NAME` | `YSWS Project Submission` | Name of the table approved projects get pushed to |
+
+### 4. Create the database tables
+
+From `backend/`:
+
+```bash
+dotnet ef database update
+```
+
+Run this again whenever you pull new migrations (new files in
+`backend/Data/Migrations/`).
+
+## Running (every time)
+
+1. Make sure Docker is running, then start Supabase from the **repo root**
+   (does nothing if it's already up):
+
+   ```bash
+   supabase start
+   ```
+
+2. Start the backend from **`backend/`** (it reads `.env` from the folder you run
+   it in):
+
+   ```bash
+   dotnet watch
+   ```
+
+The API runs at <http://localhost:5267> and restarts when you change code.
+Check it's up:
+
+```bash
+curl http://localhost:5267/api/health
+```
+
+To stop: `Ctrl-C` the backend, and `supabase stop` (from the repo root) if you
+want to shut the containers down too. Your data is kept between restarts.
 
 ## Testing
 
