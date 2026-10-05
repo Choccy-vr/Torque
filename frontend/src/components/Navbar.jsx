@@ -2,12 +2,14 @@ import { Link, NavLink } from "react-router-dom";
 import { BookOpen, Compass, FolderOpen, Gauge, LogIn, LogOut } from "lucide-react";
 import { useAuth } from "../lib/useAuth.js";
 import Drone from "../assets/img.png";
+import logo from "../assets/logo.png";
 
 const links = [
     { name: "Dashboard", path: "/home", icon: Gauge },
     { name: "Projects", path: "/projects", icon: FolderOpen },
     { name: "Explore", path: "/explore", icon: Compass },
     { name: "Docs", path: "/docs", icon: BookOpen },
+    { name: "Profile", path: "/profile", icon: LogOut },
 ];
 
 // Active = coral wash + full coral border; the label stays Chalk White so it
@@ -26,16 +28,18 @@ export default function Navbar() {
     return (
         <>
             <header className="flex items-center justify-between py-4 md:hidden">
-                <Link to="/" className="t-heading text-2xl font-bold tracking-wide">
-                    TORQUE
+                <Link to="/home" className="t-heading font-bold min-w-1/5 w-1/4 tracking-wide shrink-0">
+                    <img src={logo} className={"w-full min-w-[100px] h-auto"} alt={"Torque Logo"} />
                 </Link>
-                <button
-                    onClick={onAuth}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-xl border-2 border-transparent px-3 font-medium text-(--text) transition-all duration-300 ease hover:bg-white/10 hover:border-white/20"
-                >
-                    <AuthIcon aria-hidden="true" className="size-5" />
-                    {authLabel}
-                </button>
+                <div className="flex flex-row items-center">
+                    <button
+                        onClick={onAuth}
+                        className="inline-flex min-h-11 items-center gap-2 rounded-xl border-2 border-transparent px-3 font-medium text-(--text) transition-all duration-300 ease hover:bg-white/10 hover:border-white/20"
+                    >
+                        <AuthIcon aria-hidden="true" className="size-5" />
+                        {authLabel}
+                    </button>
+                </div>
             </header>
 
             <div
@@ -62,8 +66,9 @@ export default function Navbar() {
 
             <aside className="t-card fixed top-14 bottom-14 left-6 hidden w-(--sidebar-w) flex-col gap-6 p-4 md:flex lg:p-5">
                 <nav aria-label="Main" className="flex flex-col gap-1.5 mt-10">
-                    <h1 className="t-heading text-4xl text-center md:text-5xl font-bold mb-6">TORQUE</h1>
-                    {links.map(({ name, path, icon: Icon }) => (
+                    <img src={logo} className={"mb-4"} alt={"Torque Logo"} />
+                    {links.filter(({ name }) => name !== "Profile")
+                    .map(({ name, path, icon: Icon }) => (
                         <NavLink
                             key={path}
                             to={path}
