@@ -1,4 +1,9 @@
 import flag from '../assets/flag-orpheus-top.png'
+import logo from '../assets/logo.png'
+import designImg from '../assets/design.png'
+import buildImg from '../assets/build.png'
+import reviseImg from '../assets/revise.png'
+import shipImg from '../assets/ship.png'
 import { ChevronDown } from 'lucide-react'
 import { ReactLenis } from 'lenis/react'
 import { useEffect, useState } from 'react'
@@ -8,10 +13,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/useAuth.js'
 
 const steps = [
-  { title: "Design", text: "Design your hardware project — pick a motor-powered idea and plan how it'll work." },
-  { title: "Build", text: "Get a grant to pay for the parts, then build your design into something real." },
-  { title: "Revise", text: "Test what you built and make any revisions it needs to work better." },
-  { title: "Ship", text: "Ship a finished, working project and unlock more prizes in the shop." },
+  { title: "Design", image: designImg, text: "Design your hardware project — pick a motor-powered idea and plan how it'll work." },
+  { title: "Build", image: buildImg, text: "Get a grant to pay for the parts, then build your design into something real." },
+  { title: "Revise", image: reviseImg, text: "Test what you built and make any revisions it needs to work better." },
+  { title: "Ship", image: shipImg, text: "Ship a finished, working project and unlock more prizes in the shop." },
 ]
 
 const faq = [
@@ -74,7 +79,10 @@ export default function Home() {
 
         <div className="absolute inset-0 flex items-center justify-center z-20">
           <div className="w-full max-w-7xl mx-auto px-6 md:px-4 flex flex-col items-center text-center">
-            <h1 className="t-heading text-7xl md:text-8xl font-bold leading-none tracking-[0.02em]">TORQUE</h1>
+            <h1 className="w-full max-w-sm sm:max-w-xl md:max-w-2xl">
+              {/* object-cover at the wordmark's own ratio trims the PNG's transparent top/bottom padding */}
+              <img src={logo} alt="Torque" fetchPriority="high" className="w-full aspect-[26/5] object-cover" />
+            </h1>
             <p className="text-xl md:text-2xl leading-snug my-6 max-w-[22ch] sm:max-w-none text-(--text) [text-wrap:balance]">
               Build hardware projects with motors. Get funding and prizes.
             </p>
@@ -124,6 +132,13 @@ export default function Home() {
         <ol className="grid grid-cols-1 mt-12 md:mt-16 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 lg:gap-10 px-6 sm:px-10 lg:px-20 max-w-(--breakpoint-2xl) mx-auto">
           {steps.map((step) => (
             <li key={step.title} className="t-card p-6 md:p-8 text-center">
+              <img
+                src={step.image}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="w-full aspect-video object-contain mb-5 md:mb-6"
+              />
               <h3 className="text-2xl md:text-3xl font-bold text-(--text) mb-3 md:mb-4">{step.title}</h3>
               <p className="md:text-lg leading-relaxed text-(--text)/80">{step.text}</p>
             </li>
