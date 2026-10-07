@@ -95,6 +95,12 @@ html, body {
   border-color: var(--btn-bg-hover);
 }
 
+/* Horizontal scroll rows (dashboard projects): thin coral scrollbar. */
+.t-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 55%, transparent) transparent;
+}
+
 /* Big headings (hero, section titles, footer wordmark) */
 .t-heading {
   font-family: var(--heading-font);

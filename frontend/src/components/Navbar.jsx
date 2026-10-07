@@ -1,6 +1,8 @@
 import { Link, NavLink } from "react-router-dom";
-import { BookOpen, Compass, FolderOpen, Gauge, LogIn, LogOut } from "lucide-react";
+import { BookOpen, Compass, FolderOpen, Gauge, LogIn, LogOut, Zap } from "lucide-react";
 import { useAuth } from "../lib/useAuth.js";
+import { getMyProfile } from "../lib/endpoints.js";
+import { useApi } from "../lib/useApi.js";
 import Drone from "../assets/img.png";
 import logo from "../assets/logo.png";
 
@@ -29,7 +31,7 @@ export default function Navbar() {
         <>
             <header className="flex items-center justify-between py-4 md:hidden">
                 <Link to="/home" className="t-heading font-bold min-w-1/5 w-1/4 tracking-wide shrink-0">
-                    <img src={logo} className={"w-full min-w-[100px] h-auto"} alt={"Torque Logo"} />
+                    <img src={logo} className={"w-full min-w-[100px] h-auto"} alt="Torque home" />
                 </Link>
                 <div className="flex flex-row items-center">
                     <button
@@ -66,7 +68,9 @@ export default function Navbar() {
 
             <aside className="t-card fixed top-14 bottom-14 left-6 hidden w-(--sidebar-w) flex-col gap-6 p-4 md:flex lg:p-5">
                 <nav aria-label="Main" className="flex flex-col gap-1.5 mt-10">
-                    <img src={logo} className={"mb-4"} alt={"Torque Logo"} />
+                    <Link to="/home" className="mb-4 rounded-xl transition-opacity duration-300 ease hover:opacity-80">
+                        <img src={logo} alt="Torque home" />
+                    </Link>
                     {links.filter(({ name }) => name !== "Profile")
                     .map(({ name, path, icon: Icon }) => (
                         <NavLink
@@ -81,13 +85,7 @@ export default function Navbar() {
                         </NavLink>
                     ))}
                 </nav>
-                <NavLink to="/profile" className={`mt-auto flex flex-row items-center gap-3 px-3 text-left text-base font-medium transition-all duration-300 ease hover:opacity-75`}>
-                    <img src={Drone} alt="User PFP" className={"w-14 rounded-xl"} />
-                    <div className={`mt-auto text-white flex flex-col items-center gap-1`}>
-                        <h1>John Doe</h1>
-                        <h1>100 Hours</h1>
-                    </div>
-                </NavLink>
+                <ProfileLink />
                 <button
                     onClick={onAuth}
                     className={`flex items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-left text-base font-medium transition-all duration-300 ease ${stateClass(false)}`}
@@ -97,5 +95,44 @@ export default function Navbar() {
                 </button>
             </aside>
         </>
+    );
+}
+
+// Sidebar footer: who's signed in and their Volts balance. If the profile
+// request fails, fall back to the name from the sign-in session.
+function ProfileLink() {
+    const { user } = useAuth();
+    const { data: profile, loading } = useApi(getMyProfile);
+    const name = profile?.username || user?.user_metadata?.name || user?.user_metadata?.full_name || "Your profile";
+
+    return (
+        <NavLink
+            to="/profile"
+            aria-label={loading ? "Your profile" : undefined}
+            className="mt-auto flex items-center gap-3 rounded-xl px-3 py-2 text-left text-(--text) transition-all duration-300 ease hover:bg-white/10"
+        >
+            <img
+                src={profile?.profilePictureUrl || Drone}
+                onError={(e) => { e.currentTarget.src = Drone; }}
+                alt=""
+                className="size-12 shrink-0 rounded-xl object-cover"
+            />
+            {loading ? (
+                <div aria-hidden="true" className="flex min-w-0 flex-1 flex-col gap-2">
+                    <div className="h-4 w-4/5 rounded bg-white/10 motion-safe:animate-pulse" />
+                    <div className="h-3.5 w-1/2 rounded bg-white/10 motion-safe:animate-pulse" />
+                </div>
+            ) : (
+                <div className="flex min-w-0 flex-col">
+                    <span className="truncate font-medium">{name}</span>
+                    {profile && (
+                        <span className="flex items-center gap-1 text-sm text-(--text)/80 tabular-nums">
+                            <Zap aria-hidden="true" className="size-3.5 text-(--accent)" />
+                            {profile.volts} Volts
+                        </span>
+                    )}
+                </div>
+            )}
+        </NavLink>
     );
 }

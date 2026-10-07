@@ -3,31 +3,29 @@ import { Navigate } from 'react-router-dom'
 import { supabase } from './supabase.js'
 import { config } from './config.js'
 import { AuthContext, useAuth } from './useAuth.js'
+import { clearMyProfile } from './endpoints.js'
+
+const DEV_MODE = import.meta.env.DEV
+
+// Dev login (dev builds only): a fake, token-less session so the UI can be
+// clicked through without the OIDC provider. Only active once devLogin() has
+// been used — otherwise dev builds go through the real Supabase flow below.
+const DEV_SESSION = {
+    user: {
+        id: 'dev-user',
+        email: 'dev@example.com',
+        user_metadata: { full_name: 'Dev User' },
+    },
+}
+const isDevLogin = () => DEV_MODE && sessionStorage.getItem('dev-login') === 'true'
 
 export function AuthProvider({ children }) {
-    const [session, setSession] = useState(null)
-    const [loading, setLoading] = useState(true)
-
-    const DEV_MODE = import.meta.env.DEV;
+    const [devLoggedIn] = useState(isDevLogin)
+    const [session, setSession] = useState(devLoggedIn ? DEV_SESSION : null)
+    const [loading, setLoading] = useState(!devLoggedIn)
 
     useEffect(() => {
-        if (DEV_MODE) {
-            const devLoggedIn = sessionStorage.getItem('dev-login')
-
-            if (devLoggedIn === 'true') {
-                setSession({
-                    user: {
-                        id: 'dev-user',
-                        email: 'dev@example.com',
-                        user_metadata: {
-                            full_name: 'Dev User',
-                        },
-                    },
-                })
-            }
-            setLoading(false)
-            return
-        }
+        if (devLoggedIn) return
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, next) => {
             setSession(next)
@@ -46,7 +44,7 @@ export function AuthProvider({ children }) {
         })
 
         return () => subscription.unsubscribe()
-    }, [DEV_MODE])
+    }, [devLoggedIn])
 
     const value = {
         session,
@@ -59,13 +57,14 @@ export function AuthProvider({ children }) {
             }),
 
         signOut: () => {
-            if (DEV_MODE) {
+            if (devLoggedIn) {
                 sessionStorage.removeItem('dev-login')
                 setSession(null)
                 window.location.href = '/'
                 return
             }
 
+            clearMyProfile()
             return supabase.auth.signOut()
         },
 
