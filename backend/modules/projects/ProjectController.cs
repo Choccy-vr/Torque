@@ -144,6 +144,36 @@ public class ProjectController : ControllerBase
         return Ok(projects);
     }
 
+    // a user's projects (public view), newest first
+    [HttpGet("user/{id:guid}")]
+    public async Task<IActionResult> GetByUser(Guid id)
+    {
+        var projects = await _db.Projects
+            .Where(p => p.OwnerUserId == id)
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => new PublicProjectDto
+            {
+                Id = p.Id,
+                OwnerUserId = p.OwnerUserId.ToString(),
+                Title = p.Title,
+                Description = p.Description,
+                Tier = p.Tier,
+                RepoUrl = p.RepoUrl,
+                DemoUrl = p.DemoUrl,
+                ReadmeUrl = p.ReadmeUrl,
+                Status = p.Status,
+                TotalHours = p.TotalHoursRaw,
+                AiUse = p.AiUse,
+                DevlogIds = p.DevlogIds,
+                Exceptional = p.Exceptional,
+                IsStaffPick = p.IsStaffPick,
+                CreatedAt = p.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(projects);
+    }
+
     // projects for the authenticated user
     [Authorize]
     [HttpGet("me")]

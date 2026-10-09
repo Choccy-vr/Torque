@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
-import { BookOpen, Compass, FolderOpen, Gauge, LogIn, LogOut, Zap } from "lucide-react";
+import { BookOpen, CircleUserRound, Compass, FolderOpen, Gauge, LogIn, LogOut, Zap } from "lucide-react";
 import { useAuth } from "../lib/useAuth.js";
 import { getMyProfile } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
@@ -11,7 +11,7 @@ const links = [
     { name: "Projects", path: "/projects", icon: FolderOpen },
     { name: "Explore", path: "/explore", icon: Compass },
     { name: "Docs", path: "/docs", icon: BookOpen },
-    { name: "Profile", path: "/profile", icon: LogOut },
+    { name: "Profile", path: "/profile", icon: CircleUserRound },
 ];
 
 // Active = coral wash + full coral border; the label stays Chalk White so it
@@ -85,54 +85,72 @@ export default function Navbar() {
                         </NavLink>
                     ))}
                 </nav>
-                <ProfileLink />
-                <button
-                    onClick={onAuth}
-                    className={`flex items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-left text-base font-medium transition-all duration-300 ease ${stateClass(false)}`}
-                >
-                    <AuthIcon aria-hidden="true" className="size-5 shrink-0" />
-                    {authLabel}
-                </button>
+                {session ? (
+                    <UserPlate onSignOut={signOut} />
+                ) : (
+                    <button
+                        onClick={onAuth}
+                        className={`mt-auto flex items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-left text-base font-medium transition-all duration-300 ease ${stateClass(false)}`}
+                    >
+                        <AuthIcon aria-hidden="true" className="size-5 shrink-0" />
+                        {authLabel}
+                    </button>
+                )}
             </aside>
         </>
     );
 }
 
-// Sidebar footer: who's signed in and their Volts balance. If the profile
-// request fails, fall back to the name from the sign-in session.
-function ProfileLink() {
+// Sidebar footer: who's signed in, as one plate. The avatar, name and Volts
+// link to your profile (the plate lights up coral while you're on it), with
+// log out ruled off underneath. If the profile request fails,
+// fall back to the name from the sign-in session.
+function UserPlate({ onSignOut }) {
     const { user } = useAuth();
     const { data: profile, loading } = useApi(getMyProfile);
     const name = profile?.username || user?.user_metadata?.name || user?.user_metadata?.full_name || "Your profile";
 
     return (
-        <NavLink
-            to="/profile"
-            aria-label={loading ? "Your profile" : undefined}
-            className="mt-auto flex items-center gap-3 rounded-xl px-3 py-2 text-left text-(--text) transition-all duration-300 ease hover:bg-white/10"
-        >
-            <img
-                src={profile?.profilePictureUrl || Drone}
-                onError={(e) => { e.currentTarget.src = Drone; }}
-                alt=""
-                className="size-12 shrink-0 rounded-xl object-cover"
-            />
-            {loading ? (
-                <div aria-hidden="true" className="flex min-w-0 flex-1 flex-col gap-2">
-                    <div className="h-4 w-4/5 rounded bg-white/10 motion-safe:animate-pulse" />
-                    <div className="h-3.5 w-1/2 rounded bg-white/10 motion-safe:animate-pulse" />
-                </div>
-            ) : (
-                <div className="flex min-w-0 flex-col">
-                    <span className="truncate font-medium">{name}</span>
-                    {profile && (
-                        <span className="flex items-center gap-1 text-sm text-(--text)/80 tabular-nums">
-                            <Zap aria-hidden="true" className="size-3.5 text-(--accent)" />
-                            {profile.volts} Volts
-                        </span>
-                    )}
-                </div>
-            )}
-        </NavLink>
+        <div className="mt-auto flex flex-col rounded-2xl border-2 border-white/10 bg-(--bg)/45 p-1 transition-all duration-300 ease has-[a[aria-current=page]]:border-(--accent) has-[a[aria-current=page]]:bg-(--accent)/15">
+            <NavLink
+                to="/profile"
+                end
+                aria-label={loading ? "Your profile" : undefined}
+                title={loading ? undefined : name}
+                className="flex min-w-0 items-center gap-3 rounded-xl p-2 text-left text-(--text) transition-all duration-300 ease hover:bg-white/10"
+            >
+                <img
+                    src={profile?.profilePictureUrl || Drone}
+                    onError={(e) => { e.currentTarget.src = Drone; }}
+                    alt=""
+                    className="size-10 shrink-0 rounded-[0.625rem] border-2 border-(--accent)/55 bg-(--bg) object-cover lg:size-11"
+                />
+                {loading ? (
+                    <div aria-hidden="true" className="flex min-w-0 flex-1 flex-col gap-1.5">
+                        <div className="h-4 w-4/5 rounded bg-white/10 motion-safe:animate-pulse" />
+                        <div className="h-3.5 w-1/2 rounded bg-white/10 motion-safe:animate-pulse" />
+                    </div>
+                ) : (
+                    <div className="flex min-w-0 flex-col">
+                        <span className="truncate leading-snug font-medium">{name}</span>
+                        {profile && (
+                            <span className="flex items-center gap-1 text-sm leading-snug text-(--text)/80 tabular-nums">
+                                <Zap aria-hidden="true" className="size-3.5 shrink-0 text-(--accent)" />
+                                {profile.volts.toLocaleString()} Volts
+                            </span>
+                        )}
+                    </div>
+                )}
+            </NavLink>
+            <div aria-hidden="true" className="mx-2 my-1 h-0.5 rounded-full bg-white/10" />
+            <button
+                type="button"
+                onClick={onSignOut}
+                className="flex min-h-10 items-center gap-2.5 rounded-xl px-3 text-left text-sm font-medium text-(--text)/80 transition-all duration-300 ease hover:bg-white/10 hover:text-(--text)"
+            >
+                <LogOut aria-hidden="true" className="size-4 shrink-0" />
+                Log out
+            </button>
+        </div>
     );
 }

@@ -28,17 +28,23 @@ const SIZES = {
     },
 };
 
-export default function ProjectCard({ project, compact = false }) {
+// `image={false}` drops the placeholder image well (the profile, where a
+// column of identical placeholders would carry no information). `quietStatus`
+// draws every status neutral, for views other people see: "Changes needed"
+// is only a call to action for the owner.
+export default function ProjectCard({ project, compact = false, titleAs, image = true, quietStatus = false }) {
     const size = compact ? SIZES.compact : SIZES.full;
-    // The dashboard nests these under its own "Your projects" h2.
-    const Title = compact ? "h3" : "h2";
+    // The dashboard and profile nest these under their own h2.
+    const Title = titleAs ?? (compact ? "h3" : "h2");
+    // Own projects carry totalHoursRaw; the public view calls it totalHours.
+    const hours = project.totalHoursRaw ?? project.totalHours ?? 0;
 
     return (
         <li className={`flex h-full flex-col overflow-hidden ${size.shell}`}>
-            <img src={Drone} alt="" className={`${size.image} ${size.fit} w-full`} />
+            {image && <img src={Drone} alt="" className={`${size.image} ${size.fit} w-full`} />}
 
             <div className={`flex flex-1 flex-col ${size.body}`}>
-                <ProjectStatusBadge status={project.status} />
+                <ProjectStatusBadge status={project.status} quiet={quietStatus} />
 
                 <Title className={`font-semibold text-balance text-(--heading) ${size.title}`}>
                     {project.title}
@@ -51,7 +57,7 @@ export default function ProjectCard({ project, compact = false }) {
                 <dl className={`mt-auto flex flex-wrap gap-x-5 gap-y-1 ${size.meta} text-sm text-(--text)/85 tabular-nums`}>
                     <div className="flex items-center gap-1.5">
                         <dt><Clock aria-label="Time tracked" className="size-4" /></dt>
-                        <dd>{formatHours(project.totalHoursRaw)}</dd>
+                        <dd>{formatHours(hours)}</dd>
                     </div>
                     {project.voltsGranted > 0 && (
                         <div className="flex items-center gap-1.5">
@@ -65,12 +71,12 @@ export default function ProjectCard({ project, compact = false }) {
     );
 }
 
-export function ProjectCardSkeleton({ compact = false }) {
+export function ProjectCardSkeleton({ compact = false, image = true }) {
     const size = compact ? SIZES.compact : SIZES.full;
 
     return (
         <li aria-hidden="true" className={`flex h-full flex-col overflow-hidden ${size.shell}`}>
-            <div className={`${size.image} w-full bg-white/5 motion-safe:animate-pulse`} />
+            {image && <div className={`${size.image} w-full bg-white/5 motion-safe:animate-pulse`} />}
             <div className={`flex flex-1 flex-col ${size.body}`}>
                 <div className="h-6 w-24 rounded-full bg-white/10 motion-safe:animate-pulse" />
                 <div className="h-6 w-3/4 rounded-lg bg-white/10 motion-safe:animate-pulse" />

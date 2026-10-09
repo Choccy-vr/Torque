@@ -62,6 +62,29 @@ public class DevlogController : ControllerBase
         return Ok(devlogs);
     }
 
+    // a user's devlogs (public view), newest first
+    [HttpGet("user/{id:guid}")]
+    public async Task<IActionResult> GetByUser(Guid id)
+    {
+        var devlogs = await _db.Devlogs
+            .Where(d => d.OwnerUserId == id)
+            .OrderByDescending(d => d.CreatedAt)
+            .Take(30)
+            .Select(d => new PublicDevlogDto
+            {
+                Id = d.Id,
+                OwnerUserId = d.OwnerUserId.ToString(),
+                ProjectId = d.ProjectId.ToString(),
+                Title = d.Title,
+                Text = d.Text,
+                ImageUrls = d.ImageUrls,
+                CreatedAt = d.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(devlogs);
+    }
+
     // fetch up to 30 devlogs by id at once
     [HttpPost("batch")]
     public async Task<IActionResult> GetBatch([FromBody] BatchDevlogDto dto)

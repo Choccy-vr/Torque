@@ -26,7 +26,7 @@ const ENDPOINTS = [
     method: 'GET',
     path: '/api/user/{id}',
     auth: false,
-    desc: 'Public profile, no PII. 404 when no such user.',
+    desc: 'Public profile, no PII (includes slackUserID). 404 when no such user.',
     params: [{ name: 'id', placeholder: 'user uuid' }],
   },
   {
@@ -88,6 +88,15 @@ const ENDPOINTS = [
     desc: 'Top 50 approved projects by volts granted, descending.',
   },
   {
+    id: 'project-by-user',
+    group: 'projects',
+    method: 'GET',
+    path: '/api/project/user/{id}',
+    auth: false,
+    desc: "A user's projects (public view, any status), newest first. Empty array for an unknown user.",
+    params: [{ name: 'id', placeholder: 'user uuid' }],
+  },
+  {
     id: 'project-me',
     group: 'projects',
     method: 'GET',
@@ -140,6 +149,15 @@ const ENDPOINTS = [
     path: '/api/devlog/me',
     auth: true,
     desc: "The signed-in user's own devlogs, newest first. Capped at 30.",
+  },
+  {
+    id: 'devlog-by-user',
+    group: 'devlogs',
+    method: 'GET',
+    path: '/api/devlog/user/{id}',
+    auth: false,
+    desc: "A user's devlogs, newest first. Capped at 30. Empty array for an unknown user.",
+    params: [{ name: 'id', placeholder: 'user uuid' }],
   },
   {
     id: 'devlog-batch',

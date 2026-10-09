@@ -1,7 +1,8 @@
 import { PROJECT_STATUS } from "../lib/projects.js";
 
-export default function ProjectStatusBadge({ status }) {
-    const { label, attention } = PROJECT_STATUS[status] ?? { label: status };
+export default function ProjectStatusBadge({ status, quiet = false }) {
+    const { label, attention: flagged } = PROJECT_STATUS[status] ?? { label: status };
+    const attention = flagged && !quiet;
 
     return (
         <span

@@ -10,5 +10,6 @@ public record PublicProfileDto
     public string? ProfilePictureUrl { get; init; }
     public int Volts { get; init; }
     public string[]? Projects { get; init; }
+    public string SlackUserID { get; init; } = null!;
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 }

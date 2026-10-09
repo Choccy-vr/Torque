@@ -45,7 +45,8 @@ function AppRoutes() {
                 {/*<Route path="/projects/:id" element={<Projects />} /*/}
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/docs/*" element={<Suspense fallback={<div className="min-h-screen" />}><Docs /></Suspense>} />
-                <Route path={"/profile/*"} element={<Profile />} />
+                <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+                <Route path="/profile/:id" element={<Profile />} />
             </Routes>
         </div>
     )

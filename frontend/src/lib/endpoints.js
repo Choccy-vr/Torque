@@ -37,3 +37,18 @@ export function clearMyProfile() {
 export function getMyProjects() {
     return getJson('api/project/me')
 }
+
+// GET api/user/{id} — PublicProfileDto
+export function getUserProfile(id) {
+    return getJson(`api/user/${encodeURIComponent(id)}`)
+}
+
+// GET api/project/user/{id} — PublicProjectDto[], newest first
+export function getUserProjects(id) {
+    return getJson(`api/project/user/${encodeURIComponent(id)}`)
+}
+
+// GET api/devlog/user/{id} — PublicDevlogDto[], newest first, capped at 30
+export function getUserDevlogs(id) {
+    return getJson(`api/devlog/user/${encodeURIComponent(id)}`)
+}
