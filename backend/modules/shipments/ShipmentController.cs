@@ -27,12 +27,14 @@ public class ShipmentController : ControllerBase
 
         var shipments = await _db.Shipments
             .Where(s => s.UserId == userId.Value)
+            .OrderByDescending(s => s.CreatedAt)
             .Select(s => new OwnShipmentDto
             {
                 Id = s.Id,
                 UserId = s.UserId,
                 ProjectId = s.ProjectId,
                 Status = s.Status,
+                Feedback = s.Feedback,
                 HourSnapshot = s.HourSnapshot,
                 OverrideHours = s.OverrideHours,
                 OverrideTier = s.OverrideTier,

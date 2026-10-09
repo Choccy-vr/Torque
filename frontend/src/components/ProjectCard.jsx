@@ -31,8 +31,9 @@ const SIZES = {
 // `image={false}` drops the placeholder image well (the profile, where a
 // column of identical placeholders would carry no information). `quietStatus`
 // draws every status neutral, for views other people see: "Changes needed"
-// is only a call to action for the owner.
-export default function ProjectCard({ project, compact = false, titleAs, image = true, quietStatus = false }) {
+// is only a call to action for the owner. `hours={false}` leaves out the
+// time tracked (staff picks).
+export default function ProjectCard({ project, compact = false, titleAs, image = true, quietStatus = false, hours: showHours = true }) {
     const size = compact ? SIZES.compact : SIZES.full;
     // The dashboard and profile nest these under their own h2.
     const Title = titleAs ?? (compact ? "h3" : "h2");
@@ -54,18 +55,22 @@ export default function ProjectCard({ project, compact = false, titleAs, image =
                     <p className={`text-(--text)/80 ${size.description}`}>{project.description}</p>
                 )}
 
-                <dl className={`mt-auto flex flex-wrap gap-x-5 gap-y-1 ${size.meta} text-sm text-(--text)/85 tabular-nums`}>
-                    <div className="flex items-center gap-1.5">
-                        <dt><Clock aria-label="Time tracked" className="size-4" /></dt>
-                        <dd>{formatHours(hours)}</dd>
-                    </div>
-                    {project.voltsGranted > 0 && (
-                        <div className="flex items-center gap-1.5">
-                            <dt><Zap aria-label="Volts granted" className="size-4 text-(--accent)" /></dt>
-                            <dd>{project.voltsGranted} Volts</dd>
-                        </div>
-                    )}
-                </dl>
+                {(showHours || project.voltsGranted > 0) && (
+                    <dl className={`mt-auto flex flex-wrap gap-x-5 gap-y-1 ${size.meta} text-sm text-(--text)/85 tabular-nums`}>
+                        {showHours && (
+                            <div className="flex items-center gap-1.5">
+                                <dt><Clock aria-label="Time tracked" className="size-4" /></dt>
+                                <dd>{formatHours(hours)}</dd>
+                            </div>
+                        )}
+                        {project.voltsGranted > 0 && (
+                            <div className="flex items-center gap-1.5">
+                                <dt><Zap aria-label="Volts granted" className="size-4 text-(--accent)" /></dt>
+                                <dd>{project.voltsGranted} Volts</dd>
+                            </div>
+                        )}
+                    </dl>
+                )}
             </div>
         </li>
     );

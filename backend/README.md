@@ -139,7 +139,7 @@ requests to every endpoint below. See [testing/README.md](testing/README.md).
 | GET | `api/devlog/user/{id:guid}` | No | Get a user's devlogs, newest first, capped at 30 |
 | POST | `api/devlog/batch` | No | Get up to 30 devlogs at once. Body (JSON): `ids` (string[], required, max 30) — feed it a project's `devlogIds` |
 | POST | `api/devlog/create` | YES | Create a new devlog, owned by the authenticated user, and appends its id to the owning project's `devlogIds`. Body (JSON): `projectId` (guid string, required), `title` (string, required), `text` (string, required), `imageUrls` (string[], optional) |
-| GET | `api/ships/get/me` | YES | Get the authenticated user's own shipments |
+| GET | `api/ships/get/me` | YES | Get the authenticated user's own shipments, newest first, including reviewer feedback |
 | GET | `api/ships/get/{id:guid}` | YES | Get a shipment by ID (public view) |
 | POST | `api/ships/create` | YES | Ship (submit for review) a project owned by the authenticated user. Only allowed while the project is `Unshipped` or `Changes_Needed`; snapshots the project's current hours/tier and flips it to `Unreviewed`. Body (JSON): `projectId` (guid string, required), `isBuildComplete` (bool, required — `false` = design ship, `true` = build ship), `requestedFunding` (int >= 0, required), `howDidYouHear`, `whatAreWeDoingWell`, `howCanWeImprove` (strings, required) |
 | GET | `api/admin/review/get/pending` | YES | Reviewer-only. Get shipments awaiting review (`Unreviewed`), oldest first |

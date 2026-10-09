@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Plus, RotateCw } from "lucide-react";
 import AppShell, { PageTitle } from "../components/AppShell.jsx";
 import ProjectCard, { ProjectCardSkeleton } from "../components/ProjectCard.jsx";
-import { getMyProjects } from "../lib/endpoints.js";
+import { getMyProjects, getStaffPicks } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
 
 // Scrolls sideways when the cards don't fit. Bleeds to the panel's inner edges
@@ -89,29 +89,55 @@ export default function Home() {
                 )}
             </section>
 
-            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <Panel id="announcements" title="Announcements">
-                    <EmptyState
-                        title="Nothing new yet"
-                        body="News about Torque, like events, deadlines, and new rewards, will be posted here."
-                    />
-                </Panel>
+            <Panel id="announcements" title="Announcements" className="mt-6">
+                <EmptyState
+                    title="Nothing new yet"
+                    body="News about Torque, like events, deadlines, and new rewards, will be posted here."
+                />
+            </Panel>
 
-                <Panel id="your-ships" title="Your ships">
-                    <EmptyState
-                        title="Nothing shipped yet"
-                        body="When you ship a project for review, you can follow its status here."
-                    />
-                </Panel>
-            </div>
+            <StaffPicks />
+        </AppShell>
+    );
+}
 
-            <Panel id="staff-picks" title="Staff picks" className="mt-6">
+// Standout projects picked by the Torque team, in the same scrolling row as
+// your projects. They're other people's, so review status is drawn neutral.
+function StaffPicks() {
+    const { data: picks, error, loading, reload } = useApi(getStaffPicks);
+
+    return (
+        <Panel id="staff-picks" title="Staff picks" className="mt-6">
+            {loading ? (
+                <ul className={ROW} aria-busy="true" aria-label="Loading staff picks">
+                    {[0, 1, 2, 3, 4].map((i) => <ProjectCardSkeleton key={i} compact />)}
+                </ul>
+            ) : error ? (
+                <div role="status" className={MESSAGE}>
+                    <p className="text-xl font-bold">Couldn't load staff picks</p>
+                    <p className="max-w-md leading-relaxed text-(--text)/80 [text-wrap:balance]">
+                        Something went wrong talking to the server. Check your connection and try again.
+                    </p>
+                    <button
+                        type="button"
+                        onClick={reload}
+                        className="t-btn t-hover mt-3 inline-flex min-h-11 items-center gap-2 rounded-(--radius) px-8 text-lg font-bold"
+                    >
+                        <RotateCw aria-hidden="true" className="size-5" />
+                        Try again
+                    </button>
+                </div>
+            ) : picks.length > 0 ? (
+                <ul tabIndex={0} aria-label="Staff picks" className={ROW}>
+                    {picks.map((p) => <ProjectCard key={p.id} project={p} compact quietStatus />)}
+                </ul>
+            ) : (
                 <EmptyState
                     title="No staff picks yet"
                     body="Standout projects picked by the Torque team will be featured here."
                 />
-            </Panel>
-        </AppShell>
+            )}
+        </Panel>
     );
 }
 

@@ -10,4 +10,14 @@ export const PROJECT_STATUS = {
     Perm_Rejected: { label: "Rejected" },
 };
 
+// Backend ShipmentStatus -> what the builder sees. Same rule as projects: only
+// "Changes needed" asks something of them, so only it is drawn in coral.
+export const SHIP_STATUS = {
+    unreviewed: { label: "In review" },
+    approved: { label: "Approved" },
+    rejected: { label: "Rejected" },
+    perm_rejected: { label: "Permanently rejected" },
+    needs_changes: { label: "Changes needed", attention: true },
+};
+
 export const formatHours = (h) => `${Number.isInteger(h) ? h : h.toFixed(1)} ${h === 1 ? "hour" : "hours"}`;

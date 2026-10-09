@@ -52,3 +52,13 @@ export function getUserProjects(id) {
 export function getUserDevlogs(id) {
     return getJson(`api/devlog/user/${encodeURIComponent(id)}`)
 }
+
+// GET api/project/staff-picks — PublicProjectDto[], newest first
+export function getStaffPicks() {
+    return getJson('api/project/staff-picks')
+}
+
+// GET api/ships/get/me — OwnShipmentDto[], newest first
+export function getMyShips() {
+    return getJson('api/ships/get/me')
+}

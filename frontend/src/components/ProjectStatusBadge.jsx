@@ -1,7 +1,8 @@
 import { PROJECT_STATUS } from "../lib/projects.js";
 
-export default function ProjectStatusBadge({ status, quiet = false }) {
-    const { label, attention: flagged } = PROJECT_STATUS[status] ?? { label: status };
+// `statuses` swaps the label map, e.g. SHIP_STATUS for shipments.
+export default function ProjectStatusBadge({ status, quiet = false, statuses = PROJECT_STATUS }) {
+    const { label, attention: flagged } = statuses[status] ?? { label: status };
     const attention = flagged && !quiet;
 
     return (

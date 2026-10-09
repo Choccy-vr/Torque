@@ -59,6 +59,7 @@ public class ProjectController : ControllerBase
                 RepoUrl = p.RepoUrl,
                 DemoUrl = p.DemoUrl,
                 ReadmeUrl = p.ReadmeUrl,
+                Status = p.Status,
                 TotalHours = p.TotalHoursRaw,
                 AiUse = p.AiUse,
                 DevlogIds = p.DevlogIds,
