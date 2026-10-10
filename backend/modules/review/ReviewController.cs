@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Torque.Data;
 using Torque.Extensions;
+using Torque.Payouts;
 using Torque.Projects;
 using Torque.Shipments;
 using Torque.Users;
@@ -16,7 +18,13 @@ namespace Torque.Reviews;
 public class ReviewController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public ReviewController(AppDbContext db) => _db = db;
+    private readonly PayoutService _payouts;
+
+    public ReviewController(AppDbContext db, PayoutService payouts)
+    {
+        _db = db;
+        _payouts = payouts;
+    }
 
     // Get shipments that need reviewing oldest to newest
     [Authorize]
@@ -49,6 +57,9 @@ public class ReviewController : ControllerBase
                 ReviewId = s.ReviewId,
                 ReviewedAt = s.ReviewedAt,
                 VoltsGranted = s.VoltsGranted,
+                ApprovedHours = s.ApprovedHours,
+                PaidHours = s.PaidHours,
+                VoltsPerHour = s.VoltsPerHour,
                 IsBuildComplete = s.IsBuildComplete,
                 RequestedFunding = s.RequestedFunding,
                 HowDidYouHear = s.HowDidYouHear,
@@ -91,6 +102,9 @@ public class ReviewController : ControllerBase
                 ReviewId = s.ReviewId,
                 ReviewedAt = s.ReviewedAt,
                 VoltsGranted = s.VoltsGranted,
+                ApprovedHours = s.ApprovedHours,
+                PaidHours = s.PaidHours,
+                VoltsPerHour = s.VoltsPerHour,
                 IsBuildComplete = s.IsBuildComplete,
                 RequestedFunding = s.RequestedFunding,
                 HowDidYouHear = s.HowDidYouHear,
@@ -140,6 +154,13 @@ public class ReviewController : ControllerBase
             return BadRequest("ScreenshotUrl and TechnicalFeatures are required when approving.");
         }
 
+        if (dto.OverrideHours is < 0) return BadRequest("OverrideHours can't be negative.");
+        if (dto.OverrideHours is not null && string.IsNullOrWhiteSpace(dto.OverrideJustification))
+        {
+            return BadRequest("OverrideJustification is required when setting OverrideHours.");
+        }
+        if (dto.OverrideTier is not null and not (>= 1 and <= 4)) return BadRequest("OverrideTier must be 1–4.");
+
         var shipment = await _db.Shipments.FindAsync(dto.ShipmentId);
         if (shipment is null) return BadRequest("ShipmentId does not reference an existing shipment.");
 
@@ -150,6 +171,29 @@ public class ReviewController : ControllerBase
 
         var project = await _db.Projects.FindAsync(shipment.ProjectId);
         if (project is null) return NotFound();
+
+        // The level sets the Volts rate, so an approval needs a valid one.
+        var level = dto.OverrideTier ?? project.Tier;
+        if (dto.Status == ShipmentReviewStatus.approved && level is < 1 or > 4)
+        {
+            return BadRequest("The project has no valid level (1–4); set OverrideTier to approve.");
+        }
+
+        await using var tx = await _db.Database.BeginTransactionAsync();
+
+        // Pays out before the shipment is marked approved, so it isn't counted as an
+        // earlier ship. Volts only for build ships; a design ship with requested funding
+        // gets a Grant for an admin to fulfil.
+        PayoutService.ApprovalResult? payout = null;
+        if (dto.Status == ShipmentReviewStatus.approved)
+        {
+            if (dto.OverrideTier is not null)
+            {
+                shipment.OverrideTier = dto.OverrideTier.Value;
+                project.Tier = dto.OverrideTier.Value;
+            }
+            payout = await _payouts.ApplyApprovalAsync(shipment, project, userId.Value, level, dto.OverrideHours);
+        }
 
         var review = new ShipmentReview
         {
@@ -188,10 +232,12 @@ public class ReviewController : ControllerBase
         // perm_rejected is a genuine terminal state — Create() doesn't allow shipping
         // from Perm_Rejected, so there's no path back for the user.
         // Approval here is only the first pass: the project goes to fraud review
-        // (second pass), and AirtablePushWorker pushes the shipment to Airtable.
+        // (second pass), and AirtablePushWorker pushes the shipment to Airtable. A design
+        // ship that requested funding instead waits on its grant, after which the build
+        // can be shipped (see ShipmentController.Create).
         if (dto.Status == ShipmentReviewStatus.approved)
         {
-            project.Status = ProjectStatus.Fraud_Pending;
+            project.Status = payout?.Grant is not null ? ProjectStatus.Build_Grant_Pending : ProjectStatus.Fraud_Pending;
             if (dto.Exceptional) project.Exceptional = true;
         }
         else if (dto.Status == ShipmentReviewStatus.perm_rejected)
@@ -203,7 +249,18 @@ public class ReviewController : ControllerBase
             project.Status = ProjectStatus.Changes_Needed;
         }
 
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // The unique ShipmentId index on ledger entries / grants: another reviewer
+            // approved this shipment at the same moment.
+            return Conflict("This shipment was reviewed at the same time by someone else.");
+        }
+        if (payout?.Volts > 0) await _payouts.AddToBalanceAsync(shipment.UserId, payout.Volts);
+        await tx.CommitAsync();
 
         return Ok(new AdminShipmentReviewDto
         {
@@ -222,6 +279,11 @@ public class ReviewController : ControllerBase
             DeflationJustification = review.DeflationJustification,
             AdditionalJustification = review.AdditionalJustification,
             Exceptional = review.Exceptional,
+            ApprovedHours = shipment.ApprovedHours,
+            PaidHours = shipment.PaidHours,
+            VoltsPerHour = shipment.VoltsPerHour,
+            VoltsGranted = shipment.VoltsGranted,
+            GrantId = payout?.Grant?.Id,
             CreatedAt = review.CreatedAt
         });
     }

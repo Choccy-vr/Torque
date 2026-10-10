@@ -25,6 +25,12 @@ public class Shipment
 
     public int VoltsGranted { get; set; }
 
+    // Set on approval (see Torque.Payouts.PayoutService). ApprovedHours is what this ship
+    // credited; PaidHours is what a build ship converted to Volts at VoltsPerHour.
+    public float ApprovedHours { get; set; }
+    public float PaidHours { get; set; }
+    public decimal VoltsPerHour { get; set; }
+
     // Answered by the shipper when shipping. false = design ship, true = build ship
     // (Airtable "Design or build").
     public bool IsBuildComplete { get; set; }

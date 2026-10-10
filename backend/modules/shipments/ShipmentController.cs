@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Torque.Data;
 using Torque.Extensions;
+using Torque.Payouts;
 using Torque.Projects;
 using Torque.Users;
 // A controller for Shipments
@@ -15,7 +16,13 @@ namespace Torque.Shipments;
 public class ShipmentController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public ShipmentController(AppDbContext db) => _db = db;
+    private readonly PayoutService _payouts;
+
+    public ShipmentController(AppDbContext db, PayoutService payouts)
+    {
+        _db = db;
+        _payouts = payouts;
+    }
 
     // Get shipments all per user
     [Authorize]
@@ -41,6 +48,9 @@ public class ShipmentController : ControllerBase
                 ReviewId = s.ReviewId,
                 ReviewedAt = s.ReviewedAt,
                 VoltsGranted = s.VoltsGranted,
+                ApprovedHours = s.ApprovedHours,
+                PaidHours = s.PaidHours,
+                VoltsPerHour = s.VoltsPerHour,
                 IsBuildComplete = s.IsBuildComplete,
                 RequestedFunding = s.RequestedFunding,
                 CreatedAt = s.CreatedAt
@@ -106,7 +116,12 @@ public class ShipmentController : ControllerBase
 
         if (project.OwnerUserId != userId.Value) return Forbid();
 
-        if (project.Status != ProjectStatus.Unshipped && project.Status != ProjectStatus.Changes_Needed)
+        // Once a design ship's grant is fulfilled, the next ship is the build.
+        if (project.Status == ProjectStatus.Build_Grant_Fulfilled)
+        {
+            if (!dto.IsBuildComplete.Value) return BadRequest("This project's grant is fulfilled; ship the working build (IsBuildComplete = true).");
+        }
+        else if (project.Status != ProjectStatus.Unshipped && project.Status != ProjectStatus.Changes_Needed)
         {
             return BadRequest("This project cannot be shipped from its current status.");
         }
@@ -116,7 +131,7 @@ public class ShipmentController : ControllerBase
             UserId = userId.Value,
             ProjectId = project.Id,
             Status = ShipmentStatus.unreviewed,
-            HourSnapshot = project.TotalHoursRaw,
+            HourSnapshot = await _payouts.UnpaidJournalHoursAsync(project.Id),
             TierSnapshot = project.Tier,
             ProjectSnapshot = project,
             IsBuildComplete = dto.IsBuildComplete.Value,
@@ -142,6 +157,9 @@ public class ShipmentController : ControllerBase
             ReviewId = shipment.ReviewId,
             ReviewedAt = shipment.ReviewedAt,
             VoltsGranted = shipment.VoltsGranted,
+            ApprovedHours = shipment.ApprovedHours,
+            PaidHours = shipment.PaidHours,
+            VoltsPerHour = shipment.VoltsPerHour,
             IsBuildComplete = shipment.IsBuildComplete,
             RequestedFunding = shipment.RequestedFunding,
             CreatedAt = shipment.CreatedAt

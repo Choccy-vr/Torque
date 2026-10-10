@@ -6,6 +6,7 @@ using Torque.Crypto;
 using Torque.Extensions;
 using Torque.Hackatime;
 using Torque.Lapse;
+using Torque.Payouts;
 using Torque.Streaks;
 using Torque.Testing;
 using Torque.Users;
@@ -30,6 +31,7 @@ builder.Services.AddHackatime(builder.Configuration);
 builder.Services.AddLapse(builder.Configuration);
 builder.Services.AddAirtable(builder.Configuration);
 builder.Services.AddStreaks();
+builder.Services.AddPayouts();
 
 var app = builder.Build();
 

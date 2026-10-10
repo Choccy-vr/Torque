@@ -24,6 +24,9 @@ public record AdminShipmentDto
     public DateTime ReviewedAt { get; init; }
 
     public int VoltsGranted { get; init; }
+    public float ApprovedHours { get; init; }
+    public float PaidHours { get; init; }
+    public decimal VoltsPerHour { get; init; }
 
     public bool IsBuildComplete { get; init; }
     public int RequestedFunding { get; init; }

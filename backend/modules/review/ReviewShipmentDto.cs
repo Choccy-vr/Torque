@@ -23,4 +23,9 @@ public record ReviewShipmentDto
 
     public bool Exceptional { get; init; } = false;
 
+    // Approval only. Hours to credit instead of the unpaid journal hours (requires
+    // OverrideJustification), and a level (1–4) to set on the project before paying.
+    public float? OverrideHours { get; init; }
+    public int? OverrideTier { get; init; }
+
 }

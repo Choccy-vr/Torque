@@ -40,6 +40,14 @@ public class StreakService
 
     public static decimal Multiplier(int effectiveStreak) => 1 + effectiveStreak * MultiplierPerDay;
 
+    // Volts/hr a project earns right now: the level's base rate times the streak
+    // multiplier, never above the level's max. Levels outside 1–4 are clamped.
+    public static decimal VoltsPerHour(int tier, int streakCount)
+    {
+        var (baseRate, maxRate) = Rates[Math.Clamp(tier, 1, 4)];
+        return Math.Min(baseRate * Multiplier(EffectiveStreak(streakCount, tier)), maxRate);
+    }
+
     public static TimeZoneInfo TimeZoneFor(User user) =>
         user.TimeZone is not null && TimeZoneInfo.TryFindSystemTimeZoneById(user.TimeZone, out var tz)
             ? tz

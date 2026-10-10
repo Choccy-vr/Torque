@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Torque.Data;
 using Torque.Extensions;
+using Torque.Payouts;
 // A controller for user data
 // endpoint: /api/user/<command>
 
@@ -12,7 +13,13 @@ namespace Torque.Users;
 public class UserController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public UserController(AppDbContext db) => _db = db;
+    private readonly PayoutService _payouts;
+
+    public UserController(AppDbContext db, PayoutService payouts)
+    {
+        _db = db;
+        _payouts = payouts;
+    }
 
     // Public profile for any user, no PII
     [HttpGet("{id:guid}")]
@@ -66,6 +73,20 @@ public class UserController : ControllerBase
             StreakFreezes = user.StreakFreezes,
             CreatedAt = user.CreatedAt
         });
+    }
+
+    // Own Volts balance and history (ship payouts, admin adjustments), newest first
+    [Authorize]
+    [HttpGet("volts/history")]
+    public async Task<IActionResult> GetVoltsHistory()
+    {
+        var userId = this.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var user = await _db.Users.FindAsync(userId);
+        if (user is null) return NotFound();
+
+        return Ok(new { volts = user.Volts, entries = await _payouts.HistoryAsync(user.Id) });
     }
 
     // Set the timezone streak days are counted in. One-time only: changing it later could

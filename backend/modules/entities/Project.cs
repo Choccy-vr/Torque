@@ -52,5 +52,9 @@ public enum ProjectStatus
     Fraud_Pending,
     Changes_Needed,
     Approved,
-    Perm_Rejected
+    Perm_Rejected,
+    // Design ship approved with requested funding; waiting on an admin to send the grant.
+    Build_Grant_Pending,
+    // Grant sent; the build can now be shipped.
+    Build_Grant_Fulfilled
 }
