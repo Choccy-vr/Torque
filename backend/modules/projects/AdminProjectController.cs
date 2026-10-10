@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Torque.Data;
 using Torque.Extensions;
+using Torque.Streaks;
 // Admin-only project moderation actions
 // endpoint: /api/admin/project/<command>
 
@@ -49,6 +50,8 @@ public class AdminProjectController : ControllerBase
             DevlogIds = project.DevlogIds,
             Exceptional = project.Exceptional,
             IsStaffPick = project.IsStaffPick,
+            Streak = StreakService.EffectiveStreak(project.StreakCount, project.Tier),
+            MaxStreak = StreakService.MaxStreakForLevel(project.Tier),
             CreatedAt = project.CreatedAt
         });
     }

@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Torque.Data;
 using Torque.Extensions;
+using Torque.Hackatime;
 using Torque.Projects;
+using Torque.Streaks;
 // A controller for devlog data
 // endpoint: /api/devlog/<command>
 
@@ -13,8 +15,19 @@ namespace Torque.Devlogs;
 [Route("api/devlog")]
 public class DevlogController : ControllerBase
 {
+    // Most Hackatime time a single journal can cover; anything over carries to the next.
+    private const double MaxTrackedSecondsPerJournal = 10 * 3600;
+
     private readonly AppDbContext _db;
-    public DevlogController(AppDbContext db) => _db = db;
+    private readonly HackatimeService _hackatime;
+    private readonly StreakService _streaks;
+
+    public DevlogController(AppDbContext db, HackatimeService hackatime, StreakService streaks)
+    {
+        _db = db;
+        _hackatime = hackatime;
+        _streaks = streaks;
+    }
 
     // devlog by ID
     [HttpGet("{id:guid}")]
@@ -31,6 +44,7 @@ public class DevlogController : ControllerBase
             Title = devlog.Title,
             Text = devlog.Text,
             ImageUrls = devlog.ImageUrls,
+            TrackedHours = devlog.TrackedSeconds / 3600,
             CreatedAt = devlog.CreatedAt
         });
     }
@@ -55,6 +69,7 @@ public class DevlogController : ControllerBase
                 Title = d.Title,
                 Text = d.Text,
                 ImageUrls = d.ImageUrls,
+                TrackedHours = d.TrackedSeconds / 3600,
                 CreatedAt = d.CreatedAt
             })
             .ToListAsync();
@@ -78,6 +93,7 @@ public class DevlogController : ControllerBase
                 Title = d.Title,
                 Text = d.Text,
                 ImageUrls = d.ImageUrls,
+                TrackedHours = d.TrackedSeconds / 3600,
                 CreatedAt = d.CreatedAt
             })
             .ToListAsync();
@@ -117,6 +133,7 @@ public class DevlogController : ControllerBase
                 Title = d.Title,
                 Text = d.Text,
                 ImageUrls = d.ImageUrls,
+                TrackedHours = d.TrackedSeconds / 3600,
                 CreatedAt = d.CreatedAt
             })
             .ToListAsync();
@@ -151,19 +168,36 @@ public class DevlogController : ControllerBase
         {
             return BadRequest("ProjectId does not reference an existing project.");
         }
+        if (project.OwnerUserId != userId.Value) return Forbid();
+
+        var user = await _db.Users.FindAsync(userId.Value);
+        if (user is null) return Unauthorized();
+
+        // The journal covers the Hackatime time logged since the previous journal (capped).
+        // If Hackatime can't be reached it covers nothing, and the next journal picks it up.
+        var previousSnapshot = await _db.Devlogs
+            .Where(d => d.ProjectId == projectId)
+            .OrderByDescending(d => d.CreatedAt)
+            .Select(d => d.HackatimeSecondsSnapshot)
+            .FirstOrDefaultAsync();
+        var hackatimeTotal = await _hackatime.GetTotalSecondsForProjectsAsync(userId.Value, project.HackatimeProjectNames ?? []);
+        var trackedSeconds = Math.Clamp((hackatimeTotal ?? previousSnapshot) - previousSnapshot, 0, MaxTrackedSecondsPerJournal);
 
         Devlog devlog = new Devlog
         {
+            Id = Guid.NewGuid(),
             Title = dto.Title,
             ProjectId = projectId,
             Text = dto.Text,
-            ImageUrls = dto.ImageUrls,
+            ImageUrls = dto.ImageUrls ?? [],
             OwnerUserId = userId.Value,
-
+            TrackedSeconds = trackedSeconds,
+            HackatimeSecondsSnapshot = previousSnapshot + trackedSeconds,
         };
 
         _db.Devlogs.Add(devlog);
         project.DevlogIds = [.. project.DevlogIds ?? [], devlog.Id.ToString()];
+        await _streaks.RecordJournalAsync(devlog, project, user);
         await _db.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetById), new { id = devlog.Id }, new PublicDevlogDto
@@ -174,6 +208,7 @@ public class DevlogController : ControllerBase
             Title = devlog.Title,
             Text = devlog.Text,
             ImageUrls = devlog.ImageUrls,
+            TrackedHours = devlog.TrackedSeconds / 3600,
             CreatedAt = devlog.CreatedAt
         });
 

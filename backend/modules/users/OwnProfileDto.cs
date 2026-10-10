@@ -19,5 +19,7 @@ public record OwnProfileDto
     public bool YswsEligible { get; init; } = false;
     public bool VerificationStatus { get; init; } = false;
     public string? Country { get; init; }
+    public string? TimeZone { get; init; }
+    public int StreakFreezes { get; init; }
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 }

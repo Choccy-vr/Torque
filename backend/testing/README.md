@@ -67,3 +67,13 @@ The "Custom request" panel handles anything not worth adding permanently.
   (`modules/testing/TestingExtension.cs`), which runs an Airtable push pass immediately
   and reports whether the shipment got a record id. Point `AIRTABLE_TABLE_NAME` at a test
   table first — this creates real rows.
+- The Streaks section's **settle** row calls the dev-only `POST /testing/streaks/settle`
+  (`modules/testing/TestingExtension.cs`), which runs the streak worker pass immediately
+  instead of waiting up to 15 min. To simulate missed days, set a project's
+  `last_streak_date` back a few days in Supabase Studio first.
+- The Streaks section's **simulate** rows (`POST /testing/streaks/simulate`) are the
+  easy way to test streaks: give an `hours` array (one entry per day, oldest first, last
+  = today, `0` = missed) plus `tier` and `freezes`, and it replays those days through the
+  real streak code using backdated journals (no Hackatime needed), settling each day as
+  the worker would. It returns a day-by-day timeline showing streak, freezes left and
+  outcome. Everything is rolled back afterwards unless `keep: true`.

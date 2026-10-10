@@ -123,9 +123,12 @@ requests to every endpoint below. See [testing/README.md](testing/README.md).
 |---|---|---|---|
 | GET | `api/health` | No | return JSON |
 | GET | `api/user/{id:guid}` | No | Get public profile (no PII) by user ID, including their Slack user ID (for linking to their Slack profile) |
-| GET | `api/user/me` | YES | Get authenticated user's own profile |
+| GET | `api/user/me` | YES | Get authenticated user's own profile, including `timeZone` (streak timezone, null until set) and `streakFreezes` (read-only; everyone starts with 3) |
+| PUT | `api/user/me/timezone` | YES | Set the timezone streak days are counted in (12 AM–12 AM local). One-time only: 409 once set — after that only an admin can change it. Body (JSON): `timeZone` (IANA id, e.g. `America/New_York`, required) |
+| PATCH | `api/admin/user/{id:guid}/timezone` | YES | Admin-only. Change a user's streak timezone. Body (JSON): `timeZone` (IANA id, required) |
 | GET | `api/user/me/banned` | YES | Get whether the authenticated user is currently banned. Reachable even while banned — unlike every other endpoint, which returns 403 for a banned user |
-| GET | `api/project/{id:guid}` | No | Get a project by ID |
+| GET | `api/project/{id:guid}` | No | Get a project by ID. Project responses include `streak` (daily streak, capped at the level's max) and `maxStreak` |
+| GET | `api/project/{id:guid}/streak` | No | Get a project's daily streak: `streak`, `maxStreak` (15/25/23/19 days for levels 1–4), `multiplier` (1 + 0.01 × streak), `lastStreakDate`, and the last 60 recorded `days` (`Pending` = under 1h journaled, `Completed`, or `Frozen` = covered by a streak freeze), newest first |
 | GET | `api/project/staff-picks` | No | Get staff-picked projects (any status), newest first |
 | GET | `api/project/search` | No | Search all projects (any status) by title/description, title matches ranked first, capped at 25. Query: `q` (string, required) |
 | GET | `api/project/leaderboard/hours` | No | Get the top 50 approved projects by tracked hours, descending |
@@ -138,7 +141,7 @@ requests to every endpoint below. See [testing/README.md](testing/README.md).
 | GET | `api/devlog/me` | YES | Get the authenticated user's own devlogs, newest first, capped at 30 |
 | GET | `api/devlog/user/{id:guid}` | No | Get a user's devlogs, newest first, capped at 30 |
 | POST | `api/devlog/batch` | No | Get up to 30 devlogs at once. Body (JSON): `ids` (string[], required, max 30) — feed it a project's `devlogIds` |
-| POST | `api/devlog/create` | YES | Create a new devlog, owned by the authenticated user, and appends its id to the owning project's `devlogIds`. Body (JSON): `projectId` (guid string, required), `title` (string, required), `text` (string, required), `imageUrls` (string[], optional) |
+| POST | `api/devlog/create` | YES | Create a new devlog on one of the authenticated user's own projects (403 otherwise) and append its id to the project's `devlogIds`. Records `trackedHours`: the project's Hackatime time since the previous devlog, capped at 10h (any extra carries over to the next devlog). Then updates the project's streak: the day (in the owner's timezone) counts once its devlogs cover 1h+. Missed days are settled by a background worker, using a streak freeze per missed day or resetting the streak. Body (JSON): `projectId` (guid string, required), `title` (string, required), `text` (string, required), `imageUrls` (string[], optional) |
 | GET | `api/ships/get/me` | YES | Get the authenticated user's own shipments, newest first, including reviewer feedback |
 | GET | `api/ships/get/{id:guid}` | YES | Get a shipment by ID (public view) |
 | POST | `api/ships/create` | YES | Ship (submit for review) a project owned by the authenticated user. Only allowed while the project is `Unshipped` or `Changes_Needed`; snapshots the project's current hours/tier and flips it to `Unreviewed`. Body (JSON): `projectId` (guid string, required), `isBuildComplete` (bool, required — `false` = design ship, `true` = build ship), `requestedFunding` (int >= 0, required), `howDidYouHear`, `whatAreWeDoingWell`, `howCanWeImprove` (strings, required) |

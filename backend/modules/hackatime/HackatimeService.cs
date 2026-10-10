@@ -200,16 +200,32 @@ public class HackatimeService
     // linked project names, plus a per-project breakdown. Single API call.
     public async Task<(double Hours, Dictionary<string, double> PerProject)> GetHoursForProjectsAsync(Guid userId, string[] projectNames)
     {
-        if (projectNames.Length == 0) return (0, []);
+        var seconds = await GetSecondsPerProjectAsync(userId, projectNames);
+        if (seconds is null) return (0, []);
+
+        var perProject = seconds.ToDictionary(kv => kv.Key, kv => Math.Round(kv.Value / 3600 * 10) / 10);
+        return (Math.Round(seconds.Values.Sum() / 3600 * 10) / 10, perProject);
+    }
+
+    // Raw all-time seconds summed across the given linked project names. Null when
+    // Hackatime isn't connected or the fetch fails (as opposed to 0 tracked).
+    public async Task<double?> GetTotalSecondsForProjectsAsync(Guid userId, string[] projectNames)
+    {
+        var seconds = await GetSecondsPerProjectAsync(userId, projectNames);
+        return seconds?.Values.Sum();
+    }
+
+    private async Task<Dictionary<string, double>?> GetSecondsPerProjectAsync(Guid userId, string[] projectNames)
+    {
+        if (projectNames.Length == 0) return [];
 
         var user = await _db.Users.FindAsync(userId);
-        if (string.IsNullOrEmpty(user?.HackatimeToken)) return (0, []);
+        if (string.IsNullOrEmpty(user?.HackatimeToken)) return null;
 
         var projects = await FetchProjectsAsync(user.HackatimeToken, userId);
-        if (projects.ValueKind != JsonValueKind.Array) return (0, []);
+        if (projects.ValueKind != JsonValueKind.Array) return null;
 
         var nameSet = new HashSet<string>(projectNames);
-        double totalSeconds = 0;
         var perProject = new Dictionary<string, double>();
 
         foreach (var project in projects.EnumerateArray())
@@ -218,14 +234,12 @@ public class HackatimeService
             var name = nameEl.GetString()!;
             if (!nameSet.Contains(name)) continue;
 
-            var seconds = project.TryGetProperty("total_seconds", out var secEl) && secEl.ValueKind == JsonValueKind.Number
+            perProject[name] = project.TryGetProperty("total_seconds", out var secEl) && secEl.ValueKind == JsonValueKind.Number
                 ? secEl.GetDouble()
                 : 0;
-            totalSeconds += seconds;
-            perProject[name] = Math.Round(seconds / 3600 * 10) / 10;
         }
 
-        return (Math.Round(totalSeconds / 3600 * 10) / 10, perProject);
+        return perProject;
     }
 
     // include_archived=true: Hackatime excludes archived projects by default, so a

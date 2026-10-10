@@ -6,6 +6,7 @@ using Torque.Crypto;
 using Torque.Extensions;
 using Torque.Hackatime;
 using Torque.Lapse;
+using Torque.Streaks;
 using Torque.Testing;
 using Torque.Users;
 using DotNetEnv;
@@ -28,6 +29,7 @@ builder.Services.AddSupabaseAuth(builder.Configuration);
 builder.Services.AddHackatime(builder.Configuration);
 builder.Services.AddLapse(builder.Configuration);
 builder.Services.AddAirtable(builder.Configuration);
+builder.Services.AddStreaks();
 
 var app = builder.Build();
 

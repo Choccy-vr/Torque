@@ -19,6 +19,15 @@ public class User
 
     public string? Country { get; set; }
 
+    // IANA timezone id (e.g. "America/New_York") that defines the user's streak day
+    // (12 AM–12 AM local). Null = not set yet, treated as UTC. The user can set it once;
+    // after that only an admin can change it.
+    public string? TimeZone { get; set; }
+
+    // Each one excuses one missed streak day on one project. Readable by the user, never
+    // writable through the API.
+    public int StreakFreezes { get; set; } = 3;
+
 
     // Encrypted at rest (see Torque.Crypto.TokenEncryptor via AppDbContext) — never
     // expose this on a DTO.

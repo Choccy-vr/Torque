@@ -6,6 +6,7 @@ using Torque.Devlogs;
 using Torque.Projects;
 using Torque.Reviews;
 using Torque.Shipments;
+using Torque.Streaks;
 using Torque.Users;
 
 namespace Torque.Data;
@@ -25,6 +26,7 @@ public class AppDbContext : DbContext
     public DbSet<Shipment> Shipments => Set<Shipment>();
     public DbSet<ShipmentReview> ShipmentReviews => Set<ShipmentReview>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<ProjectStreakDay> ProjectStreakDays => Set<ProjectStreakDay>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -47,6 +49,12 @@ public class AppDbContext : DbContext
             .HasDefaultValueSql("gen_random_uuid()");
         builder.Entity<Announcement>()
             .HasIndex(a => a.CreatedAt);
+        builder.Entity<ProjectStreakDay>()
+            .Property(p => p.Id)
+            .HasDefaultValueSql("gen_random_uuid()");
+        builder.Entity<ProjectStreakDay>()
+            .HasIndex(d => new { d.ProjectId, d.Date })
+            .IsUnique();
 
         // Encrypted at rest — see TokenEncryptor. Never expose this on a DTO.
         var tokenConverter = new ValueConverter<string?, string?>(

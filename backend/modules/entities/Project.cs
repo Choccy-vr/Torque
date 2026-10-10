@@ -35,6 +35,12 @@ public class Project
 
     public bool IsStaffPick { get; set; } = false;
 
+    // Consecutive owner-local days with 1+ journaled hour (see Torque.Streaks).
+    // Capped at the level's max streak.
+    public int StreakCount { get; set; } = 0;
+    // Last owner-local day that was completed or frozen; null when there's no streak.
+    public DateOnly? LastStreakDate { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
 }

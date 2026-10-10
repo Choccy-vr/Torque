@@ -62,8 +62,37 @@ public class UserController : ControllerBase
             YswsEligible = user.YswsEligible,
             VerificationStatus = user.VerificationStatus,
             Country = user.Country,
+            TimeZone = user.TimeZone,
+            StreakFreezes = user.StreakFreezes,
             CreatedAt = user.CreatedAt
         });
+    }
+
+    // Set the timezone streak days are counted in. One-time only: changing it later could
+    // gain or skip a day, so after the first set only an admin can change it.
+    [Authorize]
+    [HttpPut("me/timezone")]
+    public async Task<IActionResult> SetTimeZone([FromBody] SetTimeZoneDto dto)
+    {
+        var userId = this.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var user = await _db.Users.FindAsync(userId);
+        if (user is null) return NotFound();
+
+        if (user.TimeZone is not null)
+        {
+            return Conflict("Timezone is already set. Ask an admin to change it.");
+        }
+        if (string.IsNullOrWhiteSpace(dto.TimeZone) || !TimeZoneInfo.TryFindSystemTimeZoneById(dto.TimeZone, out _))
+        {
+            return BadRequest("TimeZone must be a valid IANA timezone id, e.g. \"America/New_York\".");
+        }
+
+        user.TimeZone = dto.TimeZone;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { timeZone = user.TimeZone });
     }
 
     // Whether the authenticated user is currently banned. [AllowBanned] exempts this

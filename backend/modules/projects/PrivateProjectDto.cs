@@ -36,6 +36,10 @@ public record PrivateProjectDto
 
 
 
+    // Daily streak (capped at the level's max) and that max — see Torque.Streaks
+    public int Streak { get; init; }
+    public int MaxStreak { get; init; }
+
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 
 }

@@ -12,5 +12,8 @@ public record PublicDevlogDto
 
     public string[] ImageUrls { get; init; } = null!;
 
+    // Hackatime hours this journal covers (max 10)
+    public double TrackedHours { get; init; }
+
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 }

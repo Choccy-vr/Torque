@@ -3,8 +3,9 @@ using Microsoft.Extensions.FileProviders;
 using Torque.Airtable;
 using Torque.Data;
 using Torque.Projects;
+using Torque.Streaks;
 // Serves the local API test harness, Development only
-// endpoint: /testing, /testing/airtable/push/{shipmentId}
+// endpoint: /testing, /testing/airtable/push/{shipmentId}, /testing/streaks/settle, /testing/streaks/simulate
 
 namespace Torque.Testing;
 
@@ -75,6 +76,17 @@ public static class TestingExtension
                 result.airtablePushedAt
             });
         }).RequireAuthorization();
+
+        // Runs a streak settle pass right now (instead of waiting for the worker's next
+        // tick): projects that missed a day spend a freeze or reset. Set a project's
+        // last_streak_date back in Studio first to simulate missed days.
+        app.MapPost("/testing/streaks/settle", async (StreakWorker worker, CancellationToken ct) =>
+        {
+            await worker.RunOnceAsync(ct);
+            return Results.Ok(new { settled = true });
+        }).RequireAuthorization();
+
+        app.MapStreakSimulation();
 
         // Landing page for HACKATIME_REDIRECT_URI when it's pointed at the harness
         // (see backend/.env). The harness opens the Hackatime authorize page in a

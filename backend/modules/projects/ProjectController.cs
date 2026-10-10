@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Torque.Data;
 using Torque.Extensions;
+using Torque.Streaks;
 // A controller for project data
 // endpoint: /api/project/<command>
 
@@ -38,7 +39,40 @@ public class ProjectController : ControllerBase
             DevlogIds = project.DevlogIds,
             Exceptional = project.Exceptional,
             IsStaffPick = project.IsStaffPick,
+            Streak = StreakService.EffectiveStreak(project.StreakCount, project.Tier),
+            MaxStreak = StreakService.MaxStreakForLevel(project.Tier),
             CreatedAt = project.CreatedAt
+        });
+    }
+
+    // a project's daily streak plus its last 60 recorded days, newest first
+    [HttpGet("{id:guid}/streak")]
+    public async Task<IActionResult> GetStreak(Guid id)
+    {
+        var project = await _db.Projects.FindAsync(id);
+        if (project is null) return NotFound();
+
+        var days = await _db.ProjectStreakDays
+            .Where(d => d.ProjectId == id)
+            .OrderByDescending(d => d.Date)
+            .Take(60)
+            .Select(d => new ProjectStreakDayDto
+            {
+                Date = d.Date,
+                Status = d.Status,
+                TrackedHours = d.TrackedSeconds / 3600
+            })
+            .ToArrayAsync();
+
+        var streak = StreakService.EffectiveStreak(project.StreakCount, project.Tier);
+        return Ok(new ProjectStreakDto
+        {
+            ProjectId = project.Id,
+            Streak = streak,
+            MaxStreak = StreakService.MaxStreakForLevel(project.Tier),
+            Multiplier = StreakService.Multiplier(streak),
+            LastStreakDate = project.LastStreakDate,
+            Days = days
         });
     }
 
@@ -65,6 +99,8 @@ public class ProjectController : ControllerBase
                 DevlogIds = p.DevlogIds,
                 Exceptional = p.Exceptional,
                 IsStaffPick = p.IsStaffPick,
+                Streak = StreakService.EffectiveStreak(p.StreakCount, p.Tier),
+                MaxStreak = StreakService.MaxStreakForLevel(p.Tier),
                 CreatedAt = p.CreatedAt
             })
             .ToListAsync();
@@ -168,6 +204,8 @@ public class ProjectController : ControllerBase
                 DevlogIds = p.DevlogIds,
                 Exceptional = p.Exceptional,
                 IsStaffPick = p.IsStaffPick,
+                Streak = StreakService.EffectiveStreak(p.StreakCount, p.Tier),
+                MaxStreak = StreakService.MaxStreakForLevel(p.Tier),
                 CreatedAt = p.CreatedAt
             })
             .ToListAsync();
@@ -206,6 +244,8 @@ public class ProjectController : ControllerBase
                 TotalHoursApproved = p.TotalHoursApproved,
                 AiUse = p.AiUse,
                 VoltsGranted = p.VoltsGranted,
+                Streak = StreakService.EffectiveStreak(p.StreakCount, p.Tier),
+                MaxStreak = StreakService.MaxStreakForLevel(p.Tier),
                 CreatedAt = p.CreatedAt
             })
             .ToListAsync();
@@ -287,6 +327,8 @@ public class ProjectController : ControllerBase
             TotalHoursApproved = project.TotalHoursApproved,
             AiUse = project.AiUse,
             VoltsGranted = project.VoltsGranted,
+            Streak = StreakService.EffectiveStreak(project.StreakCount, project.Tier),
+            MaxStreak = StreakService.MaxStreakForLevel(project.Tier),
             CreatedAt = project.CreatedAt
         });
 
