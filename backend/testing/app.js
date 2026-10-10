@@ -362,6 +362,56 @@ const ENDPOINTS = [
     desc: "Reviewer-only. lapse.hackclub.com timelapses for a project's owner, filtered to the project's linked Hackatime project names. 403 unless the signed-in user has the reviewer role.",
     params: [{ name: 'id', placeholder: 'project uuid' }],
   },
+  {
+    id: 'announcement-latest',
+    group: 'announcements',
+    method: 'GET',
+    path: '/api/announcement',
+    auth: false,
+    desc: 'Latest 30 announcements, newest first. body is markdown.',
+  },
+  {
+    id: 'announcement-by-id',
+    group: 'announcements',
+    method: 'GET',
+    path: '/api/announcement/{id}',
+    auth: false,
+    desc: 'A single announcement.',
+    params: [{ name: 'id', placeholder: 'announcement uuid' }],
+  },
+  {
+    id: 'announcement-create',
+    group: 'announcements',
+    method: 'POST',
+    path: '/api/admin/announcement/create',
+    auth: true,
+    desc: 'Admin-only. Post an announcement. title max 200, body (markdown) max 20000. 403 unless the signed-in user has the admin role.',
+    body: {
+      title: 'Hello from Torque',
+      body: '## What\'s new\n\n- **Bold** item\n- A [link](https://hackclub.com)',
+    },
+  },
+  {
+    id: 'announcement-update',
+    group: 'announcements',
+    method: 'PATCH',
+    path: '/api/admin/announcement/{id}',
+    auth: true,
+    desc: 'Admin-only. Edit title and/or body; omitted fields are left unchanged. Stamps updatedAt.',
+    params: [{ name: 'id', placeholder: 'announcement uuid' }],
+    body: {
+      title: 'Edited title',
+    },
+  },
+  {
+    id: 'announcement-delete',
+    group: 'announcements',
+    method: 'DELETE',
+    path: '/api/admin/announcement/{id}',
+    auth: true,
+    desc: 'Admin-only. Delete an announcement. 204 on success.',
+    params: [{ name: 'id', placeholder: 'announcement uuid' }],
+  },
 ];
 
 // Display order and labels for the groups above.
@@ -374,6 +424,7 @@ const GROUP_LABELS = {
   review: 'Review',
   hackatime: 'Hackatime',
   lapse: 'Lapse',
+  announcements: 'Announcements',
 };
 
 // ---------------------------------------------------------------- boot

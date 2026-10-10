@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Torque.Announcements;
 using Torque.Crypto;
 using Torque.Devlogs;
 using Torque.Projects;
@@ -23,6 +24,7 @@ public class AppDbContext : DbContext
     public DbSet<Devlog> Devlogs => Set<Devlog>();
     public DbSet<Shipment> Shipments => Set<Shipment>();
     public DbSet<ShipmentReview> ShipmentReviews => Set<ShipmentReview>();
+    public DbSet<Announcement> Announcements => Set<Announcement>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -40,6 +42,11 @@ public class AppDbContext : DbContext
         builder.Entity<ShipmentReview>()
             .Property(p => p.Id)
             .HasDefaultValueSql("gen_random_uuid()");
+        builder.Entity<Announcement>()
+            .Property(p => p.Id)
+            .HasDefaultValueSql("gen_random_uuid()");
+        builder.Entity<Announcement>()
+            .HasIndex(a => a.CreatedAt);
 
         // Encrypted at rest — see TokenEncryptor. Never expose this on a DTO.
         var tokenConverter = new ValueConverter<string?, string?>(

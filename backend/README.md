@@ -151,3 +151,8 @@ requests to every endpoint below. See [testing/README.md](testing/README.md).
 | GET | `api/hackatime/projects` | YES | Get the authenticated user's Hackatime project names (for linking to a Torque project). Rate-limited to 15/min per user |
 | POST | `api/hackatime/hours` | YES | Get all-time hours (+ per-project breakdown) for a set of the authenticated user's linked Hackatime project names. Rate-limited to 15/min per user. Body (JSON): `projectNames` (string[], required) |
 | GET | `api/admin/project/{id:guid}/lapse` | YES | Reviewer-only. Get lapse.hackclub.com timelapses for a project's owner, filtered to the project's linked Hackatime project names |
+| GET | `api/announcement` | No | Get the latest 30 announcements, newest first. `body` is markdown (rendered by the frontend); `updatedAt` is null unless edited |
+| GET | `api/announcement/{id:guid}` | No | Get an announcement by ID |
+| POST | `api/admin/announcement/create` | YES | Admin-only. Post an announcement. Body (JSON): `title` (string, required, max 200), `body` (markdown string, required, max 20000) |
+| PATCH | `api/admin/announcement/{id:guid}` | YES | Admin-only. Edit an announcement and stamp `updatedAt`. Body (JSON): `title`, `body` (strings, optional — omitted fields are left unchanged, at least one required) |
+| DELETE | `api/admin/announcement/{id:guid}` | YES | Admin-only. Delete an announcement. 204 on success |

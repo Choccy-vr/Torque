@@ -62,3 +62,9 @@ export function getStaffPicks() {
 export function getMyShips() {
     return getJson('api/ships/get/me')
 }
+
+// GET api/announcement — AnnouncementDto[], newest first, capped at 30.
+// `body` is markdown.
+export function getAnnouncements() {
+    return getJson('api/announcement')
+}
