@@ -8,6 +8,8 @@ public record ProjectStreakDto
     public int MaxStreak { get; init; }
     public decimal Multiplier { get; init; }
     public DateOnly? LastStreakDate { get; init; }
+    // Missed days reset the streak instead of spending a freeze
+    public bool FreezesPaused { get; init; }
     public ProjectStreakDayDto[] Days { get; init; } = [];
 }
 

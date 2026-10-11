@@ -82,7 +82,8 @@ public class StreakService
     }
 
     // Settles every fully-past day since the streak was last extended: each missed day
-    // spends a freeze (streak holds) or, with none left, resets the streak. Does nothing
+    // spends a freeze (streak holds) or, with none left or freezes paused on the
+    // project, resets the streak. Does nothing
     // without an active streak, so freezes are never spent protecting nothing, or while the
     // streak is paused for review. Caller saves.
     public async Task ReconcileAsync(Project project, User user, DateOnly today, CancellationToken ct = default)
@@ -92,7 +93,7 @@ public class StreakService
 
         for (var day = project.LastStreakDate.Value.AddDays(1); day < today; day = day.AddDays(1))
         {
-            if (user.StreakFreezes <= 0)
+            if (user.StreakFreezes <= 0 || project.StreakFreezesPaused)
             {
                 project.StreakCount = 0;
                 project.LastStreakDate = null;

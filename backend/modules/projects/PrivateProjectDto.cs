@@ -35,11 +35,16 @@ public record PrivateProjectDto
 
     public bool Exceptional { get; set; } = false; // Black Market
 
+    public bool IsArchived { get; init; } = false;
+    public DateTime? ArchivedAt { get; init; }
+
 
 
     // Daily streak (capped at the level's max) and that max — see Torque.Streaks
     public int Streak { get; init; }
     public int MaxStreak { get; init; }
+    // Missed days reset the streak instead of spending a freeze
+    public bool StreakFreezesPaused { get; init; }
 
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 

@@ -116,6 +116,7 @@ public class ShipmentController : ControllerBase
         if (project is null) return BadRequest("ProjectId does not reference an existing project.");
 
         if (project.OwnerUserId != userId.Value) return Forbid();
+        if (project.IsArchived) return BadRequest("This project is archived. Unarchive it to ship it.");
 
         // Design vs build is always the shipper's call (IsBuildComplete). An approved design
         // can ship again either way, but a build ship waits for any grant the design asked

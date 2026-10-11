@@ -35,6 +35,11 @@ public class Project
 
     public bool IsStaffPick { get; set; } = false;
 
+    // Archived by its owner: hidden from search and locked (no edits, journals or ships)
+    // until unarchived. Archiving drops the streak.
+    public bool IsArchived { get; set; } = false;
+    public DateTime? ArchivedAt { get; set; }
+
     // Build grant from an approved design ship that requested funding (see Torque.Grants).
     // Pending blocks the build ship until an admin marks the grant sent.
     public ProjectGrantStatus GrantStatus { get; set; } = ProjectGrantStatus.None;
@@ -44,6 +49,9 @@ public class Project
     public int StreakCount { get; set; } = 0;
     // Last owner-local day that was completed or frozen; null when there's no streak.
     public DateOnly? LastStreakDate { get; set; }
+    // Owner opted this project out of their streak freezes: a missed day resets its
+    // streak instead of spending one, saving them for other projects.
+    public bool StreakFreezesPaused { get; set; } = false;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -169,6 +169,7 @@ public class DevlogController : ControllerBase
             return BadRequest("ProjectId does not reference an existing project.");
         }
         if (project.OwnerUserId != userId.Value) return Forbid();
+        if (project.IsArchived) return BadRequest("This project is archived. Unarchive it to journal on it.");
 
         var user = await _db.Users.FindAsync(userId.Value);
         if (user is null) return Unauthorized();

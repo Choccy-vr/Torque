@@ -13,7 +13,7 @@ namespace Torque.Testing;
 // become backdated journals (split into ≤10h chunks, Hackatime skipped), run through the
 // real StreakService, and after every finished day the worker's settle step runs — so the
 // timeline shows exactly what production would do over those days.
-public record StreakSimRequest(int Tier = 1, int Freezes = 3, double[]? Hours = null, bool Keep = false);
+public record StreakSimRequest(int Tier = 1, int Freezes = 3, double[]? Hours = null, bool Keep = false, bool FreezesPaused = false);
 
 public static class StreakSimulation
 {
@@ -44,7 +44,8 @@ public static class StreakSimulation
                 Id = Guid.NewGuid(),
                 OwnerUserId = userId,
                 Title = $"Streak sim {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}",
-                Tier = body.Tier
+                Tier = body.Tier,
+                StreakFreezesPaused = body.FreezesPaused
             };
             db.Projects.Add(project);
             await db.SaveChangesAsync(ct);

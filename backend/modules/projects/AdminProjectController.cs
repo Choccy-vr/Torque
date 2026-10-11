@@ -51,6 +51,8 @@ public class AdminProjectController : ControllerBase
             DevlogIds = project.DevlogIds,
             Exceptional = project.Exceptional,
             IsStaffPick = project.IsStaffPick,
+            IsArchived = project.IsArchived,
+            ArchivedAt = project.ArchivedAt,
             Streak = StreakService.EffectiveStreak(project.StreakCount, project.Tier),
             MaxStreak = StreakService.MaxStreakForLevel(project.Tier),
             CreatedAt = project.CreatedAt

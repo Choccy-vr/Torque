@@ -28,6 +28,9 @@ public record PublicProjectDto
 
     public bool IsStaffPick { get; init; } = false;
 
+    public bool IsArchived { get; init; } = false;
+    public DateTime? ArchivedAt { get; init; }
+
     // Daily streak (capped at the level's max) and that max — see Torque.Streaks
     public int Streak { get; init; }
     public int MaxStreak { get; init; }

@@ -77,7 +77,8 @@ The "Custom request" panel handles anything not worth adding permanently.
   `last_streak_date` back a few days in Supabase Studio first.
 - The Streaks section's **simulate** rows (`POST /testing/streaks/simulate`) are the
   easy way to test streaks: give an `hours` array (one entry per day, oldest first, last
-  = today, `0` = missed) plus `tier` and `freezes`, and it replays those days through the
+  = today, `0` = missed) plus `tier`, `freezes` and optionally `freezesPaused` (missed
+  days reset instead of freezing), and it replays those days through the
   real streak code using backdated journals (no Hackatime needed), settling each day as
   the worker would. It returns a day-by-day timeline showing streak, freezes left and
   outcome. Everything is rolled back afterwards unless `keep: true`.

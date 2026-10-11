@@ -242,6 +242,10 @@ namespace torque_backend.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("ai_use");
 
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archived_at");
+
                     b.Property<DateTime>("ClaimedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("claimed_at");
@@ -278,6 +282,10 @@ namespace torque_backend.Data.Migrations
                         .HasColumnType("text[]")
                         .HasColumnName("hackatime_project_names");
 
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
                     b.Property<bool>("IsStaffPick")
                         .HasColumnType("boolean")
                         .HasColumnName("is_staff_pick");
@@ -305,6 +313,10 @@ namespace torque_backend.Data.Migrations
                     b.Property<int>("StreakCount")
                         .HasColumnType("integer")
                         .HasColumnName("streak_count");
+
+                    b.Property<bool>("StreakFreezesPaused")
+                        .HasColumnType("boolean")
+                        .HasColumnName("streak_freezes_paused");
 
                     b.Property<int>("Tier")
                         .HasColumnType("integer")
