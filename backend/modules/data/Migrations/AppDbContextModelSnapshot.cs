@@ -254,6 +254,10 @@ namespace torque_backend.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("claimed_by_reviewer");
 
+                    b.Property<string>("CoverImageUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("cover_image_url");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");

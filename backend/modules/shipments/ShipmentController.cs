@@ -15,6 +15,9 @@ namespace Torque.Shipments;
 [Route("api/ships")]
 public class ShipmentController : ControllerBase
 {
+    // Journaled hours a ship needs that no approved ship has credited yet
+    private const float MinShipHours = 1;
+
     private readonly AppDbContext _db;
     private readonly PayoutService _payouts;
 
@@ -118,23 +121,17 @@ public class ShipmentController : ControllerBase
         if (project.OwnerUserId != userId.Value) return Forbid();
         if (project.IsArchived) return BadRequest("This project is archived. Unarchive it to ship it.");
 
-        // Design vs build is always the shipper's call (IsBuildComplete). An approved design
-        // can ship again either way, but a build ship waits for any grant the design asked
-        // for to be sent. An approved build is final.
-        if (project.Status == ProjectStatus.Approved)
-        {
-            if (dto.IsBuildComplete.Value && project.GrantStatus == ProjectGrantStatus.Pending)
-            {
-                return BadRequest("This project's build grant hasn't been sent yet.");
-            }
-            if (await _db.Shipments.AnyAsync(s => s.ProjectId == project.Id && s.IsBuildComplete && s.FinalApprovedAt != null))
-            {
-                return BadRequest("This project's build has already been approved.");
-            }
-        }
-        else if (project.Status != ProjectStatus.Unshipped && project.Status != ProjectStatus.Changes_Needed)
+        // Design vs build is always the shipper's call (IsBuildComplete). Out of review, a
+        // project can ship again as often as it likes, as long as it has new journaled time
+        // to ship: at least an hour no final-approved ship has credited yet.
+        if (project.Status is not (ProjectStatus.Unshipped or ProjectStatus.Changes_Needed or ProjectStatus.Approved))
         {
             return BadRequest("This project cannot be shipped from its current status.");
+        }
+        var unpaidHours = await _payouts.UnpaidJournalHoursAsync(project.Id);
+        if (unpaidHours < MinShipHours)
+        {
+            return BadRequest("You need at least 1 hour of journaled time since your last approved ship to ship.");
         }
 
         Shipment shipment = new Shipment
@@ -142,7 +139,7 @@ public class ShipmentController : ControllerBase
             UserId = userId.Value,
             ProjectId = project.Id,
             Status = ShipmentStatus.unreviewed,
-            HourSnapshot = await _payouts.UnpaidJournalHoursAsync(project.Id),
+            HourSnapshot = unpaidHours,
             TierSnapshot = project.Tier,
             ProjectSnapshot = project,
             IsBuildComplete = dto.IsBuildComplete.Value,

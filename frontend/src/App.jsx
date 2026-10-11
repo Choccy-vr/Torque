@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import Landing from './pages/Landing.jsx'
 import Home from './pages/Home.jsx'
 import Projects from './pages/Projects.jsx'
+import Project from './pages/Project.jsx'
 import Explore from './pages/Explore.jsx'
 import Profile from './pages/Profile.jsx'
 import { AuthProvider, RequireAuth } from './lib/auth.jsx'
@@ -42,7 +43,7 @@ function AppRoutes() {
                 <Route path="/" element={<Landing />} />
                 <Route path="/home" element={<RequireAuth><Home /></RequireAuth>} />
                 <Route path="/projects" element={<RequireAuth><Projects /></RequireAuth>} />
-                {/*<Route path="/projects/:id" element={<Projects />} /*/}
+                <Route path="/projects/:id" element={<Project />} />
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/docs/*" element={<Suspense fallback={<div className="min-h-screen" />}><Docs /></Suspense>} />
                 <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />

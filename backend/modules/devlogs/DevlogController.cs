@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Torque.Data;
 using Torque.Extensions;
@@ -141,6 +142,31 @@ public class DevlogController : ControllerBase
         return Ok(devlogs);
     }
 
+    // What a journal posted now would credit, without posting one: the Hackatime time
+    // logged on the project's linked names since its last journal, capped at 10h.
+    [Authorize]
+    [EnableRateLimiting("hackatime-read")]
+    [HttpGet("preview/{projectId:guid}")]
+    public async Task<IActionResult> Preview(Guid projectId)
+    {
+        var userId = this.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var project = await _db.Projects.FindAsync(projectId);
+        if (project is null) return NotFound();
+        if (project.OwnerUserId != userId.Value) return Forbid();
+
+        var time = await PendingTimeAsync(project, userId.Value);
+        return Ok(new
+        {
+            trackedHours = time.TrackedSeconds / 3600,
+            uncappedHours = time.UncappedSeconds / 3600,
+            maxHours = MaxTrackedSecondsPerJournal / 3600,
+            hackatimeLinked = project.HackatimeProjectNames is { Length: > 0 },
+            hackatimeReachable = time.HackatimeTotal is not null
+        });
+    }
+
     //Create Devlog
     [Authorize]
     [HttpPost("create")]
@@ -162,6 +188,9 @@ public class DevlogController : ControllerBase
         {
             return BadRequest("Text is required");
         }
+        var imageUrls = JournalRules.ImageUrls(dto.Text, dto.ImageUrls);
+        var ruleError = JournalRules.Check(dto.Text, imageUrls);
+        if (ruleError is not null) return BadRequest(ruleError);
 
         var project = await _db.Projects.FindAsync(projectId);
         if (project is null)
@@ -174,15 +203,7 @@ public class DevlogController : ControllerBase
         var user = await _db.Users.FindAsync(userId.Value);
         if (user is null) return Unauthorized();
 
-        // The journal covers the Hackatime time logged since the previous journal (capped).
-        // If Hackatime can't be reached it covers nothing, and the next journal picks it up.
-        var previousSnapshot = await _db.Devlogs
-            .Where(d => d.ProjectId == projectId)
-            .OrderByDescending(d => d.CreatedAt)
-            .Select(d => d.HackatimeSecondsSnapshot)
-            .FirstOrDefaultAsync();
-        var hackatimeTotal = await _hackatime.GetTotalSecondsForProjectsAsync(userId.Value, project.HackatimeProjectNames ?? []);
-        var trackedSeconds = Math.Clamp((hackatimeTotal ?? previousSnapshot) - previousSnapshot, 0, MaxTrackedSecondsPerJournal);
+        var (previousSnapshot, _, trackedSeconds, _) = await PendingTimeAsync(project, userId.Value);
 
         Devlog devlog = new Devlog
         {
@@ -190,7 +211,7 @@ public class DevlogController : ControllerBase
             Title = dto.Title,
             ProjectId = projectId,
             Text = dto.Text,
-            ImageUrls = dto.ImageUrls ?? [],
+            ImageUrls = imageUrls,
             OwnerUserId = userId.Value,
             TrackedSeconds = trackedSeconds,
             HackatimeSecondsSnapshot = previousSnapshot + trackedSeconds,
@@ -198,6 +219,8 @@ public class DevlogController : ControllerBase
 
         _db.Devlogs.Add(devlog);
         project.DevlogIds = [.. project.DevlogIds ?? [], devlog.Id.ToString()];
+        // Raw hours tracked = every journal's credited time (what the hours leaderboard ranks on)
+        project.TotalHoursRaw += (float)(trackedSeconds / 3600);
         await _streaks.RecordJournalAsync(devlog, project, user);
         await _db.SaveChangesAsync();
 
@@ -215,4 +238,17 @@ public class DevlogController : ControllerBase
 
     }
 
+    // The journal covers the Hackatime time logged since the previous journal (capped).
+    // If Hackatime can't be reached it covers nothing, and the next journal picks it up.
+    private async Task<(double PreviousSnapshot, double? HackatimeTotal, double TrackedSeconds, double UncappedSeconds)> PendingTimeAsync(Project project, Guid userId)
+    {
+        var previousSnapshot = await _db.Devlogs
+            .Where(d => d.ProjectId == project.Id)
+            .OrderByDescending(d => d.CreatedAt)
+            .Select(d => d.HackatimeSecondsSnapshot)
+            .FirstOrDefaultAsync();
+        var hackatimeTotal = await _hackatime.GetTotalSecondsForProjectsAsync(userId, project.HackatimeProjectNames ?? []);
+        var uncapped = Math.Max(0, (hackatimeTotal ?? previousSnapshot) - previousSnapshot);
+        return (previousSnapshot, hackatimeTotal, Math.Min(uncapped, MaxTrackedSecondsPerJournal), uncapped);
+    }
 }

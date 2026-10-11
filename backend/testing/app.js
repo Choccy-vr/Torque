@@ -172,6 +172,7 @@ const ENDPOINTS = [
       repoUrl: 'https://github.com/example/repo',
       demoUrl: 'https://example.com/demo',
       readmeUrl: 'https://github.com/example/repo#readme',
+      coverImageUrl: 'https://example.com/cover.jpg',
       hackatimeProjectNames: ['my-project'],
     },
   },
@@ -189,6 +190,7 @@ const ENDPOINTS = [
       tier: 2,
       aiUse: 'No AI used',
       repoUrl: 'https://github.com/example/renamed',
+      coverImageUrl: 'https://example.com/new-cover.jpg',
       hackatimeProjectNames: ['my-project'],
     },
   },
@@ -312,16 +314,25 @@ const ENDPOINTS = [
     },
   },
   {
+    id: 'devlog-preview',
+    group: 'devlogs',
+    method: 'GET',
+    path: '/api/devlog/preview/{projectId}',
+    auth: true,
+    desc: 'What a journal posted now would credit on one of your projects (403 otherwise): trackedHours (Hackatime time since the last journal, max 10), uncappedHours, hackatimeLinked, hackatimeReachable. Nothing is posted. 15/min.',
+    params: [{ name: 'projectId', placeholder: 'project uuid' }],
+  },
+  {
     id: 'devlog-create',
     group: 'devlogs',
     method: 'POST',
     path: '/api/devlog/create',
     auth: true,
-    desc: 'Creates a devlog on one of your projects (403 otherwise). trackedHours = Hackatime time since the previous devlog, max 10. Updates the project streak once the day reaches 1h. 400 when title/projectId/text is blank.',
+    desc: 'Creates a devlog on one of your projects (403 otherwise). text is markdown with photos embedded inline; it needs 150+ characters of writing (image markdown not counted) and at least one photo (embedded or in imageUrls). trackedHours = Hackatime time since the previous devlog, max 10. Updates the project streak once the day reaches 1h. 400 when title/projectId/text is blank or the rules fail.',
     body: {
       projectId: '00000000-0000-0000-0000-000000000000',
       title: 'Test devlog',
-      text: 'created from the harness',
+      text: 'Created from the harness. Wired up the motor driver on the bench supply, tuned the current limit, and got the stepper turning smoothly at half step.\n\n![Stepper on the bench](https://example.com/bench.jpg)',
       imageUrls: [],
     },
   },
@@ -348,7 +359,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/ships/create',
     auth: true,
-    desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped or Changes_Needed, or Approved (unless a build is already approved; a build ship is refused while grantStatus is Pending — design vs build is always your isBuildComplete choice), or if any of isBuildComplete, requestedFunding (>= 0) or the three feedback answers are missing. Pauses the project\'s streak until the review ends.',
+    desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped, Changes_Needed or Approved and has 1h+ of journaled time no approved ship has credited (design vs build is always your isBuildComplete choice), or if any of isBuildComplete, requestedFunding (>= 0) or the three feedback answers are missing. Pauses the project\'s streak until the review ends.',
     body: {
       projectId: '00000000-0000-0000-0000-000000000000',
       isBuildComplete: false,
@@ -441,7 +452,7 @@ const ENDPOINTS = [
     auth: true,
     bundle: true,
     buttonLabel: 'Run',
-    desc: 'End-to-end ship test as the signed-in user (needs the reviewer role): creates a project from `project` below (a unique suffix is added to the title and URLs so reruns never collide), ships it with `ship`, reviews the shipment with `review`, then forces an Airtable push pass via the dev-only /testing/airtable/push route and reports the record id. Stops at the first failing step. hackatimeProjectNames must be unused by other projects.',
+    desc: 'End-to-end ship test as the signed-in user (needs the reviewer role): creates a project from `project` below (a unique suffix is added to the title and URLs so reruns never collide), logs 1.5h of fake journal time via the dev-only /testing/devlogs/fake-time route (ships need 1h+), ships it with `ship`, reviews the shipment with `review`, then forces an Airtable push pass via the dev-only /testing/airtable/push route and reports the record id. Stops at the first failing step. hackatimeProjectNames must be unused by other projects.',
     body: {
       project: {
         title: 'Airtable flow test',
@@ -918,6 +929,10 @@ async function runShipFlow(ep) {
 
   const created = await bundleStep('POST', '/api/project/create', project);
   if (!created?.id) return;
+
+  // Ships need 1h+ of journaled time; log some without going through Hackatime.
+  const logged = await bundleStep('POST', `/testing/devlogs/fake-time/${created.id}?hours=1.5`);
+  if (!logged?.devlogId) return;
 
   const shipment = await bundleStep('POST', '/api/ships/create', { ...(input.ship ?? {}), projectId: created.id });
   if (!shipment?.id) return;

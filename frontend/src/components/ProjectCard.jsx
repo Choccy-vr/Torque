@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Clock, Zap } from "lucide-react";
 import ProjectStatusBadge from "./ProjectStatusBadge.jsx";
 import { formatHours } from "../lib/projects.js";
@@ -6,7 +7,7 @@ import Drone from "../assets/drone.png";
 // Project card for /projects, and in `compact` form for the dashboard's
 // scrolling row: a fixed-width tile, darker than the panel it sits in, with a
 // short image and a one-line title and description.
-// Projects have no image field yet, so every card shows the placeholder.
+// Cards show the project's cover image, or the drone placeholder without one.
 const SIZES = {
     full: {
         shell: "t-card",
@@ -41,14 +42,25 @@ export default function ProjectCard({ project, compact = false, titleAs, image =
     const hours = project.totalHoursRaw ?? project.totalHours ?? 0;
 
     return (
-        <li className={`flex h-full flex-col overflow-hidden ${size.shell}`}>
-            {image && <img src={Drone} alt="" className={`${size.image} ${size.fit} w-full`} />}
+        // The title's link stretches over the whole card (its ::after), so the
+        // card is one click target with one accessible name.
+        <li className={`relative flex h-full flex-col overflow-hidden transition-all duration-300 ease hover:-translate-y-0.5 hover:border-(--accent) hover:shadow-[0_8px_24px_-12px_var(--accent)] has-[a:focus-visible]:border-(--accent) motion-reduce:hover:translate-y-0 ${size.shell}`}>
+            {image && (
+                project.coverImageUrl
+                    ? <img src={project.coverImageUrl} alt="" loading="lazy" onError={(e) => { e.currentTarget.src = Drone; }} className={`${size.image} w-full bg-(--bg) object-cover`} />
+                    : <img src={Drone} alt="" className={`${size.image} ${size.fit} w-full`} />
+            )}
 
             <div className={`flex flex-1 flex-col ${size.body}`}>
                 <ProjectStatusBadge status={project.status} quiet={quietStatus} />
 
                 <Title className={`font-semibold text-balance text-(--heading) ${size.title}`}>
-                    {project.title}
+                    <Link
+                        to={`/projects/${project.id}`}
+                        className="rounded-sm outline-none after:absolute after:inset-0 after:content-[''] focus-visible:underline focus-visible:decoration-(--accent) focus-visible:decoration-2 focus-visible:underline-offset-4"
+                    >
+                        {project.title}
+                    </Link>
                 </Title>
 
                 {project.description && (

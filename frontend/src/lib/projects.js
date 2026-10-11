@@ -21,3 +21,6 @@ export const SHIP_STATUS = {
 };
 
 export const formatHours = (h) => `${Number.isInteger(h) ? h : h.toFixed(1)} ${h === 1 ? "hour" : "hours"}`;
+
+export const formatDay = (iso) =>
+    new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });

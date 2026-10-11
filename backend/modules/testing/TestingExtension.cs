@@ -2,10 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Torque.Airtable;
 using Torque.Data;
+using Torque.Devlogs;
 using Torque.Projects;
 using Torque.Streaks;
 // Serves the local API test harness, Development only
-// endpoint: /testing, /testing/airtable/push/{shipmentId}, /testing/streaks/settle, /testing/streaks/simulate
+// endpoint: /testing, /testing/airtable/push/{shipmentId}, /testing/devlogs/fake-time/{projectId}, /testing/streaks/settle, /testing/streaks/simulate
 
 namespace Torque.Testing;
 
@@ -87,6 +88,34 @@ public static class TestingExtension
         }).RequireAuthorization();
 
         app.MapStreakSimulation();
+
+        // Logs a journal entry carrying `hours` of tracked time without going through
+        // Hackatime, so a fresh test project clears the 1-hour minimum to ship. Used by
+        // the harness's ship → review → Airtable bundle.
+        app.MapPost("/testing/devlogs/fake-time/{projectId:guid}", async (
+            Guid projectId, double? hours, AppDbContext db, CancellationToken ct) =>
+        {
+            var project = await db.Projects.FindAsync([projectId], ct);
+            if (project is null) return Results.NotFound(new { error = "No such project." });
+
+            var seconds = Math.Clamp(hours ?? 1.5, 0, 10) * 3600;
+            var devlog = new Devlog
+            {
+                Id = Guid.NewGuid(),
+                OwnerUserId = project.OwnerUserId,
+                ProjectId = project.Id,
+                Title = "Harness time",
+                Text = "Fake tracked time logged by the testing harness.",
+                ImageUrls = [],
+                TrackedSeconds = seconds,
+            };
+            db.Devlogs.Add(devlog);
+            project.DevlogIds = [.. project.DevlogIds ?? [], devlog.Id.ToString()];
+            project.TotalHoursRaw += (float)(seconds / 3600);
+            await db.SaveChangesAsync(ct);
+
+            return Results.Ok(new { devlogId = devlog.Id, trackedHours = seconds / 3600 });
+        }).RequireAuthorization();
 
         // Landing page for HACKATIME_REDIRECT_URI when it's pointed at the harness
         // (see backend/.env). The harness opens the Hackatime authorize page in a

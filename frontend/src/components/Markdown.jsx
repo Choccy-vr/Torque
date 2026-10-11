@@ -2,7 +2,7 @@ import { Square, SquareCheck } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-// Renders admin-written markdown (announcements) in the app's reading style.
+// Renders markdown (announcements, journal entries) in the app's reading style.
 // Safe by default: react-markdown never renders raw HTML, and its URL
 // transform drops javascript:/data: links. `preview` is for a clipped glimpse
 // inside a clickable tile: nothing in it can take focus or be clicked, and
@@ -72,9 +72,19 @@ const COMPONENTS = {
             : <code className="rounded-md bg-(--bg)/70 px-1.5 py-0.5 font-mono text-[0.875em] text-(--text)" {...rest} />;
     },
     pre: styled("pre", "t-scroll overflow-x-auto rounded-2xl border-2 border-white/10 bg-(--bg)/70 px-4 py-3 font-mono text-sm leading-relaxed text-(--text) [&_code]:bg-transparent [&_code]:p-0"),
+    // Photos open full size in a new tab, like the journal's thumbnails.
     img: function Image(props) {
-        const { alt, ...rest } = withoutNode(props);
-        return <img alt={alt ?? ""} loading="lazy" className="max-h-96 rounded-xl border-2 border-white/15 bg-(--bg) object-contain" {...rest} />;
+        const { alt, src, ...rest } = withoutNode(props);
+        return (
+            <a
+                href={src}
+                target="_blank"
+                rel="noreferrer"
+                className="block w-fit rounded-xl transition-all duration-300 ease hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-12px_var(--accent)] motion-reduce:hover:translate-y-0"
+            >
+                <img src={src} alt={alt ?? ""} loading="lazy" className="max-h-96 rounded-xl border-2 border-white/15 bg-(--bg) object-contain" {...rest} />
+            </a>
+        );
     },
     table: function Table(props) {
         return (

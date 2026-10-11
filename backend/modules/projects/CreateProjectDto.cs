@@ -10,6 +10,7 @@ public record CreateProjectDto
     public string? RepoUrl { get; init; }
     public string? DemoUrl { get; init; }
     public string? ReadmeUrl { get; init; }
+    public string? CoverImageUrl { get; init; } // http(s) image URL shown at the top of the project page
 
     public string[]? HackatimeProjectNames { get; init; }
 

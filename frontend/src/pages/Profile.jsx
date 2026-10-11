@@ -1,8 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Clock, FolderOpen, NotebookPen, RotateCw, Zap } from "lucide-react";
+import { Clock, FolderOpen, NotebookPen, Zap } from "lucide-react";
 import AppShell from "../components/AppShell.jsx";
 import ProjectCard, { ProjectCardSkeleton } from "../components/ProjectCard.jsx";
+import { JournalEntry, JournalSkeleton, PagedTimeline } from "../components/Journal.jsx";
+import { Empty, InlineError, RetryButton, Section } from "../components/PageParts.jsx";
 import SlackIcon from "../components/SlackIcon.jsx";
 import { getMyProfile, getUserDevlogs, getUserProfile, getUserProjects } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
@@ -23,8 +25,6 @@ function OwnProfile() {
     return <ProfileView userId={me.id} />;
 }
 
-const JOURNAL_PAGE = 5;
-
 function ProfileView({ userId }) {
     const fetchProfile = useCallback(() => getUserProfile(userId), [userId]);
     const fetchProjects = useCallback(() => getUserProjects(userId), [userId]);
@@ -39,7 +39,7 @@ function ProfileView({ userId }) {
 
     const user = profile.data;
     const projectList = projects.data ?? [];
-    const projectTitles = new Map(projectList.map((p) => [p.id, p.title]));
+    const projectsById = new Map(projectList.map((p) => [p.id, p]));
 
     // The devlog endpoint is capped at 30, so count journal entries from the
     // projects' devlog ids instead.
@@ -83,7 +83,7 @@ function ProfileView({ userId }) {
                                 Journal entries are how builders log each work session. {user.username}'s will show up here, newest first.
                             </Empty>
                         ) : (
-                            <Journal entries={devlogs.data} total={stats?.journals ?? devlogs.data.length} projectTitles={projectTitles} />
+                            <Journal entries={devlogs.data} total={stats?.journals ?? devlogs.data.length} projectsById={projectsById} />
                         )}
                     </Section>
                 </div>
@@ -97,8 +97,6 @@ const PROJECT_GRID = "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-1 xl:gr
 const formatNumber = (n) => (Number.isInteger(n) ? n : n.toFixed(1)).toLocaleString();
 const formatJoined = (iso) =>
     new Date(iso).toLocaleDateString(undefined, { month: "long", year: "numeric" });
-const formatDay = (iso) =>
-    new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 
 // The title block: who this is, how to reach them, and what they've logged.
 // Pinned beside the content on wide screens, a header card above it otherwise.
@@ -178,169 +176,22 @@ function Stat({ icon: Icon, label, value, accent = false }) {
     );
 }
 
-function Section({ id, title, count, children }) {
-    return (
-        <section aria-labelledby={id} className="flex flex-col gap-5">
-            <h2 id={id} className="flex items-baseline gap-3 text-(--text)">
-                {/* The docs' coral h2 tick, so sections read as redlined. */}
-                <span aria-hidden="true" className="w-1 self-stretch rounded-full bg-(--accent)" />
-                <span className="[font-family:var(--heading-font)] text-3xl font-bold">{title}</span>
-                {count > 0 && <span className="text-lg font-medium text-(--text)/75 tabular-nums">{count}</span>}
-            </h2>
-            {children}
-        </section>
-    );
-}
-
-// The journal hangs off a coral redline, one dated tick per entry, newest
-// first. Shows a page at a time so a long log doesn't bury the page.
-function Journal({ entries, total, projectTitles }) {
-    const [shown, setShown] = useState(JOURNAL_PAGE);
-    const remaining = entries.length - shown;
+// The journal across all of this builder's projects, each entry footed with
+// the project it's from.
+function Journal({ entries, total, projectsById }) {
     // The endpoint returns the newest 30, so say so once they're all shown.
-    const capped = remaining <= 0 && total > entries.length;
+    const capped = total > entries.length;
 
     return (
-        <div className="flex flex-col gap-6">
-            <ol className="flex flex-col gap-8 border-l-2 border-(--accent)/55 pl-(--pad) [--pad:1.25rem] sm:[--pad:1.75rem]">
-                {entries.slice(0, shown).map((entry) => (
-                    <JournalEntry key={entry.id} entry={entry} project={projectTitles.get(entry.projectId)} />
-                ))}
-            </ol>
-            {remaining > 0 && (
-                <button
-                    type="button"
-                    onClick={() => setShown((n) => n + JOURNAL_PAGE)}
-                    className="inline-flex min-h-11 items-center self-start rounded-(--radius) border-2 border-(--accent)/55 px-6 font-bold text-(--text) transition-all duration-300 ease hover:border-(--accent) hover:bg-(--accent)/15"
-                >
-                    Show {Math.min(remaining, JOURNAL_PAGE)} older {remaining === 1 ? "entry" : "entries"}
-                </button>
-            )}
-            {capped && (
+        <PagedTimeline
+            items={entries}
+            renderItem={(entry) => <JournalEntry key={entry.id} entry={entry} project={projectsById.get(entry.projectId)} />}
+            footer={capped && (
                 <p className="text-sm text-(--text)/75">
                     Showing the latest {entries.length} of {total} entries.
                 </p>
             )}
-        </div>
-    );
-}
-
-// Long entries collapse behind a toggle; ~360 characters is roughly where
-// five lines of the card's measure run out.
-const LONG_ENTRY = 360;
-
-// The collapsed text: as many whole paragraphs as fit in LONG_ENTRY, so the
-// cut lands on a real paragraph end. Null when even the first paragraph is
-// too long, in which case it's clamped with an ellipsis instead.
-function excerptOf(text) {
-    const [first, ...rest] = text.split(/\n\s*\n/);
-    if (first.length > LONG_ENTRY) return null;
-    let out = first;
-    for (const para of rest) {
-        if (out.length + 2 + para.length > LONG_ENTRY) break;
-        out += `\n\n${para}`;
-    }
-    return out;
-}
-
-function JournalEntry({ entry, project }) {
-    const [open, setOpen] = useState(false);
-    const text = entry.text.trim();
-    const long = text.length > LONG_ENTRY;
-    const excerpt = long ? excerptOf(text) : null;
-    const images = entry.imageUrls ?? [];
-
-    return (
-        <li className="relative flex flex-col gap-2.5">
-            {/* Dated tick: a dot on the 2px redline (cut out of it by a ring of
-                page colour) with the entry's date beside it. */}
-            <span
-                aria-hidden="true"
-                className="absolute top-[0.1875rem] left-[calc(-1*var(--pad)-8px)] size-3.5 rounded-full bg-(--accent) ring-4 ring-(--bg)"
-            />
-            <time dateTime={entry.createdAt} className="text-sm leading-5 font-medium text-(--text)/85 tabular-nums">
-                {formatDay(entry.createdAt)}
-            </time>
-            <article className="t-card flex flex-col gap-2 px-5 py-5 text-(--text) sm:px-7 sm:py-6">
-                <h3 className="text-xl font-semibold text-balance break-words text-(--text)">{entry.title}</h3>
-                <p
-                    id={`entry-${entry.id}`}
-                    className={`max-w-[70ch] leading-relaxed whitespace-pre-line break-words text-(--text)/90 ${long && !open && !excerpt ? "line-clamp-5" : ""}`}
-                >
-                    {long && !open && excerpt ? excerpt : text}
-                </p>
-                {long && (
-                    <button
-                        type="button"
-                        aria-expanded={open}
-                        aria-controls={`entry-${entry.id}`}
-                        onClick={() => setOpen((o) => !o)}
-                        className="-ml-3 inline-flex min-h-11 items-center self-start rounded-(--radius) px-3 font-medium text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 transition-all duration-300 ease hover:bg-white/10"
-                    >
-                        {open ? "Show less" : "Read more"}
-                    </button>
-                )}
-                {images.length > 0 && (
-                    <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {images.slice(0, 6).map((src, i) => (
-                            <li key={src}>
-                                <a
-                                    href={src}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="block overflow-hidden rounded-xl border-2 border-white/15 transition-all duration-300 ease hover:-translate-y-0.5 hover:border-(--accent) hover:shadow-[0_8px_24px_-12px_var(--accent)] motion-reduce:hover:translate-y-0"
-                                >
-                                    <img
-                                        src={src}
-                                        alt={`Photo ${i + 1} from “${entry.title}”`}
-                                        loading="lazy"
-                                        className="aspect-[4/3] w-full bg-(--bg) object-cover"
-                                    />
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-                {project && (
-                    <p className="mt-1 flex items-center gap-1.5 text-sm text-(--text)/80">
-                        <FolderOpen aria-hidden="true" className="size-4 shrink-0" />
-                        <span className="sr-only">Project:</span>
-                        {project}
-                    </p>
-                )}
-            </article>
-        </li>
-    );
-}
-
-function Empty({ title, children }) {
-    return (
-        <div className="flex flex-col gap-1.5 rounded-[var(--card-radius)] border-2 border-dashed border-white/20 px-5 py-8 text-(--text) sm:px-7">
-            <p className="text-lg font-bold">{title}</p>
-            <p className="max-w-[55ch] leading-relaxed text-(--text)/80">{children}</p>
-        </div>
-    );
-}
-
-function InlineError({ what, onRetry }) {
-    return (
-        <div role="status" className="flex flex-col items-start gap-3 rounded-[var(--card-radius)] border-2 border-dashed border-white/20 px-5 py-6 text-(--text) sm:px-7">
-            <p className="leading-relaxed text-(--text)/90">Couldn't load {what}. Check your connection and try again.</p>
-            <RetryButton onClick={onRetry} />
-        </div>
-    );
-}
-
-function RetryButton({ onClick }) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className="t-btn t-hover inline-flex min-h-11 items-center gap-2 rounded-(--radius) px-6 font-bold"
-        >
-            <RotateCw aria-hidden="true" className="size-4" />
-            Try again
-        </button>
+        />
     );
 }
 
@@ -395,20 +246,5 @@ function ProfileSkeleton() {
                 </div>
             </div>
         </AppShell>
-    );
-}
-
-function JournalSkeleton() {
-    return (
-        <div aria-busy="true" aria-label="Loading journal" className="flex flex-col gap-6 border-l-2 border-(--accent)/30 pl-5 sm:pl-7">
-            {[0, 1].map((i) => (
-                <div key={i} className="t-card flex flex-col gap-3 px-5 py-6 sm:px-7">
-                    <div className="h-4 w-40 rounded bg-white/10 motion-safe:animate-pulse" />
-                    <div className="h-6 w-2/3 rounded-lg bg-white/10 motion-safe:animate-pulse" />
-                    <div className="h-4 w-full rounded bg-white/10 motion-safe:animate-pulse" />
-                    <div className="h-4 w-5/6 rounded bg-white/10 motion-safe:animate-pulse" />
-                </div>
-            ))}
-        </div>
     );
 }

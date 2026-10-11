@@ -45,6 +45,7 @@ public class ProjectController : ControllerBase
             RepoUrl = project.RepoUrl,
             DemoUrl = project.DemoUrl,
             ReadmeUrl = project.ReadmeUrl,
+            CoverImageUrl = project.CoverImageUrl,
             Status = project.Status,
             GrantStatus = project.GrantStatus,
             TotalHours = project.TotalHoursRaw,
@@ -109,6 +110,7 @@ public class ProjectController : ControllerBase
                 RepoUrl = p.RepoUrl,
                 DemoUrl = p.DemoUrl,
                 ReadmeUrl = p.ReadmeUrl,
+                CoverImageUrl = p.CoverImageUrl,
                 Status = p.Status,
                 GrantStatus = p.GrantStatus,
                 TotalHours = p.TotalHoursRaw,
@@ -218,6 +220,7 @@ public class ProjectController : ControllerBase
                 RepoUrl = p.RepoUrl,
                 DemoUrl = p.DemoUrl,
                 ReadmeUrl = p.ReadmeUrl,
+                CoverImageUrl = p.CoverImageUrl,
                 Status = p.Status,
                 GrantStatus = p.GrantStatus,
                 TotalHours = p.TotalHoursRaw,
@@ -256,6 +259,7 @@ public class ProjectController : ControllerBase
                 RepoUrl = p.RepoUrl,
                 DemoUrl = p.DemoUrl,
                 ReadmeUrl = p.ReadmeUrl,
+                CoverImageUrl = p.CoverImageUrl,
                 ClaimedByReviewer = p.ClaimedByReviewer.ToString(),
                 ClaimedAt = p.ClaimedAt,
                 HackatimeProjectNames = p.HackatimeProjectNames,
@@ -301,9 +305,10 @@ public class ProjectController : ControllerBase
         var repoUrl = Clean(dto.RepoUrl);
         var demoUrl = Clean(dto.DemoUrl);
         var readmeUrl = Clean(dto.ReadmeUrl);
+        var coverImageUrl = Clean(dto.CoverImageUrl);
         var hackatimeNames = CleanNames(dto.HackatimeProjectNames);
 
-        var error = Validate(dto.Title, dto.Description, dto.Tier, repoUrl, demoUrl, readmeUrl, dto.AiUse)
+        var error = Validate(dto.Title, dto.Description, dto.Tier, repoUrl, demoUrl, readmeUrl, coverImageUrl, dto.AiUse)
             ?? await FindDuplicateAsync(null, repoUrl, demoUrl, readmeUrl, hackatimeNames);
         if (error is not null) return BadRequest(error);
 
@@ -315,6 +320,7 @@ public class ProjectController : ControllerBase
             RepoUrl = repoUrl,
             DemoUrl = demoUrl,
             ReadmeUrl = readmeUrl,
+            CoverImageUrl = coverImageUrl,
             HackatimeProjectNames = hackatimeNames,
             AiUse = Clean(dto.AiUse),
             OwnerUserId = userId.Value
@@ -335,7 +341,7 @@ public class ProjectController : ControllerBase
         if (userId is null) return Unauthorized();
 
         if (dto.Title is null && dto.Description is null && dto.Tier is null
-            && dto.RepoUrl is null && dto.DemoUrl is null && dto.ReadmeUrl is null
+            && dto.RepoUrl is null && dto.DemoUrl is null && dto.ReadmeUrl is null && dto.CoverImageUrl is null
             && dto.HackatimeProjectNames is null && dto.AiUse is null)
         {
             return BadRequest("Nothing to update.");
@@ -364,6 +370,7 @@ public class ProjectController : ControllerBase
         var repoUrl = dto.RepoUrl is null ? project.RepoUrl : Clean(dto.RepoUrl);
         var demoUrl = dto.DemoUrl is null ? project.DemoUrl : Clean(dto.DemoUrl);
         var readmeUrl = dto.ReadmeUrl is null ? project.ReadmeUrl : Clean(dto.ReadmeUrl);
+        var coverImageUrl = dto.CoverImageUrl is null ? project.CoverImageUrl : Clean(dto.CoverImageUrl);
         var hackatimeNames = dto.HackatimeProjectNames is null ? project.HackatimeProjectNames : CleanNames(dto.HackatimeProjectNames);
 
         var oldNames = project.HackatimeProjectNames ?? [];
@@ -374,7 +381,7 @@ public class ProjectController : ControllerBase
         string? IfChanged(string? value, string? current) => value == current ? null : value;
         var error = Validate(dto.Title, dto.Description, tierChanged ? dto.Tier : null,
                 IfChanged(repoUrl, project.RepoUrl), IfChanged(demoUrl, project.DemoUrl),
-                IfChanged(readmeUrl, project.ReadmeUrl), dto.AiUse)
+                IfChanged(readmeUrl, project.ReadmeUrl), IfChanged(coverImageUrl, project.CoverImageUrl), dto.AiUse)
             ?? await FindDuplicateAsync(project.Id,
                 IfChanged(repoUrl, project.RepoUrl), IfChanged(demoUrl, project.DemoUrl),
                 IfChanged(readmeUrl, project.ReadmeUrl), [.. newNames.Except(oldNames)]);
@@ -392,6 +399,7 @@ public class ProjectController : ControllerBase
         project.RepoUrl = repoUrl;
         project.DemoUrl = demoUrl;
         project.ReadmeUrl = readmeUrl;
+        project.CoverImageUrl = coverImageUrl;
         project.HackatimeProjectNames = hackatimeNames;
         if (dto.AiUse is not null) project.AiUse = Clean(dto.AiUse);
         await _db.SaveChangesAsync();
@@ -482,7 +490,7 @@ public class ProjectController : ControllerBase
 
     // Field rules shared by create and update; null fields are skipped
     private static string? Validate(string? title, string? description, int? tier,
-        string? repoUrl, string? demoUrl, string? readmeUrl, string? aiUse)
+        string? repoUrl, string? demoUrl, string? readmeUrl, string? coverImageUrl, string? aiUse)
     {
         if (title is not null && title.Trim().Length > MaxTitleLength)
         {
@@ -500,7 +508,7 @@ public class ProjectController : ControllerBase
         {
             return "Tier must be between 1 and 4.";
         }
-        foreach (var (name, url) in new[] { ("RepoUrl", repoUrl), ("DemoUrl", demoUrl), ("ReadmeUrl", readmeUrl) })
+        foreach (var (name, url) in new[] { ("RepoUrl", repoUrl), ("DemoUrl", demoUrl), ("ReadmeUrl", readmeUrl), ("CoverImageUrl", coverImageUrl) })
         {
             if (url is not null && !IsHttpUrl(url)) return $"{name} must be an http(s) URL.";
         }
@@ -554,6 +562,7 @@ public class ProjectController : ControllerBase
         RepoUrl = project.RepoUrl,
         DemoUrl = project.DemoUrl,
         ReadmeUrl = project.ReadmeUrl,
+        CoverImageUrl = project.CoverImageUrl,
         ClaimedByReviewer = project.ClaimedByReviewer.ToString(),
         ClaimedAt = project.ClaimedAt,
         HackatimeProjectNames = project.HackatimeProjectNames,

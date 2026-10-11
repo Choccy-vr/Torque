@@ -12,6 +12,8 @@ public class Project
     public string? RepoUrl { get; set; }
     public string? DemoUrl { get; set; }
     public string? ReadmeUrl { get; set; }
+    // http(s) image URL shown at the top of the project page
+    public string? CoverImageUrl { get; set; }
 
     public Guid ClaimedByReviewer { get; set; }
     public DateTime ClaimedAt { get; set; }
