@@ -5,7 +5,8 @@ using Torque.Data;
 using Torque.Extensions;
 using Torque.Projects;
 // Admin-only build grant tracking. Grants are created when a design ship that requested
-// funding is approved (see ReviewController.Create); sending the money is manual.
+// funding gets its final approval (see AirtableWebhookController); sending the money is
+// manual. Project.GrantStatus mirrors the grant, and Fulfilled unlocks the build ship.
 // endpoint: /api/admin/grants/<command>
 
 namespace Torque.Grants;
@@ -82,15 +83,14 @@ public class AdminGrantController : ControllerBase
             grant.Fulfilled = true;
             grant.FulfilledByUserId = userId.Value;
             grant.FulfilledAt = DateTime.UtcNow;
-            if (project.Status == ProjectStatus.Build_Grant_Pending) project.Status = ProjectStatus.Build_Grant_Fulfilled;
+            project.GrantStatus = ProjectGrantStatus.Fulfilled;
         }
         else if (!dto.Fulfilled.Value && grant.Fulfilled)
         {
             grant.Fulfilled = false;
             grant.FulfilledByUserId = null;
             grant.FulfilledAt = null;
-            // Only while the build hasn't been shipped yet.
-            if (project.Status == ProjectStatus.Build_Grant_Fulfilled) project.Status = ProjectStatus.Build_Grant_Pending;
+            project.GrantStatus = ProjectGrantStatus.Pending;
         }
         if (dto.Note is not null) grant.Note = string.IsNullOrWhiteSpace(dto.Note) ? null : dto.Note.Trim();
 

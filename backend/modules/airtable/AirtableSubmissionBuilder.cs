@@ -48,6 +48,8 @@ public class AirtableSubmissionBuilder
 
         var fields = new Dictionary<string, object?>
         {
+            // Sent back by the approval automation (POST api/airtable/approve).
+            ["Torque Ship ID"] = shipment.Id.ToString(),
             ["Project name"] = project.Title,
             ["Description"] = project.Description,
             ["Code URL"] = project.RepoUrl,

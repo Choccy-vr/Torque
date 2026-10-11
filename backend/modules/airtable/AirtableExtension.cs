@@ -1,10 +1,18 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+
 namespace Torque.Airtable;
 
-// Server-internal only: no controllers. Shipments that pass first-pass review (project
-// flips to Fraud_Pending) are pushed once to Airtable by AirtablePushWorker; Airtable
-// automations own the record from there.
+// Shipments that pass first-pass review (project flips to Fraud_Pending) are pushed once
+// to Airtable by AirtablePushWorker. Airtable owns the record from there, and its
+// approval automation calls back into AirtableWebhookController to pay the ship out.
 public static class AirtableExtension
 {
+    public const string WebhookRateLimit = "airtable-webhook";
+
+    // Short secrets are guessable, so they leave the webhook off rather than half-locked.
+    private const int MinWebhookSecretLength = 32;
+
     public static IServiceCollection AddAirtable(this IServiceCollection services, IConfiguration config)
     {
         var options = new AirtableOptions
@@ -15,8 +23,33 @@ public static class AirtableExtension
                 ? "YSWS Project Submission"
                 : config["AIRTABLE_TABLE_NAME"]!,
             SupabaseUrl = config["SUPABASE_URL"]?.TrimEnd('/'),
-            SupabaseServiceRoleKey = config["SUPABASE_SERVICE_ROLE_KEY"]
+            SupabaseServiceRoleKey = config["SUPABASE_SERVICE_ROLE_KEY"],
+            WebhookSecret = config["AIRTABLE_WEBHOOK_SECRET"]
         };
+
+        // Always registered: the webhook controller reads WebhookSecret from it even when
+        // the push is disabled.
+        services.AddSingleton(options);
+
+        if (string.IsNullOrEmpty(options.WebhookSecret))
+        {
+            Console.WriteLine("[Airtable] AIRTABLE_WEBHOOK_SECRET not set — approval webhook disabled");
+        }
+        else if (options.WebhookSecret.Length < MinWebhookSecretLength)
+        {
+            Console.WriteLine($"[Airtable] AIRTABLE_WEBHOOK_SECRET is under {MinWebhookSecretLength} characters — approval webhook disabled");
+            options.WebhookSecret = null;
+        }
+
+        // Slows down anyone guessing the secret. Airtable runs automations one record at a
+        // time, so a bulk approval stays well under this.
+        services.AddRateLimiter(rateLimiterOptions =>
+        {
+            rateLimiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            rateLimiterOptions.AddPolicy(WebhookRateLimit, httpContext => RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.Connection.RemoteIpAddress?.ToString() ?? "anon",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 60, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+        });
 
         if (string.IsNullOrEmpty(options.ApiKey) || string.IsNullOrEmpty(options.BaseId))
         {
@@ -29,7 +62,6 @@ public static class AirtableExtension
             Console.WriteLine("[Airtable] SUPABASE_SERVICE_ROLE_KEY not set — rows will be pushed without birthday/address");
         }
 
-        services.AddSingleton(options);
         services.AddHttpClient<AirtableClient>();
         services.AddHttpClient<SupabaseUserClient>();
         services.AddScoped<AirtableSubmissionBuilder>();

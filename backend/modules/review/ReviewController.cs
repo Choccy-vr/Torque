@@ -1,10 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using Torque.Data;
 using Torque.Extensions;
-using Torque.Payouts;
+using Torque.Streaks;
 using Torque.Projects;
 using Torque.Shipments;
 using Torque.Users;
@@ -18,13 +17,8 @@ namespace Torque.Reviews;
 public class ReviewController : ControllerBase
 {
     private readonly AppDbContext _db;
-    private readonly PayoutService _payouts;
 
-    public ReviewController(AppDbContext db, PayoutService payouts)
-    {
-        _db = db;
-        _payouts = payouts;
-    }
+    public ReviewController(AppDbContext db) => _db = db;
 
     // Get shipments that need reviewing oldest to newest
     [Authorize]
@@ -60,6 +54,7 @@ public class ReviewController : ControllerBase
                 ApprovedHours = s.ApprovedHours,
                 PaidHours = s.PaidHours,
                 VoltsPerHour = s.VoltsPerHour,
+                FinalApprovedAt = s.FinalApprovedAt,
                 IsBuildComplete = s.IsBuildComplete,
                 RequestedFunding = s.RequestedFunding,
                 HowDidYouHear = s.HowDidYouHear,
@@ -105,6 +100,7 @@ public class ReviewController : ControllerBase
                 ApprovedHours = s.ApprovedHours,
                 PaidHours = s.PaidHours,
                 VoltsPerHour = s.VoltsPerHour,
+                FinalApprovedAt = s.FinalApprovedAt,
                 IsBuildComplete = s.IsBuildComplete,
                 RequestedFunding = s.RequestedFunding,
                 HowDidYouHear = s.HowDidYouHear,
@@ -179,12 +175,27 @@ public class ReviewController : ControllerBase
             return BadRequest("The project has no valid level (1–4); set OverrideTier to approve.");
         }
 
+        var newStatus = dto.Status switch
+        {
+            ShipmentReviewStatus.approved => ShipmentStatus.approved,
+            ShipmentReviewStatus.rejected => ShipmentStatus.rejected,
+            ShipmentReviewStatus.perm_rejected => ShipmentStatus.perm_rejected,
+            ShipmentReviewStatus.changes_needed => ShipmentStatus.needs_changes,
+            _ => shipment.Status
+        };
+
         await using var tx = await _db.Database.BeginTransactionAsync();
 
-        // Pays out before the shipment is marked approved, so it isn't counted as an
-        // earlier ship. Volts only for build ships; a design ship with requested funding
-        // gets a Grant for an admin to fulfil.
-        PayoutService.ApprovalResult? payout = null;
+        // Claims the shipment: a second reviewer submitting at the same moment blocks on
+        // this row, then matches nothing once the first commits.
+        var claimed = await _db.Shipments
+            .Where(s => s.Id == shipment.Id && s.Status == ShipmentStatus.unreviewed)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, newStatus));
+        if (claimed == 0) return Conflict("This shipment was reviewed at the same time by someone else.");
+
+        // Nothing is credited or paid here: hours, Volts and grants all wait for the ship's
+        // final approval from Airtable (AirtableWebhookController). The overrides are kept
+        // for it.
         if (dto.Status == ShipmentReviewStatus.approved)
         {
             if (dto.OverrideTier is not null)
@@ -192,7 +203,7 @@ public class ReviewController : ControllerBase
                 shipment.OverrideTier = dto.OverrideTier.Value;
                 project.Tier = dto.OverrideTier.Value;
             }
-            payout = await _payouts.ApplyApprovalAsync(shipment, project, userId.Value, level, dto.OverrideHours);
+            if (dto.OverrideHours is not null) shipment.OverrideHours = dto.OverrideHours.Value;
         }
 
         var review = new ShipmentReview
@@ -215,14 +226,7 @@ public class ReviewController : ControllerBase
         };
         _db.ShipmentReviews.Add(review);
 
-        shipment.Status = dto.Status switch
-        {
-            ShipmentReviewStatus.approved => ShipmentStatus.approved,
-            ShipmentReviewStatus.rejected => ShipmentStatus.rejected,
-            ShipmentReviewStatus.perm_rejected => ShipmentStatus.perm_rejected,
-            ShipmentReviewStatus.changes_needed => ShipmentStatus.needs_changes,
-            _ => shipment.Status
-        };
+        shipment.Status = newStatus;
         shipment.Feedback = dto.Feedback;
         shipment.ReviewId = review.Id;
         shipment.ReviewedAt = DateTime.UtcNow;
@@ -232,34 +236,25 @@ public class ReviewController : ControllerBase
         // perm_rejected is a genuine terminal state — Create() doesn't allow shipping
         // from Perm_Rejected, so there's no path back for the user.
         // Approval here is only the first pass: the project goes to fraud review
-        // (second pass), and AirtablePushWorker pushes the shipment to Airtable. A design
-        // ship that requested funding instead waits on its grant, after which the build
-        // can be shipped (see ShipmentController.Create).
+        // (second pass) and AirtablePushWorker pushes the shipment to Airtable. Approving
+        // that record is the final approval (see AirtableWebhookController). Anything else
+        // ends the review, so the paused streak resumes.
         if (dto.Status == ShipmentReviewStatus.approved)
         {
-            project.Status = payout?.Grant is not null ? ProjectStatus.Build_Grant_Pending : ProjectStatus.Fraud_Pending;
+            project.Status = ProjectStatus.Fraud_Pending;
             if (dto.Exceptional) project.Exceptional = true;
-        }
-        else if (dto.Status == ShipmentReviewStatus.perm_rejected)
-        {
-            project.Status = ProjectStatus.Perm_Rejected;
         }
         else
         {
-            project.Status = ProjectStatus.Changes_Needed;
+            project.Status = dto.Status == ShipmentReviewStatus.perm_rejected
+                ? ProjectStatus.Perm_Rejected
+                : ProjectStatus.Changes_Needed;
+
+            var owner = await _db.Users.FindAsync(project.OwnerUserId);
+            if (owner is not null) StreakService.ResumeAfterReview(project, owner);
         }
 
-        try
-        {
-            await _db.SaveChangesAsync();
-        }
-        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
-        {
-            // The unique ShipmentId index on ledger entries / grants: another reviewer
-            // approved this shipment at the same moment.
-            return Conflict("This shipment was reviewed at the same time by someone else.");
-        }
-        if (payout?.Volts > 0) await _payouts.AddToBalanceAsync(shipment.UserId, payout.Volts);
+        await _db.SaveChangesAsync();
         await tx.CommitAsync();
 
         return Ok(new AdminShipmentReviewDto
@@ -279,11 +274,6 @@ public class ReviewController : ControllerBase
             DeflationJustification = review.DeflationJustification,
             AdditionalJustification = review.AdditionalJustification,
             Exceptional = review.Exceptional,
-            ApprovedHours = shipment.ApprovedHours,
-            PaidHours = shipment.PaidHours,
-            VoltsPerHour = shipment.VoltsPerHour,
-            VoltsGranted = shipment.VoltsGranted,
-            GrantId = payout?.Grant?.Id,
             CreatedAt = review.CreatedAt
         });
     }

@@ -51,6 +51,7 @@ public class ShipmentController : ControllerBase
                 ApprovedHours = s.ApprovedHours,
                 PaidHours = s.PaidHours,
                 VoltsPerHour = s.VoltsPerHour,
+                FinalApprovedAt = s.FinalApprovedAt,
                 IsBuildComplete = s.IsBuildComplete,
                 RequestedFunding = s.RequestedFunding,
                 CreatedAt = s.CreatedAt
@@ -116,10 +117,19 @@ public class ShipmentController : ControllerBase
 
         if (project.OwnerUserId != userId.Value) return Forbid();
 
-        // Once a design ship's grant is fulfilled, the next ship is the build.
-        if (project.Status == ProjectStatus.Build_Grant_Fulfilled)
+        // Design vs build is always the shipper's call (IsBuildComplete). An approved design
+        // can ship again either way, but a build ship waits for any grant the design asked
+        // for to be sent. An approved build is final.
+        if (project.Status == ProjectStatus.Approved)
         {
-            if (!dto.IsBuildComplete.Value) return BadRequest("This project's grant is fulfilled; ship the working build (IsBuildComplete = true).");
+            if (dto.IsBuildComplete.Value && project.GrantStatus == ProjectGrantStatus.Pending)
+            {
+                return BadRequest("This project's build grant hasn't been sent yet.");
+            }
+            if (await _db.Shipments.AnyAsync(s => s.ProjectId == project.Id && s.IsBuildComplete && s.FinalApprovedAt != null))
+            {
+                return BadRequest("This project's build has already been approved.");
+            }
         }
         else if (project.Status != ProjectStatus.Unshipped && project.Status != ProjectStatus.Changes_Needed)
         {
@@ -160,6 +170,7 @@ public class ShipmentController : ControllerBase
             ApprovedHours = shipment.ApprovedHours,
             PaidHours = shipment.PaidHours,
             VoltsPerHour = shipment.VoltsPerHour,
+            FinalApprovedAt = shipment.FinalApprovedAt,
             IsBuildComplete = shipment.IsBuildComplete,
             RequestedFunding = shipment.RequestedFunding,
             CreatedAt = shipment.CreatedAt

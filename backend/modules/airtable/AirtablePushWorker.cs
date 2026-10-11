@@ -70,12 +70,7 @@ public class AirtablePushWorker : BackgroundService
 
         var pending = await db.Shipments
             .Where(s => s.Status == ShipmentStatus.approved && s.AirtableRecordId == null)
-            // Approved design ships that requested funding wait on their grant instead of
-            // Fraud_Pending, but still need pushing.
-            .Where(s => db.Projects.Any(p => p.Id == s.ProjectId
-                && (p.Status == ProjectStatus.Fraud_Pending
-                    || p.Status == ProjectStatus.Build_Grant_Pending
-                    || p.Status == ProjectStatus.Build_Grant_Fulfilled)))
+            .Where(s => db.Projects.Any(p => p.Id == s.ProjectId && p.Status == ProjectStatus.Fraud_Pending))
             .OrderBy(s => s.CreatedAt)
             .ToListAsync(ct);
 

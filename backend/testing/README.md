@@ -45,6 +45,10 @@ Append to the `ENDPOINTS` array at the top of `app.js`:
 }
 ```
 
+An endpoint that needs a request header (like `airtable-approve`'s webhook secret) can
+list it as `headers: [{ name: 'X-Webhook-Secret', placeholder: '...' }]`, which renders a
+masked input whose value is sent as that header when filled in.
+
 The "Custom request" panel handles anything not worth adding permanently.
 
 ## Notes

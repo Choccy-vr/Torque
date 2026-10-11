@@ -8,7 +8,9 @@ namespace Torque.Streaks;
 
 // Per-project daily streaks. A day is 12 AM–12 AM in the owner's timezone; it counts
 // once that project's journals created that day cover 1+ hour of Hackatime time. A
-// missed day resets the streak unless the owner spends a streak freeze on it.
+// missed day resets the streak unless the owner spends a streak freeze on it. While a
+// ship is in review the streak is paused: missed days aren't settled until the review
+// ends (approved, changes needed or rejected), and the paused days are forgiven.
 public class StreakService
 {
     public const double SecondsPerDay = 3600; // journaled seconds needed for a day to count
@@ -48,6 +50,20 @@ public class StreakService
         return Math.Min(baseRate * Multiplier(EffectiveStreak(streakCount, tier)), maxRate);
     }
 
+    // A shipped project waiting on first-pass review or final approval.
+    public static bool InReview(ProjectStatus status) =>
+        status is ProjectStatus.Unreviewed or ProjectStatus.Claimed or ProjectStatus.Fraud_Pending;
+
+    // Call when a project leaves review: moves the last counted day up to yesterday so
+    // the days spent in review aren't settled as missed. Today is still theirs to journal.
+    public static void ResumeAfterReview(Project project, User owner)
+    {
+        if (project.StreakCount == 0 || project.LastStreakDate is null) return;
+
+        var yesterday = LocalDate(owner, DateTime.UtcNow).AddDays(-1);
+        if (project.LastStreakDate < yesterday) project.LastStreakDate = yesterday;
+    }
+
     public static TimeZoneInfo TimeZoneFor(User user) =>
         user.TimeZone is not null && TimeZoneInfo.TryFindSystemTimeZoneById(user.TimeZone, out var tz)
             ? tz
@@ -67,10 +83,12 @@ public class StreakService
 
     // Settles every fully-past day since the streak was last extended: each missed day
     // spends a freeze (streak holds) or, with none left, resets the streak. Does nothing
-    // without an active streak, so freezes are never spent protecting nothing. Caller saves.
+    // without an active streak, so freezes are never spent protecting nothing, or while the
+    // streak is paused for review. Caller saves.
     public async Task ReconcileAsync(Project project, User user, DateOnly today, CancellationToken ct = default)
     {
         if (project.StreakCount == 0 || project.LastStreakDate is null) return;
+        if (InReview(project.Status)) return;
 
         for (var day = project.LastStreakDate.Value.AddDays(1); day < today; day = day.AddDays(1))
         {

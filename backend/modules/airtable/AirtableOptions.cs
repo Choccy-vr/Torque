@@ -12,5 +12,9 @@ public class AirtableOptions
     public string? SupabaseUrl { get; set; }
     public string? SupabaseServiceRoleKey { get; set; }
 
+    // Shared secret the Airtable approval automation sends in X-Webhook-Secret (see
+    // AirtableWebhookController). Unset disables the webhook.
+    public string? WebhookSecret { get; set; }
+
     public TimeSpan PollInterval { get; set; } = TimeSpan.FromSeconds(60);
 }

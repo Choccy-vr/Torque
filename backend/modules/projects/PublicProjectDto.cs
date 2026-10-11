@@ -16,6 +16,7 @@ public record PublicProjectDto
     public string? ReadmeUrl { get; init; }
 
     public ProjectStatus Status { get; init; } = ProjectStatus.Unshipped;
+    public ProjectGrantStatus GrantStatus { get; init; } = ProjectGrantStatus.None;
 
     public float TotalHours { get; init; } = 0;// raw total hours tracked
 

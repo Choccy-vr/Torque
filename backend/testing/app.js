@@ -305,7 +305,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/ships/create',
     auth: true,
-    desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped or Changes_Needed (or Build_Grant_Fulfilled with isBuildComplete: true), or if any of isBuildComplete, requestedFunding (>= 0) or the three feedback answers are missing.',
+    desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped or Changes_Needed, or Approved (unless a build is already approved; a build ship is refused while grantStatus is Pending — design vs build is always your isBuildComplete choice), or if any of isBuildComplete, requestedFunding (>= 0) or the three feedback answers are missing. Pauses the project\'s streak until the review ends.',
     body: {
       projectId: '00000000-0000-0000-0000-000000000000',
       isBuildComplete: false,
@@ -338,7 +338,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/admin/review/create',
     auth: true,
-    desc: 'Reviewer-only. Reviews an unreviewed shipment. status is approved | rejected | perm_rejected | changes_needed. 400 if already reviewed, status is "returned" (not supported yet), screenshotUrl isn\'t http(s), or approving without screenshotUrl + technicalFeatures. Approving credits the unpaid journal hours (or overrideHours, which needs overrideJustification). A build ship (isBuildComplete) pays Volts for unpaid hours minus grant-covered hours at the level/streak rate and moves the project to Fraud_Pending; a design ship pays none, and if it requested funding creates a grant and moves the project to Build_Grant_Pending. 400 if the project has no level 1–4 and no overrideTier. The Airtable row is pushed by a background worker within ~60s.',
+    desc: 'Reviewer-only. First-pass review of an unreviewed shipment. status is approved | rejected | perm_rejected | changes_needed. 400 if already reviewed, status is "returned" (not supported yet), screenshotUrl isn\'t http(s), approving without screenshotUrl + technicalFeatures, or approving a project with no level 1–4 and no overrideTier. 409 if reviewed at the same moment. Approving credits and pays nothing: it keeps overrideHours (needs overrideJustification) / overrideTier for the final approval, moves the project to Fraud_Pending and the Airtable row is pushed within ~60s; approving that row (airtable-approve) pays out. Any other status ends the review and resumes the streak.',
     body: {
       shipmentId: '00000000-0000-0000-0000-000000000000',
       status: 'approved',
@@ -361,7 +361,7 @@ const ENDPOINTS = [
     method: 'GET',
     path: '/api/admin/grants?fulfilled={fulfilled}',
     auth: true,
-    desc: 'Admin-only. Build grants (created when a design ship that requested funding is approved), oldest first. fulfilled filters to true/false; leave blank for all.',
+    desc: 'Admin-only. Build grants (created when the Airtable record of a design ship that requested funding is approved), oldest first. fulfilled filters to true/false; leave blank for all.',
     params: [{ name: 'fulfilled', placeholder: 'false' }],
   },
   {
@@ -370,11 +370,24 @@ const ENDPOINTS = [
     method: 'PATCH',
     path: '/api/admin/grants/{id}',
     auth: true,
-    desc: "Admin-only. Tick/untick a grant as fulfilled. Ticking records you as fulfiller and moves the project Build_Grant_Pending → Build_Grant_Fulfilled, so the build can be shipped.",
+    desc: "Admin-only. Tick/untick a grant as fulfilled. Ticking records you as fulfiller and sets the project's grantStatus to Fulfilled, so the build can be shipped; unticking sets it back to Pending.",
     params: [{ name: 'id', placeholder: 'grant uuid' }],
     body: {
       fulfilled: true,
       note: 'Sent via HCB',
+    },
+  },
+  {
+    id: 'airtable-approve',
+    group: 'airtable',
+    method: 'POST',
+    path: '/api/airtable/approve',
+    auth: false,
+    desc: 'What the Airtable automation calls when a record is approved: the ship\'s final approval. No login works here (leave auth unticked); the only auth is the X-Webhook-Secret header (AIRTABLE_WEBHOOK_SECRET). Credits overrideHours (optional) or the reviewer\'s override or the shipped hourSnapshot, then pays a build ship\'s Volts or creates a design ship\'s grant (grantStatus Pending), and moves the project Fraud_Pending → Approved. Repeat calls return alreadyApproved: true. 401 bad secret, 404 unknown shipment, 409 not awaiting final approval, 429 rate-limited, 503 secret not set.',
+    headers: [{ name: 'X-Webhook-Secret', placeholder: 'AIRTABLE_WEBHOOK_SECRET' }],
+    body: {
+      shipmentId: '00000000-0000-0000-0000-000000000000',
+      overrideHours: null,
     },
   },
   {
@@ -546,6 +559,7 @@ const GROUP_LABELS = {
   ships: 'Ships',
   review: 'Review',
   grants: 'Grants',
+  airtable: 'Airtable',
   hackatime: 'Hackatime',
   lapse: 'Lapse',
   announcements: 'Announcements',
@@ -725,6 +739,17 @@ function buildEndpointRow(ep) {
     actions.append(input);
   }
 
+  // Request headers the endpoint needs (e.g. a webhook secret); sent only when filled in.
+  for (const h of ep.headers ?? []) {
+    const input = document.createElement('input');
+    input.type = 'password';
+    input.id = `h-${ep.id}-${h.name}`;
+    input.placeholder = h.placeholder;
+    input.size = 36;
+    input.autocomplete = 'off';
+    actions.append(input);
+  }
+
   const send = document.createElement('button');
   send.className = 'primary';
 
@@ -785,7 +810,13 @@ function sendEndpoint(ep) {
     }
   }
 
-  send({ method: ep.method, path, body, auth: $(`a-${ep.id}`).checked, endpointId: ep.id });
+  const headers = {};
+  for (const h of ep.headers ?? []) {
+    const value = $(`h-${ep.id}-${h.name}`).value.trim();
+    if (value) headers[h.name] = value;
+  }
+
+  send({ method: ep.method, path, body, auth: $(`a-${ep.id}`).checked, endpointId: ep.id, headers });
 }
 
 // ---------------------------------------------------------------- bundles
@@ -948,10 +979,10 @@ function safeJson(text) {
 
 // ---------------------------------------------------------------- requests
 
-async function send({ method, path, body, auth, endpointId }) {
+async function send({ method, path, body, auth, endpointId, headers: extraHeaders }) {
   const label = `${method} ${path}`;
 
-  const headers = {};
+  const headers = { ...extraHeaders };
   if (auth) {
     if (!session) return renderError(label, 'Not signed in — sign in first or untick "auth".');
     headers.Authorization = `Bearer ${session.access_token}`;

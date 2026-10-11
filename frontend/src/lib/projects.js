@@ -8,8 +8,6 @@ export const PROJECT_STATUS = {
     Changes_Needed: { label: "Changes needed", attention: true },
     Approved: { label: "Approved" },
     Perm_Rejected: { label: "Rejected" },
-    Build_Grant_Pending: { label: "Grant pending" },
-    Build_Grant_Fulfilled: { label: "Grant sent — ship your build" },
 };
 
 // Backend ShipmentStatus -> what the builder sees. Same rule as projects: only

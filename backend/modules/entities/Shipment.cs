@@ -44,6 +44,11 @@ public class Shipment
     public string? AirtableRecordId { get; set; }
     public DateTime? AirtablePushedAt { get; set; }
 
+    // Set when the ship gets its final approval from Airtable (fraud review, second pass —
+    // see AirtableWebhookController). That's when hours are credited and the Volts paid
+    // or the grant created; until then ApprovedHours/PaidHours/VoltsGranted are 0.
+    public DateTime? FinalApprovedAt { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
 }

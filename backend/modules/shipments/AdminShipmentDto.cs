@@ -27,6 +27,9 @@ public record AdminShipmentDto
     public float ApprovedHours { get; init; }
     public float PaidHours { get; init; }
     public decimal VoltsPerHour { get; init; }
+    // Set on the ship's final approval (Airtable), which is when hours are credited and
+    // Volts/grant paid out; until then those are 0.
+    public DateTime? FinalApprovedAt { get; init; }
 
     public bool IsBuildComplete { get; init; }
     public int RequestedFunding { get; init; }

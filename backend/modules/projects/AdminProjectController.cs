@@ -45,6 +45,7 @@ public class AdminProjectController : ControllerBase
             DemoUrl = project.DemoUrl,
             ReadmeUrl = project.ReadmeUrl,
             Status = project.Status,
+            GrantStatus = project.GrantStatus,
             TotalHours = project.TotalHoursRaw,
             AiUse = project.AiUse,
             DevlogIds = project.DevlogIds,

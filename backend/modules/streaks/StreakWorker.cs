@@ -1,12 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Torque.Data;
+using Torque.Projects;
 
 namespace Torque.Streaks;
 
 // Settles streaks after each owner's local midnight passes: a project whose last counted
 // day is before yesterday missed a day, so it spends a freeze or resets. Journals settle
 // their own project too (StreakService.RecordJournalAsync); this catches projects nobody
-// journals on.
+// journals on. Projects in review are skipped: their streak is paused (see
+// StreakService.InReview).
 public class StreakWorker : BackgroundService
 {
     private static readonly TimeSpan PollInterval = TimeSpan.FromMinutes(15);
@@ -61,7 +63,10 @@ public class StreakWorker : BackgroundService
         var streaks = scope.ServiceProvider.GetRequiredService<StreakService>();
 
         var active = await db.Projects
-            .Where(p => p.StreakCount > 0)
+            .Where(p => p.StreakCount > 0
+                && p.Status != ProjectStatus.Unreviewed
+                && p.Status != ProjectStatus.Claimed
+                && p.Status != ProjectStatus.Fraud_Pending)
             .ToListAsync(ct);
         if (active.Count == 0) return;
 

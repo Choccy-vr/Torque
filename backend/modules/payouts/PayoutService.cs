@@ -7,9 +7,11 @@ using Torque.Streaks;
 
 namespace Torque.Payouts;
 
-// Volts payouts, paid when a reviewer approves a ship. A design ship
-// (IsBuildComplete = false) only credits hours; a build ship converts every credited hour
-// not yet paid or covered by a grant into Volts at the project's level/streak rate.
+// Payouts, made when a ship gets its final approval from Airtable (fraud review — see
+// AirtableWebhookController). First-pass review pays nothing. A build ship
+// (IsBuildComplete = true) converts every credited hour not yet paid or covered by a grant
+// into Volts at the project's level/streak rate; a design ship that requested funding
+// gets a Grant for an admin to send.
 public class PayoutService
 {
     // A grant of $N covers N / 5 hours, which aren't paid again as Volts.
@@ -18,29 +20,29 @@ public class PayoutService
     private readonly AppDbContext _db;
     public PayoutService(AppDbContext db) => _db = db;
 
-    public record ApprovalResult(int Volts, Grant? Grant);
+    public record PayoutResult(int Volts, Grant? Grant);
 
-    // Journaled hours not yet credited by an approved ship. The default hours for a ship.
+    // Journaled hours not yet credited by a final-approved ship. Snapshotted as a ship's hours.
     public async Task<float> UnpaidJournalHoursAsync(Guid projectId, CancellationToken ct = default)
     {
         var journaled = await _db.Devlogs
             .Where(d => d.ProjectId == projectId)
             .SumAsync(d => d.TrackedSeconds, ct) / 3600;
         var credited = await _db.Shipments
-            .Where(s => s.ProjectId == projectId && s.Status == ShipmentStatus.approved)
+            .Where(s => s.ProjectId == projectId && s.FinalApprovedAt != null)
             .SumAsync(s => (double)s.ApprovedHours, ct);
         return (float)Math.Max(0, journaled - credited);
     }
 
-    // Credits hours for an approved shipment, and for a build ship adds the Volts payout
-    // to the ledger; for a design ship with requested funding, adds a Grant to fulfil.
-    // Call before marking the shipment approved, then save, then AddToBalanceAsync(Volts)
-    // in the same transaction. The level must already be validated as 1–4.
-    public async Task<ApprovalResult> ApplyApprovalAsync(
-        Shipment shipment, Project project, Guid reviewerId, int level, float? overrideHours,
-        CancellationToken ct = default)
+    // Final approval: credits the ship's hours (overrideHours, else the reviewer's
+    // override, else the hours snapshotted when it was shipped) and pays it out — Volts to
+    // the ledger for a build ship, a Grant for a design ship that requested funding. Then
+    // save, then AddToBalanceAsync(Volts), in one transaction. The project's level must
+    // already be validated as 1–4.
+    public async Task<PayoutResult> ApproveAsync(
+        Shipment shipment, Project project, Guid? paidByUserId, float? overrideHours, CancellationToken ct = default)
     {
-        var approvedHours = overrideHours ?? await UnpaidJournalHoursAsync(project.Id, ct);
+        var approvedHours = overrideHours ?? (shipment.OverrideHours > 0 ? shipment.OverrideHours : shipment.HourSnapshot);
         if (overrideHours is not null) shipment.OverrideHours = overrideHours.Value;
 
         shipment.ApprovedHours = approvedHours;
@@ -48,7 +50,7 @@ public class PayoutService
 
         if (!shipment.IsBuildComplete)
         {
-            if (shipment.RequestedFunding <= 0) return new ApprovalResult(0, null);
+            if (shipment.RequestedFunding <= 0) return new PayoutResult(0, null);
 
             var grant = new Grant
             {
@@ -58,11 +60,12 @@ public class PayoutService
                 Amount = shipment.RequestedFunding
             };
             _db.Grants.Add(grant);
-            return new ApprovalResult(0, grant);
+            project.GrantStatus = ProjectGrantStatus.Pending;
+            return new PayoutResult(0, grant);
         }
 
         var earlier = await _db.Shipments
-            .Where(s => s.ProjectId == project.Id && s.Status == ShipmentStatus.approved && s.Id != shipment.Id)
+            .Where(s => s.ProjectId == project.Id && s.FinalApprovedAt != null && s.Id != shipment.Id)
             .Select(s => new { s.ApprovedHours, s.PaidHours })
             .ToListAsync(ct);
         var grantDollars = await _db.Grants
@@ -74,7 +77,8 @@ public class PayoutService
             - grantDollars / GrantDollarsPerHour;
         payableHours = Math.Max(0, payableHours);
 
-        var rate = StreakService.VoltsPerHour(level, project.StreakCount);
+        // The streak was paused while the ship was in review, so this is the rate it shipped at.
+        var rate = StreakService.VoltsPerHour(project.Tier, project.StreakCount);
         var volts = (int)Math.Floor(payableHours * rate);
 
         shipment.PaidHours = (float)payableHours;
@@ -91,11 +95,11 @@ public class PayoutService
                 Kind = LedgerEntryKind.ship_payout,
                 Reason = $"Ship payout: {project.Title}",
                 ShipmentId = shipment.Id,
-                CreatedByUserId = reviewerId
+                CreatedByUserId = paidByUserId
             });
         }
 
-        return new ApprovalResult(volts, null);
+        return new PayoutResult(volts, null);
     }
 
     // Atomic increment of the cached balance, so concurrent payouts never lose an update.

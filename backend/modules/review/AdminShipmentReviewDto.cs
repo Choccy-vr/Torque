@@ -26,13 +26,6 @@ public record AdminShipmentReviewDto
 
     public bool Exceptional { get; init; } = false;
 
-    // Payout from this review (all zero / null unless approved).
-    public float ApprovedHours { get; init; }
-    public float PaidHours { get; init; }
-    public decimal VoltsPerHour { get; init; }
-    public int VoltsGranted { get; init; }
-    public Guid? GrantId { get; init; }
-
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 
 }

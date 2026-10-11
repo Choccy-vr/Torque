@@ -22,6 +22,7 @@ public record PrivateProjectDto
     public string[]? DevlogIds { get; init; }
 
     public ProjectStatus Status { get; init; } = ProjectStatus.Unshipped;
+    public ProjectGrantStatus GrantStatus { get; init; } = ProjectGrantStatus.None;
 
     public float TrackedDesignHours { get; init; } = 0;// hours spent on design stage
     public float TrackedBuildHours { get; init; } = 0;// hours spent on build stage

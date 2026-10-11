@@ -35,6 +35,10 @@ public class Project
 
     public bool IsStaffPick { get; set; } = false;
 
+    // Build grant from an approved design ship that requested funding (see Torque.Grants).
+    // Pending blocks the build ship until an admin marks the grant sent.
+    public ProjectGrantStatus GrantStatus { get; set; } = ProjectGrantStatus.None;
+
     // Consecutive owner-local days with 1+ journaled hour (see Torque.Streaks).
     // Capped at the level's max streak.
     public int StreakCount { get; set; } = 0;
@@ -52,9 +56,13 @@ public enum ProjectStatus
     Fraud_Pending,
     Changes_Needed,
     Approved,
-    Perm_Rejected,
+    Perm_Rejected
+}
+public enum ProjectGrantStatus
+{
+    None,
     // Design ship approved with requested funding; waiting on an admin to send the grant.
-    Build_Grant_Pending,
-    // Grant sent; the build can now be shipped.
-    Build_Grant_Fulfilled
+    Pending,
+    // Grant sent.
+    Fulfilled
 }
