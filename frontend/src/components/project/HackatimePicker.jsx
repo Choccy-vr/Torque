@@ -19,9 +19,9 @@ async function loadProjects() {
 }
 
 // Linked Hackatime projects as removable tags, plus a dropdown of the rest
-// with their tracked time. Falls back to a comma-separated list when
+// with their tracked time. `hint={false}` drops the explainer line. Falls back to a comma-separated list when
 // Hackatime isn't connected.
-export default function HackatimePicker({ value, onChange }) {
+export default function HackatimePicker({ value, onChange, hint = true }) {
     const { data, loading, error } = useApi(loadProjects);
     const fieldsetRef = useRef(null);
 
@@ -87,9 +87,11 @@ export default function HackatimePicker({ value, onChange }) {
                 options={data.filter((p) => !value.includes(p.name))}
                 onPick={(name) => onChange([...value, name])}
             />
-            <p className="text-sm leading-relaxed text-(--text)/80">
-                Firmware time on these projects counts toward your journal entries.
-            </p>
+            {hint && (
+                <p className="text-sm leading-relaxed text-(--text)/80">
+                    Firmware time on these projects counts toward your journal entries.
+                </p>
+            )}
         </fieldset>
     );
 }

@@ -98,6 +98,11 @@ export function getDevlogs(ids) {
     return sendJson('POST', 'api/devlog/batch', { ids })
 }
 
+// POST api/project/create — PrivateProjectDto of the new project
+export function createProject(body) {
+    return sendJson('POST', 'api/project/create', body)
+}
+
 // PATCH api/project/{id} — PrivateProjectDto. Omitted fields are unchanged, "" clears.
 export function updateProject(id, changes) {
     return sendJson('PATCH', `api/project/${encodeURIComponent(id)}`, changes)

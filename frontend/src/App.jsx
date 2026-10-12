@@ -4,6 +4,7 @@ import Landing from './pages/Landing.jsx'
 import Home from './pages/Home.jsx'
 import Projects from './pages/Projects.jsx'
 import Project from './pages/Project.jsx'
+import NewProject from './pages/NewProject.jsx'
 import Explore from './pages/Explore.jsx'
 import Profile from './pages/Profile.jsx'
 import { AuthProvider, RequireAuth } from './lib/auth.jsx'
@@ -43,6 +44,7 @@ function AppRoutes() {
                 <Route path="/" element={<Landing />} />
                 <Route path="/home" element={<RequireAuth><Home /></RequireAuth>} />
                 <Route path="/projects" element={<RequireAuth><Projects /></RequireAuth>} />
+                <Route path="/projects/new" element={<RequireAuth><NewProject /></RequireAuth>} />
                 <Route path="/projects/:id" element={<Project />} />
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/docs/*" element={<Suspense fallback={<div className="min-h-screen" />}><Docs /></Suspense>} />

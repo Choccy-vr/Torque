@@ -16,14 +16,13 @@ export default function Projects() {
             <PageHeader
                 title="My Projects"
                 action={
-                    // Not wired up yet: creating a project comes later.
-                    <button
-                        type="button"
+                    <Link
+                        to="/projects/new"
                         className="t-btn t-hover inline-flex min-h-11 items-center gap-2 rounded-(--radius) px-7 text-lg font-bold focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--text)"
                     >
                         <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
                         New project
-                    </button>
+                    </Link>
                 }
             />
 

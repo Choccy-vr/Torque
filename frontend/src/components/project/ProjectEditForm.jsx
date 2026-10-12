@@ -1,9 +1,8 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useId, useState } from "react";
 import { Check } from "lucide-react";
 import { updateProject } from "../../lib/endpoints.js";
 import HackatimePicker from "./HackatimePicker.jsx";
-import { BTN_GHOST, BTN_PRIMARY, Field, FOCUS, FormError, INPUT } from "../Form.jsx";
+import { BTN_GHOST, BTN_PRIMARY, Field, FieldError, FormError, INPUT } from "../Form.jsx";
 import { errorText, isHttpUrl, useRevealOnMount } from "../../lib/forms.js";
 
 const TEXT_FIELDS = ["title", "description", "aiUse", "repoUrl", "demoUrl", "readmeUrl", "coverImageUrl"];
@@ -112,16 +111,27 @@ export default function ProjectEditForm({ project, onSaved, onCancel }) {
     );
 }
 
-// Level 1–4 as a row of pill radios.
-function LevelPicker({ value, onChange }) {
+// Short versions of docs/projects/levels.
+const LEVELS = [
+    { level: 1, name: "Starter", about: "Your first motor project. Basic motion with off-the-shelf parts." },
+    { level: 2, name: "Stepping stone", about: "One motor done well, or motors plus sensors, screens or buttons." },
+    { level: 3, name: "Polished", about: "Advanced motor control or custom electronics, in an enclosure or rigid frame." },
+    { level: 4, name: "Flagship", about: "Complex control like FOC, custom PCBs and product-grade mechanics." },
+];
+
+// Level 1–4 as radio cards, each with a one-line scope so builders can place
+// themselves. `value` is null until one is picked.
+export function LevelPicker({ value, onChange, error }) {
+    const errorId = `${useId()}-error`;
+
     return (
         <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 font-semibold text-(--text)">Level</legend>
-            <div className="grid grid-cols-4 gap-2 sm:flex">
-                {[1, 2, 3, 4].map((level) => (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {LEVELS.map(({ level, name, about }) => (
                     <label
                         key={level}
-                        className="relative inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-(--radius) border-2 border-white/15 px-5 font-bold text-(--text) transition-all duration-300 ease hover:border-white/30 hover:bg-white/10 has-checked:border-(--accent) has-checked:bg-(--accent)/15 has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-(--text)"
+                        className="flex cursor-pointer flex-col gap-1 rounded-2xl border-2 border-white/15 px-4 py-3 text-(--text) transition-all duration-300 ease hover:border-white/30 hover:bg-white/10 has-[[aria-invalid=true]]:border-(--accent)/70 has-checked:border-(--accent) has-checked:bg-(--accent)/15 has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-(--text)"
                     >
                         <input
                             type="radio"
@@ -129,19 +139,21 @@ function LevelPicker({ value, onChange }) {
                             value={level}
                             checked={value === level}
                             onChange={() => onChange(level)}
+                            required
+                            aria-invalid={error ? true : undefined}
+                            aria-describedby={error ? errorId : undefined}
                             className="peer sr-only"
                         />
-                        <Check aria-hidden="true" className="hidden size-4 peer-checked:block" />
-                        <span className="sr-only">Level </span>{level}
+                        <span className="flex items-center gap-2 font-bold">
+                            Level {level}
+                            <span className="font-medium text-(--text)/80">· {name}</span>
+                            <Check aria-hidden="true" className="ml-auto hidden size-4.5 peer-checked:block" />
+                        </span>
+                        <span className="text-sm leading-relaxed text-(--text)/80">{about}</span>
                     </label>
                 ))}
             </div>
-            <p className="text-sm leading-relaxed text-(--text)/80">
-                Based on how mechanically and electrically complex the build is. Reviewers can adjust it.{" "}
-                <Link to="/docs/projects/levels" className={`rounded-sm font-medium text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 hover:bg-white/10 ${FOCUS}`}>
-                    What each level means
-                </Link>
-            </p>
+            <FieldError id={errorId}>{error}</FieldError>
         </fieldset>
     );
 }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
     Archive, ArchiveRestore, ArrowUpRight, ChevronDown, CircleAlert, Clock, FileText, Flame, FolderGit2,
-    Globe, ImageOff, NotebookPen, Pencil, Plus, Ship, Sparkles, Star, Zap,
+    Globe, NotebookPen, Pencil, Plus, Ship, Sparkles, Star, Zap,
 } from "lucide-react";
 import AppShell from "../components/AppShell.jsx";
 import ProjectStatusBadge from "../components/ProjectStatusBadge.jsx";
@@ -11,6 +11,7 @@ import { Empty, InlineError, RetryButton, Section } from "../components/PagePart
 import { BTN_GHOST, BTN_OUTLINE, BTN_PRIMARY, FOCUS, FormError } from "../components/Form.jsx";
 import { errorText } from "../lib/forms.js";
 import ProjectEditForm from "../components/project/ProjectEditForm.jsx";
+import Cover from "../components/project/Cover.jsx";
 import ShipForm from "../components/project/ShipForm.jsx";
 import JournalComposer from "../components/project/JournalComposer.jsx";
 import {
@@ -401,44 +402,6 @@ function ArchiveConfirm({ project, onConfirm, onCancel }) {
 }
 
 // The cover band, or a blank drawing sheet that says so.
-function Cover({ project, onAdd }) {
-    const [failed, setFailed] = useState(false);
-
-    if (project.coverImageUrl && !failed) {
-        return (
-            <img
-                src={project.coverImageUrl}
-                alt={`Cover image for ${project.title}`}
-                onError={() => setFailed(true)}
-                className="aspect-[21/9] max-h-96 w-full border-b-2 border-(--accent)/55 bg-(--bg) object-cover object-center"
-            />
-        );
-    }
-
-    return (
-        <div
-            className="flex min-h-36 flex-col items-center justify-center gap-2 border-b-2 border-dashed border-white/20 bg-(--bg)/45 px-6 py-6 text-center sm:min-h-44"
-            style={{
-                backgroundImage:
-                    "linear-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.07) 1px, transparent 1px)",
-                backgroundSize: "22px 22px",
-            }}
-        >
-            <ImageOff aria-hidden="true" className="size-6 text-(--text)/80" />
-            <p className="font-medium text-(--text)/85">{failed ? "Cover image couldn't load" : "No cover image"}</p>
-            {onAdd && (
-                <button
-                    type="button"
-                    onClick={onAdd}
-                    className={`inline-flex min-h-11 items-center rounded-(--radius) px-3 font-medium text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 transition-all duration-300 ease hover:bg-white/10 ${FOCUS}`}
-                >
-                    {failed ? "Change cover image" : "Add a cover image"}
-                </button>
-            )}
-        </div>
-    );
-}
-
 function Chip({ icon: Icon, accent = false, children }) {
     return (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-2.5 py-0.5 text-[0.8125rem] font-medium whitespace-nowrap text-(--text)/85">

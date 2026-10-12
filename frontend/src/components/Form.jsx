@@ -21,13 +21,15 @@ export const BTN_OUTLINE = `${BTN} border-(--accent)/55 text-(--text) hover:bord
 // Borderless until hovered, for quiet actions (Cancel, Archive).
 export const BTN_GHOST = `${BTN} border-transparent text-(--text) hover:border-white/20 hover:bg-white/10 disabled:text-(--text)/75 disabled:hover:border-transparent disabled:hover:bg-transparent`;
 
-export const INPUT = `w-full rounded-2xl border-2 border-white/15 bg-(--bg)/70 px-4 py-2.5 text-(--text) caret-(--accent) placeholder:text-(--text)/75 transition-colors duration-300 ease hover:border-white/30 focus:border-(--accent) focus:outline-none aria-[invalid=true]:border-(--accent)`;
+export const INPUT = `w-full rounded-2xl border-2 border-white/15 bg-(--bg)/70 px-4 py-2.5 text-(--text) caret-(--accent) placeholder:text-(--text)/75 transition-colors duration-300 ease hover:border-white/30 focus:border-(--accent) focus:outline-none ${FOCUS} aria-[invalid=true]:border-(--accent)`;
 
 // A labelled field. `children` is a render function that receives the props
-// to spread on the control (id, aria-describedby).
-export function Field({ label, hint, optional = false, children }) {
+// to spread on the control (id, aria-describedby, aria-invalid). `error`
+// shows under the control and marks it invalid.
+export function Field({ label, hint, optional = false, error, children }) {
     const id = useId();
     const hintId = hint ? `${id}-hint` : undefined;
+    const errorId = error ? `${id}-error` : undefined;
 
     return (
         <div className="flex flex-col gap-2">
@@ -35,9 +37,26 @@ export function Field({ label, hint, optional = false, children }) {
                 {label}
                 {optional && <span className="font-normal text-(--text)/75"> (optional)</span>}
             </label>
-            {children({ id, "aria-describedby": hintId })}
+            {children({
+                id,
+                "aria-describedby": [errorId, hintId].filter(Boolean).join(" ") || undefined,
+                "aria-invalid": error ? true : undefined,
+            })}
+            <FieldError id={errorId}>{error}</FieldError>
             {hint && <p id={hintId} className="text-sm leading-relaxed text-(--text)/80">{hint}</p>}
         </div>
+    );
+}
+
+// What's wrong with one field, right under it. Chalk White text with a coral
+// icon, since coral text would fail contrast.
+export function FieldError({ id, children }) {
+    if (!children) return null;
+    return (
+        <p id={id} className="flex items-start gap-2 text-sm leading-relaxed font-medium text-(--text)">
+            <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-(--accent)" />
+            {children}
+        </p>
     );
 }
 
