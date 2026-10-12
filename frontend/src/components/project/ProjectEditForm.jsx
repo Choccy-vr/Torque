@@ -5,9 +5,8 @@ import HackatimePicker from "./HackatimePicker.jsx";
 import { BTN_GHOST, BTN_PRIMARY, Field, FieldError, FormError, INPUT } from "../Form.jsx";
 import { errorText, isHttpUrl, useRevealOnMount } from "../../lib/forms.js";
 
-const TEXT_FIELDS = ["title", "description", "aiUse", "repoUrl", "demoUrl", "readmeUrl", "coverImageUrl"];
+const TEXT_FIELDS = ["title", "description", "aiUse", "repoUrl", "demoUrl", "readmeUrl"];
 const URL_FIELDS = [
-    ["coverImageUrl", "Cover image"],
     ["repoUrl", "Repository"],
     ["demoUrl", "Demo"],
     ["readmeUrl", "Readme"],
@@ -76,8 +75,6 @@ export default function ProjectEditForm({ project, onSaved, onCancel }) {
             </Field>
 
             <LevelPicker value={values.tier} onChange={(tier) => setValues((v) => ({ ...v, tier }))} />
-
-            <CoverField value={values.coverImageUrl} onChange={set("coverImageUrl")} />
 
             <div className="grid gap-7 sm:grid-cols-3 sm:gap-4">
                 <Field label="Repository" optional>
@@ -155,31 +152,5 @@ export function LevelPicker({ value, onChange, error }) {
             </div>
             <FieldError id={errorId}>{error}</FieldError>
         </fieldset>
-    );
-}
-
-// Cover image link with a live preview, so a broken link shows before saving.
-function CoverField({ value, onChange }) {
-    const url = value.trim();
-    const [failed, setFailed] = useState(null);
-    const valid = url && isHttpUrl(url);
-
-    return (
-        <Field label="Cover image" optional hint="A direct link to a photo or render (ends in .jpg, .png, …). It's shown across the top of the project.">
-            {(p) => (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-                    <input {...p} type="url" inputMode="url" placeholder="https://…/photo.jpg" value={value} onChange={onChange} className={INPUT} />
-                    {valid && (
-                        <div className="flex aspect-[21/9] w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-white/15 bg-(--bg) sm:w-44">
-                            {failed === url ? (
-                                <span className="px-3 text-center text-sm text-(--text)/80">Can't load this image</span>
-                            ) : (
-                                <img key={url} src={url} alt="Cover preview" onError={() => setFailed(url)} className="size-full object-cover" />
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
-        </Field>
     );
 }

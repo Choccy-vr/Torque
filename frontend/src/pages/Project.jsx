@@ -12,10 +12,11 @@ import { BTN_GHOST, BTN_OUTLINE, BTN_PRIMARY, FOCUS, FormError } from "../compon
 import { errorText } from "../lib/forms.js";
 import ProjectEditForm from "../components/project/ProjectEditForm.jsx";
 import Cover from "../components/project/Cover.jsx";
+import CoverPicker from "../components/project/CoverPicker.jsx";
 import ShipForm from "../components/project/ShipForm.jsx";
 import JournalComposer from "../components/project/JournalComposer.jsx";
 import {
-    getDevlogs, getMyProfile, getMyProjects, getMyShips, getProject, getUserProfile, setProjectArchived, setStreakFreezesPaused,
+    getDevlogs, getMyProfile, getMyProjects, getMyShips, getProject, getUserProfile, setProjectArchived, setStreakFreezesPaused, updateProject,
 } from "../lib/endpoints.js";
 import { SHIP_STATUS, formatDay } from "../lib/projects.js";
 import { useApi } from "../lib/useApi.js";
@@ -138,6 +139,12 @@ function ProjectPage({ projectApi, isOwner }) {
         }
     }
 
+    // The cover is set from the band at the top of the card, not the edit form.
+    async function setCover(coverImageUrl) {
+        await updateProject(project.id, { coverImageUrl });
+        reloadData();
+    }
+
     return (
         <AppShell title={project.title}>
             <div className="mx-auto flex max-w-4xl flex-col gap-12">
@@ -155,6 +162,7 @@ function ProjectPage({ projectApi, isOwner }) {
                             onArchive={setArchived}
                             archiveError={archiveError}
                             onStreakChanged={reloadData}
+                            onCoverChange={setCover}
                         />
                     )}
 
@@ -207,12 +215,14 @@ function ProjectPage({ projectApi, isOwner }) {
 
 // ---------------------------------------------------------------- the card
 
-function ProjectCard({ project, owner, isOwner, blocked, panel, onPanel, onArchive, archiveError, onStreakChanged }) {
+function ProjectCard({ project, owner, isOwner, blocked, panel, onPanel, onArchive, archiveError, onStreakChanged, onCoverChange }) {
     const [confirmingArchive, setConfirmingArchive] = useState(false);
 
     return (
         <article aria-labelledby="project-title" className="t-card overflow-hidden text-(--text)">
-            <Cover project={project} onAdd={isOwner && !blocked.edit ? () => onPanel("edit") : null} />
+            {isOwner && !blocked.edit
+                ? <CoverPicker value={project.coverImageUrl ?? ""} onChange={onCoverChange} title={project.title} emptyText="No cover image" />
+                : <Cover project={project} />}
 
             <div className="flex flex-col gap-6 px-5 py-6 sm:px-8 sm:py-8">
                 <div className="flex flex-col gap-4">
@@ -401,7 +411,6 @@ function ArchiveConfirm({ project, onConfirm, onCancel }) {
     );
 }
 
-// The cover band, or a blank drawing sheet that says so.
 function Chip({ icon: Icon, accent = false, children }) {
     return (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-2.5 py-0.5 text-[0.8125rem] font-medium whitespace-nowrap text-(--text)/85">
