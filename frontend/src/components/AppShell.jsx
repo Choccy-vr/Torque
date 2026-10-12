@@ -33,3 +33,18 @@ export function PageTitle({ children }) {
         </h1>
     );
 }
+
+// A page title with its `action` at the far end (e.g. "New project"), an
+// optional one-line lede, and any extras (`children`), ruled off from the
+// content by a fading coral redline.
+export function PageHeader({ title, lede, action, children }) {
+    return (
+        <header className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-x-8">
+            <PageTitle>{title}</PageTitle>
+            {lede && <p className="-mt-1 max-w-[62ch] text-lg leading-relaxed text-(--text)/85 text-pretty sm:col-span-2 sm:row-start-2">{lede}</p>}
+            {action && <div className="sm:col-start-2 sm:row-start-1 sm:self-center">{action}</div>}
+            {children && <div className="sm:col-span-2">{children}</div>}
+            <div aria-hidden="true" className="mt-1 h-[3px] rounded-full bg-linear-to-r from-(--accent)/70 to-transparent sm:col-span-2" />
+        </header>
+    );
+}

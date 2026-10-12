@@ -80,7 +80,7 @@ const COMPONENTS = {
                 href={src}
                 target="_blank"
                 rel="noreferrer"
-                className="block w-fit rounded-xl transition-all duration-300 ease hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-12px_var(--accent)] motion-reduce:hover:translate-y-0"
+                className="block w-fit rounded-xl transition-all duration-300 ease hover:-translate-y-0.5 motion-reduce:hover:translate-y-0"
             >
                 <img src={src} alt={alt ?? ""} loading="lazy" className="max-h-96 rounded-xl border-2 border-white/15 bg-(--bg) object-contain" {...rest} />
             </a>

@@ -1,59 +1,60 @@
 import { Link } from "react-router-dom";
-import { RotateCw } from "lucide-react";
-import AppShell, { PageTitle } from "../components/AppShell.jsx";
+import { Plus } from "lucide-react";
+import AppShell, { PageHeader } from "../components/AppShell.jsx";
 import { getMyProjects } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
 import ProjectCard, { ProjectCardSkeleton } from "../components/ProjectCard.jsx";
+import { Empty, InlineError } from "../components/PageParts.jsx";
 
-const GRID = "mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 md:mt-8 lg:grid-cols-3 lg:gap-8";
+const GRID = "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8";
 
 export default function Projects() {
     const { data: projects, error, loading, reload } = useApi(getMyProjects);
 
     return (
         <AppShell title="Projects">
-            <PageTitle>My Projects</PageTitle>
+            <PageHeader
+                title="My Projects"
+                action={
+                    // Not wired up yet: creating a project comes later.
+                    <button
+                        type="button"
+                        className="t-btn t-hover inline-flex min-h-11 items-center gap-2 rounded-(--radius) px-7 text-lg font-bold focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--text)"
+                    >
+                        <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                        New project
+                    </button>
+                }
+            />
 
-            {loading ? (
-                <ul className={GRID} aria-busy="true" aria-label="Loading projects">
-                    {[0, 1, 2].map((i) => <ProjectCardSkeleton key={i} />)}
-                </ul>
-            ) : error ? (
-                <Notice
-                    title="Couldn't load your projects"
-                    body="Something went wrong talking to the server. Check your connection and try again."
-                    action={
-                        <button onClick={reload} className="t-btn t-hover inline-flex min-h-11 items-center gap-2 rounded-(--radius) px-6 font-bold">
-                            <RotateCw aria-hidden="true" className="size-4" />
-                            Try again
-                        </button>
-                    }
-                />
-            ) : projects.length === 0 ? (
-                <Notice
-                    title="No projects yet"
-                    body="Your projects will show up here once you start one. Not sure what to build? Here's what makes a good Torque project."
-                    action={
-                        <Link to="/docs/projects/what-is-a-good-project" className="t-btn t-hover inline-flex min-h-11 items-center rounded-(--radius) px-6 font-bold">
-                            Project ideas
-                        </Link>
-                    }
-                />
-            ) : (
-                <ul className={GRID}>
-                    {projects.map((p) => <ProjectCard key={p.id} project={p} />)}
-                </ul>
-            )}
+            <div className="mt-8">
+                {loading ? (
+                    <ul className={GRID} aria-busy="true" aria-label="Loading projects">
+                        {[0, 1, 2].map((i) => <ProjectCardSkeleton key={i} />)}
+                    </ul>
+                ) : error ? (
+                    <InlineError what="your projects" onRetry={reload} />
+                ) : projects.length === 0 ? (
+                    <Empty
+                        title="No projects yet"
+                        action={
+                            <Link
+                                to="/docs/projects/what-is-a-good-project"
+                                className="inline-flex min-h-11 items-center rounded-(--radius) border-2 border-(--accent)/55 px-6 font-bold text-(--text) transition-all duration-300 ease hover:border-(--accent) hover:bg-(--accent)/15"
+                            >
+                                Project ideas
+                            </Link>
+                        }
+                    >
+                        Your projects will show up here once you start one. Not sure what to build? Here's what makes a good Torque project.
+                    </Empty>
+                ) : (
+                    <ul className={GRID}>
+                        {projects.map((p) => <ProjectCard key={p.id} project={p} />)}
+                    </ul>
+                )}
+            </div>
         </AppShell>
     );
 }
 
-function Notice({ title, body, action }) {
-    return (
-        <section role="status" className="t-card mt-6 flex flex-col items-start gap-3 px-5 py-8 sm:px-8 md:mt-8 lg:px-12">
-            <h2 className="text-2xl font-bold text-(--heading)">{title}</h2>
-            <p className="max-w-[60ch] text-(--text)/85">{body}</p>
-            <div className="mt-2">{action}</div>
-        </section>
-    );
-}

@@ -178,7 +178,7 @@ export function JournalEntry({ entry, project, hours = false }) {
                                     href={src}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="block overflow-hidden rounded-xl border-2 border-white/15 transition-all duration-300 ease hover:-translate-y-0.5 hover:border-(--accent) hover:shadow-[0_8px_24px_-12px_var(--accent)] motion-reduce:hover:translate-y-0"
+                                    className="block overflow-hidden rounded-xl border-2 border-white/15 transition-all duration-300 ease hover:-translate-y-0.5 hover:border-(--accent) motion-reduce:hover:translate-y-0"
                                 >
                                     <img
                                         src={src}

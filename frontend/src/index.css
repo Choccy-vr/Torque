@@ -75,6 +75,18 @@ html, body {
   background-position: -1px -1px;
 }
 
+/* Drawing plate: the image well on project cards. A recessed slate sheet
+   ruled with the blueprint's minor grid, so a placeholder part (the drone)
+   reads as drawn on paper rather than floating on the card. */
+.t-plate {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--grid) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--grid) 55%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: center;
+}
+
 /* Cards (How It Works boxes, FAQ items, navbar, footer) */
 .t-card {
   background: var(--card);
@@ -298,14 +310,13 @@ html, body {
   font-weight: 700;
 }
 
-/* Cards lift and glow on hover */
+/* Cards lift and take a full coral edge on hover */
 .torque-docs .prose a[data-card] {
-  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+  transition: transform 200ms ease, border-color 200ms ease;
 }
 .torque-docs .prose a[data-card]:hover {
   transform: translateY(-2px);
   border-color: var(--accent);
-  box-shadow: 0 8px 24px -12px var(--accent);
 }
 .torque-docs [data-card] svg {
   color: var(--accent);

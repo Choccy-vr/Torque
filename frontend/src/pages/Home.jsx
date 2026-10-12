@@ -230,7 +230,7 @@ function PostDate({ post }) {
 // over it. The preview is a glimpse, so it holds nothing focusable of its own.
 function AnnouncementCard({ post, onRead }) {
     return (
-        <li className={`flex flex-col gap-2 px-5 py-4 text-(--text) transition-all duration-300 ease has-[button:hover]:-translate-y-0.5 has-[button:hover]:border-(--accent) has-[button:hover]:shadow-[0_8px_24px_-12px_var(--accent)] motion-reduce:has-[button:hover]:translate-y-0 ${TILE}`}>
+        <li className={`flex flex-col gap-2 px-5 py-4 text-(--text) transition-all duration-300 ease has-[button:hover]:-translate-y-0.5 has-[button:hover]:border-(--accent) motion-reduce:has-[button:hover]:translate-y-0 ${TILE}`}>
             <PostDate post={post} />
             <h3 className="text-lg font-semibold text-pretty break-words line-clamp-2 text-(--heading)">{post.title}</h3>
             <div className="max-h-32 overflow-hidden text-[0.9375rem] [mask-image:linear-gradient(to_bottom,black_55%,transparent)]">
