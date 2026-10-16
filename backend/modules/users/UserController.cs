@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Torque.Data;
 using Torque.Extensions;
 using Torque.Payouts;
+using Torque.Slack;
 // A controller for user data
 // endpoint: /api/user/<command>
 
@@ -15,11 +16,13 @@ public class UserController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly PayoutService _payouts;
+    private readonly SlackNotifier _slack;
 
-    public UserController(AppDbContext db, PayoutService payouts)
+    public UserController(AppDbContext db, PayoutService payouts, SlackNotifier slack)
     {
         _db = db;
         _payouts = payouts;
+        _slack = slack;
     }
 
     // Public profile for any user, no PII
@@ -153,11 +156,16 @@ public class UserController : ControllerBase
             return Conflict("That username is taken.");
         }
 
+        // Finishing setup for the first time is sign-up as far as the welcome DM goes.
+        var firstTime = !user.CompletedFirstTimeSetup;
+
         user.Username = username;
         user.Bio = bio;
         user.ProfilePictureUrl = profilePictureUrl;
         user.CompletedFirstTimeSetup = true;
         await _db.SaveChangesAsync();
+
+        if (firstTime) _slack.Send(user.SlackUserID, SlackMessages.Welcome(user.Username));
 
         return Ok(new
         {

@@ -8,6 +8,7 @@ using Torque.Data;
 using Torque.Payouts;
 using Torque.Projects;
 using Torque.Shipments;
+using Torque.Slack;
 using Torque.Streaks;
 // Called by an Airtable automation when a shipment's record is approved: the ship's final
 // approval (fraud review, the second pass). Not a user endpoint — no login token works
@@ -27,13 +28,17 @@ public class AirtableWebhookController : ControllerBase
     private readonly PayoutService _payouts;
     private readonly AirtableOptions _options;
     private readonly ILogger<AirtableWebhookController> _logger;
+    private readonly SlackNotifier _slack;
+    private readonly SlackOptions _slackOptions;
 
-    public AirtableWebhookController(AppDbContext db, PayoutService payouts, AirtableOptions options, ILogger<AirtableWebhookController> logger)
+    public AirtableWebhookController(AppDbContext db, PayoutService payouts, AirtableOptions options, ILogger<AirtableWebhookController> logger, SlackNotifier slack, SlackOptions slackOptions)
     {
         _db = db;
         _payouts = payouts;
         _options = options;
         _logger = logger;
+        _slack = slack;
+        _slackOptions = slackOptions;
     }
 
     // Final approval: credits the ship's hours (optionally adjusted), pays the Volts (build
@@ -111,6 +116,10 @@ public class AirtableWebhookController : ControllerBase
         }
         if (payout.Volts > 0) await _payouts.AddToBalanceAsync(shipment.UserId, payout.Volts);
         await tx.CommitAsync();
+
+        // Only on the call that actually approved it, so a repeated webhook doesn't DM twice.
+        _slack.Send(owner.SlackUserID, SlackMessages.Approved(
+            project.Title, _slackOptions.ProjectUrl(project.Id), payout.Volts, payout.Grant?.Amount));
 
         return Ok(new AirtableApprovalDto
         {

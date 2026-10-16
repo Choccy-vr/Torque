@@ -7,6 +7,7 @@ using Torque.Extensions;
 using Torque.Hackatime;
 using Torque.Lapse;
 using Torque.Payouts;
+using Torque.Slack;
 using Torque.Streaks;
 using Torque.Testing;
 using Torque.Users;
@@ -30,6 +31,7 @@ builder.Services.AddSupabaseAuth(builder.Configuration);
 builder.Services.AddHackatime(builder.Configuration);
 builder.Services.AddLapse(builder.Configuration);
 builder.Services.AddAirtable(builder.Configuration);
+builder.Services.AddSlack(builder.Configuration);
 builder.Services.AddStreaks();
 builder.Services.AddPayouts();
 

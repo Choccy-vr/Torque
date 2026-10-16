@@ -5,6 +5,7 @@ using Torque.Data;
 using Torque.Extensions;
 using Torque.Payouts;
 using Torque.Projects;
+using Torque.Slack;
 using Torque.Users;
 // A controller for Shipments
 // endpoint: /ships
@@ -20,11 +21,15 @@ public class ShipmentController : ControllerBase
 
     private readonly AppDbContext _db;
     private readonly PayoutService _payouts;
+    private readonly SlackNotifier _slack;
+    private readonly SlackOptions _slackOptions;
 
-    public ShipmentController(AppDbContext db, PayoutService payouts)
+    public ShipmentController(AppDbContext db, PayoutService payouts, SlackNotifier slack, SlackOptions slackOptions)
     {
         _db = db;
         _payouts = payouts;
+        _slack = slack;
+        _slackOptions = slackOptions;
     }
 
     // Get shipments all per user
@@ -152,6 +157,9 @@ public class ShipmentController : ControllerBase
         _db.Shipments.Add(shipment);
         project.Status = ProjectStatus.Unreviewed;
         await _db.SaveChangesAsync();
+
+        var shipper = await _db.Users.FindAsync(userId.Value);
+        _slack.Send(shipper?.SlackUserID, SlackMessages.Shipped(project.Title, _slackOptions.ProjectUrl(project.Id)));
 
         return Ok(new OwnShipmentDto
         {

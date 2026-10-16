@@ -6,6 +6,7 @@ using Torque.Extensions;
 using Torque.Streaks;
 using Torque.Projects;
 using Torque.Shipments;
+using Torque.Slack;
 using Torque.Users;
 // A controller for reviewing projects
 // endpoint: /api/admin/review/
@@ -17,8 +18,15 @@ namespace Torque.Reviews;
 public class ReviewController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly SlackNotifier _slack;
+    private readonly SlackOptions _slackOptions;
 
-    public ReviewController(AppDbContext db) => _db = db;
+    public ReviewController(AppDbContext db, SlackNotifier slack, SlackOptions slackOptions)
+    {
+        _db = db;
+        _slack = slack;
+        _slackOptions = slackOptions;
+    }
 
     // Get shipments that need reviewing oldest to newest
     [Authorize]
@@ -256,6 +264,17 @@ public class ReviewController : ControllerBase
 
         await _db.SaveChangesAsync();
         await tx.CommitAsync();
+
+        // Approval here is only the first pass; its DM waits for final approval.
+        if (dto.Status != ShipmentReviewStatus.approved)
+        {
+            var owner = await _db.Users.FindAsync(project.OwnerUserId);
+            var projectUrl = _slackOptions.ProjectUrl(project.Id);
+            var reviewerName = dto.HideReviewerName ? null : reviewer.Username;
+            _slack.Send(owner?.SlackUserID, dto.Status == ShipmentReviewStatus.perm_rejected
+                ? SlackMessages.Rejected(project.Title, projectUrl, dto.Feedback, reviewerName)
+                : SlackMessages.ChangesNeeded(project.Title, projectUrl, dto.Feedback, reviewerName));
+        }
 
         return Ok(new AdminShipmentReviewDto
         {

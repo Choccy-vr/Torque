@@ -82,3 +82,7 @@ The "Custom request" panel handles anything not worth adding permanently.
   real streak code using backdated journals (no Hackatime needed), settling each day as
   the worker would. It returns a day-by-day timeline showing streak, freezes left and
   outcome. Everything is rolled back afterwards unless `keep: true`.
+- The Slack section's **test DM** row calls the dev-only `POST /testing/slack/dm`
+  (`modules/testing/SlackTesting.cs`), which sends one of the real DM templates
+  (`welcome`, `shipped`, `approved`, `changes_needed`, `rejected`) to **your own** Slack ID
+  and reports whether Slack accepted it. Needs `SLACK_BOT_TOKEN` in `backend/.env`.
