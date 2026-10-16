@@ -124,7 +124,8 @@ requests to every endpoint below. See [testing/README.md](testing/README.md).
 |---|---|---|---|
 | GET | `api/health` | No | return JSON |
 | GET | `api/user/{id:guid}` | No | Get public profile (no PII) by user ID, including their Slack user ID (for linking to their Slack profile) |
-| GET | `api/user/me` | YES | Get authenticated user's own profile, including `timeZone` (streak timezone, null until set) and `streakFreezes` (read-only; everyone starts with 3) |
+| GET | `api/user/me` | YES | Get authenticated user's own profile, including `timeZone` (streak timezone, null until set) `streakFreezes` (read-only; everyone starts with 3) and `completedFirstTimeSetup` (false until `me/onboarding` is called) |
+| PUT | `api/user/me/onboarding` | YES | First-time setup: set your username, bio and profile picture, and mark `completedFirstTimeSetup` true. Can be called again to change them (every field is overwritten). 400 on invalid input; 409 if the username is taken (case-insensitive). Body (JSON): `username` (string, required, 3–30 chars: letters, numbers, `_`, `-`), `bio` (string, optional, max 500), `profilePictureUrl` (http(s) URL, optional — omitted/`""` clears it) |
 | PUT | `api/user/me/timezone` | YES | Set the timezone streak days are counted in (12 AM–12 AM local). One-time only: 409 once set — after that only an admin can change it. Body (JSON): `timeZone` (IANA id, e.g. `America/New_York`, required) |
 | PATCH | `api/admin/user/{id:guid}/timezone` | YES | Admin-only. Change a user's streak timezone. Body (JSON): `timeZone` (IANA id, required) |
 | GET | `api/user/volts/history` | YES | Get the authenticated user's Volts balance (`volts`) and ledger `entries` (ship payouts and admin adjustments: `amount` (signed), `kind` (`ship_payout`\|`admin_adjustment`), `reason`, `shipmentId`, `createdByUserId`, `createdAt`), newest first |

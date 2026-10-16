@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Torque.Data;
 using Torque.Extensions;
 using Torque.Payouts;
@@ -71,6 +72,7 @@ public class UserController : ControllerBase
             Country = user.Country,
             TimeZone = user.TimeZone,
             StreakFreezes = user.StreakFreezes,
+            CompletedFirstTimeSetup = user.CompletedFirstTimeSetup,
             CreatedAt = user.CreatedAt
         });
     }
@@ -115,6 +117,66 @@ public class UserController : ControllerBase
 
         return Ok(new { timeZone = user.TimeZone });
     }
+
+    // First-time setup: pick a username, bio and profile picture, and mark setup as done.
+    // Can be called again to change them.
+    [Authorize]
+    [HttpPut("me/onboarding")]
+    public async Task<IActionResult> Onboard([FromBody] OnboardingDto dto)
+    {
+        var userId = this.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var user = await _db.Users.FindAsync(userId);
+        if (user is null) return NotFound();
+
+        var username = dto.Username?.Trim() ?? "";
+        var bio = dto.Bio?.Trim() ?? "";
+        var profilePictureUrl = string.IsNullOrWhiteSpace(dto.ProfilePictureUrl) ? null : dto.ProfilePictureUrl.Trim();
+
+        if (username.Length is < MinUsernameLength or > MaxUsernameLength || !username.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-'))
+        {
+            return BadRequest($"Username must be {MinUsernameLength}–{MaxUsernameLength} characters: letters, numbers, _ or -.");
+        }
+        if (bio.Length > MaxBioLength)
+        {
+            return BadRequest($"Bio must be {MaxBioLength} characters or fewer.");
+        }
+        if (profilePictureUrl is not null && !IsHttpUrl(profilePictureUrl))
+        {
+            return BadRequest("ProfilePictureUrl must be an http(s) URL.");
+        }
+
+        var lowered = username.ToLower();
+        if (await _db.Users.AnyAsync(u => u.Id != user.Id && u.Username.ToLower() == lowered))
+        {
+            return Conflict("That username is taken.");
+        }
+
+        user.Username = username;
+        user.Bio = bio;
+        user.ProfilePictureUrl = profilePictureUrl;
+        user.CompletedFirstTimeSetup = true;
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            username = user.Username,
+            bio = user.Bio,
+            profilePictureUrl = user.ProfilePictureUrl,
+            completedFirstTimeSetup = user.CompletedFirstTimeSetup
+        });
+    }
+
+    private const int MinUsernameLength = 3;
+    private const int MaxUsernameLength = 30;
+    private const int MaxBioLength = 500;
+    private const int MaxUrlLength = 2048;
+
+    private static bool IsHttpUrl(string url) =>
+        url.Length <= MaxUrlLength
+        && Uri.TryCreate(url, UriKind.Absolute, out var uri)
+        && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 
     // Whether the authenticated user is currently banned. [AllowBanned] exempts this
     // one action from EnsureUserExistsFilter's blanket ban block, since its entire

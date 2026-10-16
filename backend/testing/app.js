@@ -54,6 +54,19 @@ const ENDPOINTS = [
     desc: 'Whether the signed-in user is currently banned. Reachable even while banned — every other endpoint 403s for a banned user.',
   },
   {
+    id: 'user-onboarding',
+    group: 'users',
+    method: 'PUT',
+    path: '/api/user/me/onboarding',
+    auth: true,
+    desc: 'First-time setup: set username (3–30 chars: letters, numbers, _ or -), bio (max 500) and profile picture URL, and mark completedFirstTimeSetup. Repeatable. 409 if the username is taken.',
+    body: {
+      username: 'torque_builder',
+      bio: 'I build things that spin.',
+      profilePictureUrl: 'https://example.com/pfp.png',
+    },
+  },
+  {
     id: 'user-set-timezone',
     group: 'users',
     method: 'PUT',

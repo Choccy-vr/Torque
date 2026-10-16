@@ -21,5 +21,6 @@ public record OwnProfileDto
     public string? Country { get; init; }
     public string? TimeZone { get; init; }
     public int StreakFreezes { get; init; }
+    public bool CompletedFirstTimeSetup { get; init; } = false;
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 }
