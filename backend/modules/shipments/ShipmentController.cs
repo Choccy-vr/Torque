@@ -5,6 +5,7 @@ using Torque.Data;
 using Torque.Extensions;
 using Torque.Payouts;
 using Torque.Projects;
+using Torque.Settings;
 using Torque.Slack;
 using Torque.Users;
 // A controller for Shipments
@@ -23,13 +24,15 @@ public class ShipmentController : ControllerBase
     private readonly PayoutService _payouts;
     private readonly SlackNotifier _slack;
     private readonly SlackOptions _slackOptions;
+    private readonly SettingsService _settings;
 
-    public ShipmentController(AppDbContext db, PayoutService payouts, SlackNotifier slack, SlackOptions slackOptions)
+    public ShipmentController(AppDbContext db, PayoutService payouts, SlackNotifier slack, SlackOptions slackOptions, SettingsService settings)
     {
         _db = db;
         _payouts = payouts;
         _slack = slack;
         _slackOptions = slackOptions;
+        _settings = settings;
     }
 
     // Get shipments all per user
@@ -100,6 +103,7 @@ public class ShipmentController : ControllerBase
 
     // Create a shipment (submit a project for review)
     [Authorize]
+    [PausedBy(SettingKeys.ShipsPaused)]
     [HttpPost("create")]
     public async Task<IActionResult> Create([FromBody] CreateShipmentDto dto)
     {
@@ -132,6 +136,13 @@ public class ShipmentController : ControllerBase
         if (project.Status is not (ProjectStatus.Unshipped or ProjectStatus.Changes_Needed or ProjectStatus.Approved))
         {
             return BadRequest("This project cannot be shipped from its current status.");
+        }
+        // Resubmitting after a review asked for changes can be paused on its own, so
+        // reviewers can clear the queue while first ships keep coming in.
+        if (project.Status == ProjectStatus.Changes_Needed)
+        {
+            var paused = await _settings.PausedResultAsync(SettingKeys.ResubmissionsPaused);
+            if (paused is not null) return paused;
         }
         var unpaidHours = await _payouts.UnpaidJournalHoursAsync(project.Id);
         if (unpaidHours < MinShipHours)

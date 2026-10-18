@@ -7,6 +7,7 @@ import Project from './pages/Project.jsx'
 import NewProject from './pages/NewProject.jsx'
 import Explore from './pages/Explore.jsx'
 import Profile from './pages/Profile.jsx'
+import AdminSettings from './pages/AdminSettings.jsx'
 import { AuthProvider, RequireAuth } from './lib/auth.jsx'
 import './App.css'
 
@@ -50,6 +51,7 @@ function AppRoutes() {
                 <Route path="/docs/*" element={<Suspense fallback={<div className="min-h-screen" />}><Docs /></Suspense>} />
                 <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
                 <Route path="/profile/:id" element={<Profile />} />
+                <Route path="/admin/settings" element={<RequireAuth><AdminSettings /></RequireAuth>} />
             </Routes>
         </div>
     )

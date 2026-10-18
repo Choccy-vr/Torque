@@ -4,18 +4,30 @@ import AppShell, { PageHeader } from "../components/AppShell.jsx";
 import { getMyProjects } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
 import ProjectCard, { ProjectCardSkeleton } from "../components/ProjectCard.jsx";
-import { Empty, InlineError } from "../components/PageParts.jsx";
+import { Empty, InlineError, PauseNotices } from "../components/PageParts.jsx";
+import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
 
 const GRID = "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8";
 
 export default function Projects() {
     const { data: projects, error, loading, reload } = useApi(getMyProjects);
+    const creationPaused = Boolean(pausedMessage(useSettings(), PAUSE.projectCreation));
 
     return (
         <AppShell title="Projects">
             <PageHeader
                 title="My Projects"
-                action={
+                action={creationPaused ? (
+                    // The notice under the header says why.
+                    <button
+                        type="button"
+                        disabled
+                        className="inline-flex min-h-11 items-center gap-2 rounded-(--radius) border-2 border-white/15 bg-white/10 px-7 text-lg font-bold text-(--text)/75 cursor-not-allowed"
+                    >
+                        <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                        New project
+                    </button>
+                ) : (
                     <Link
                         to="/projects/new"
                         className="t-btn t-hover inline-flex min-h-11 items-center gap-2 rounded-(--radius) px-7 text-lg font-bold focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--text)"
@@ -23,8 +35,10 @@ export default function Projects() {
                         <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
                         New project
                     </Link>
-                }
+                )}
             />
+
+            <PauseNotices keys={[PAUSE.projectCreation]} className="mt-6" />
 
             <div className="mt-8">
                 {loading ? (

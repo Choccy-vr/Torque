@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Torque.Data;
 using Torque.Devlogs;
 using Torque.Projects;
+using Torque.Settings;
 using Torque.Users;
 
 namespace Torque.Streaks;
@@ -10,7 +11,9 @@ namespace Torque.Streaks;
 // once that project's journals created that day cover 1+ hour of Hackatime time. A
 // missed day resets the streak unless the owner spends a streak freeze on it. While a
 // ship is in review the streak is paused: missed days aren't settled until the review
-// ends (approved, changes needed or rejected), and the paused days are forgiven.
+// ends (approved, changes needed or rejected), and the paused days are forgiven. The
+// same goes for everyone while an admin has streaks or journaling paused globally
+// (SettingKeys.StreakPausing).
 public class StreakService
 {
     public const double SecondsPerDay = 3600; // journaled seconds needed for a day to count
@@ -26,7 +29,13 @@ public class StreakService
     };
 
     private readonly AppDbContext _db;
-    public StreakService(AppDbContext db) => _db = db;
+    private readonly SettingsService _settings;
+
+    public StreakService(AppDbContext db, SettingsService settings)
+    {
+        _db = db;
+        _settings = settings;
+    }
 
     // Days of streak it takes to reach the level's max rate, rounded up (e.g. level 1:
     // 14 days = 39.9/hr, so 15). Levels outside 1–4 are clamped.
@@ -54,14 +63,35 @@ public class StreakService
     public static bool InReview(ProjectStatus status) =>
         status is ProjectStatus.Unreviewed or ProjectStatus.Claimed or ProjectStatus.Fraud_Pending;
 
-    // Call when a project leaves review: moves the last counted day up to yesterday so
-    // the days spent in review aren't settled as missed. Today is still theirs to journal.
+    // Call when a project leaves review (or a global streak pause ends): moves the last
+    // counted day up to yesterday so the paused days aren't settled as missed. Today is
+    // still theirs to journal.
     public static void ResumeAfterReview(Project project, User owner)
     {
         if (project.StreakCount == 0 || project.LastStreakDate is null) return;
 
         var yesterday = LocalDate(owner, DateTime.UtcNow).AddDays(-1);
         if (project.LastStreakDate < yesterday) project.LastStreakDate = yesterday;
+    }
+
+    // Call when a global streak pause ends: forgives the paused days on every active
+    // streak, like ResumeAfterReview. Caller saves.
+    public async Task ResumeAllAfterPauseAsync(CancellationToken ct = default)
+    {
+        var active = await _db.Projects
+            .Where(p => p.StreakCount > 0 && p.LastStreakDate != null)
+            .ToListAsync(ct);
+        if (active.Count == 0) return;
+
+        var ownerIds = active.Select(p => p.OwnerUserId).Distinct().ToList();
+        var owners = await _db.Users
+            .Where(u => ownerIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, ct);
+
+        foreach (var project in active)
+        {
+            if (owners.TryGetValue(project.OwnerUserId, out var owner)) ResumeAfterReview(project, owner);
+        }
     }
 
     public static TimeZoneInfo TimeZoneFor(User user) =>
@@ -85,11 +115,12 @@ public class StreakService
     // spends a freeze (streak holds) or, with none left or freezes paused on the
     // project, resets the streak. Does nothing
     // without an active streak, so freezes are never spent protecting nothing, or while the
-    // streak is paused for review. Caller saves.
+    // streak is paused (for review, or globally by an admin). Caller saves.
     public async Task ReconcileAsync(Project project, User user, DateOnly today, CancellationToken ct = default)
     {
         if (project.StreakCount == 0 || project.LastStreakDate is null) return;
         if (InReview(project.Status)) return;
+        if (await _settings.StreaksPausedAsync(ct)) return;
 
         for (var day = project.LastStreakDate.Value.AddDays(1); day < today; day = day.AddDays(1))
         {

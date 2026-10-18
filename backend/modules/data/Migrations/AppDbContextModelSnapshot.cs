@@ -431,6 +431,34 @@ namespace torque_backend.Data.Migrations
                     b.ToTable("shipment_reviews", (string)null);
                 });
 
+            modelBuilder.Entity("Torque.Settings.AppSetting", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("text")
+                        .HasColumnName("key");
+
+                    b.Property<bool>("BoolValue")
+                        .HasColumnType("boolean")
+                        .HasColumnName("bool_value");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("text")
+                        .HasColumnName("message");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.HasKey("Key")
+                        .HasName("pk_app_settings");
+
+                    b.ToTable("app_settings", (string)null);
+                });
+
             modelBuilder.Entity("Torque.Shipments.Shipment", b =>
                 {
                     b.Property<Guid>("Id")

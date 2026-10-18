@@ -1,8 +1,10 @@
 import { Link, NavLink } from "react-router-dom";
-import { BookOpen, CircleUserRound, Compass, FolderOpen, Gauge, LogIn, LogOut, Zap } from "lucide-react";
+import { useCallback } from "react";
+import { BookOpen, CircleUserRound, Compass, FolderOpen, Gauge, LogIn, LogOut, Settings2, Zap } from "lucide-react";
 import { useAuth } from "../lib/useAuth.js";
 import { getMyProfile } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
+import { isAdmin } from "../lib/settings.js";
 import Drone from "../assets/img.png";
 import logo from "../assets/logo.png";
 
@@ -13,6 +15,9 @@ const links = [
     { name: "Docs", path: "/docs", icon: BookOpen },
     { name: "Profile", path: "/profile", icon: CircleUserRound },
 ];
+
+// Only for admins: the global switches (pause ships, journaling, ...).
+const ADMIN_LINK = { name: "Admin", path: "/admin/settings", icon: Settings2 };
 
 // Active = coral wash + full coral border; the label stays Chalk White so it
 // keeps 6:1 contrast (coral text on the wash is only 2.4:1).
@@ -26,6 +31,9 @@ export default function Navbar() {
     const AuthIcon = session ? LogOut : LogIn;
     const authLabel = session ? "Log out" : "Log in";
     const onAuth = () => (session ? signOut() : signIn(window.location.pathname));
+    // Shares the cached profile request with the user plate.
+    const fetchProfile = useCallback(() => (session ? getMyProfile().catch(() => null) : Promise.resolve(null)), [session]);
+    const admin = isAdmin(useApi(fetchProfile).data);
 
     return (
         <>
@@ -33,7 +41,19 @@ export default function Navbar() {
                 <Link to="/home" className="t-heading font-bold min-w-1/5 w-1/4 tracking-wide shrink-0">
                     <img src={logo} className={"w-full min-w-[100px] h-auto"} alt="Torque home" />
                 </Link>
-                <div className="flex flex-row items-center">
+                <div className="flex flex-row items-center gap-1">
+                    {admin && (
+                        <NavLink
+                            to={ADMIN_LINK.path}
+                            aria-label={ADMIN_LINK.name}
+                            title={ADMIN_LINK.name}
+                            className={({ isActive }) =>
+                                `inline-flex size-11 items-center justify-center rounded-xl border-2 transition-all duration-300 ease ${stateClass(isActive)}`
+                            }
+                        >
+                            <ADMIN_LINK.icon aria-hidden="true" className="size-5" />
+                        </NavLink>
+                    )}
                     <button
                         onClick={onAuth}
                         className="inline-flex min-h-11 items-center gap-2 rounded-xl border-2 border-transparent px-3 font-medium text-(--text) transition-all duration-300 ease hover:bg-white/10 hover:border-white/20"
@@ -71,7 +91,7 @@ export default function Navbar() {
                     <Link to="/home" className="mb-4 rounded-xl transition-opacity duration-300 ease hover:opacity-80">
                         <img src={logo} alt="Torque home" />
                     </Link>
-                    {links.filter(({ name }) => name !== "Profile")
+                    {[...links.filter(({ name }) => name !== "Profile"), ...(admin ? [ADMIN_LINK] : [])]
                     .map(({ name, path, icon: Icon }) => (
                         <NavLink
                             key={path}

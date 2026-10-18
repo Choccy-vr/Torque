@@ -7,6 +7,7 @@ using Torque.Extensions;
 using Torque.Hackatime;
 using Torque.Lapse;
 using Torque.Payouts;
+using Torque.Settings;
 using Torque.Slack;
 using Torque.Streaks;
 using Torque.Testing;
@@ -34,6 +35,7 @@ builder.Services.AddAirtable(builder.Configuration);
 builder.Services.AddSlack(builder.Configuration);
 builder.Services.AddStreaks();
 builder.Services.AddPayouts();
+builder.Services.AddSettings();
 
 var app = builder.Build();
 

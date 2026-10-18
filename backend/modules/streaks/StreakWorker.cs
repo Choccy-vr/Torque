@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Torque.Data;
 using Torque.Projects;
+using Torque.Settings;
 
 namespace Torque.Streaks;
 
@@ -8,7 +9,7 @@ namespace Torque.Streaks;
 // day is before yesterday missed a day, so it spends a freeze or resets. Journals settle
 // their own project too (StreakService.RecordJournalAsync); this catches projects nobody
 // journals on. Projects in review are skipped: their streak is paused (see
-// StreakService.InReview).
+// StreakService.InReview). Nothing is settled while streaks are paused globally.
 public class StreakWorker : BackgroundService
 {
     private static readonly TimeSpan PollInterval = TimeSpan.FromMinutes(15);
@@ -61,6 +62,8 @@ public class StreakWorker : BackgroundService
         using var scope = _scopes.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var streaks = scope.ServiceProvider.GetRequiredService<StreakService>();
+        var settings = scope.ServiceProvider.GetRequiredService<SettingsService>();
+        if (await settings.StreaksPausedAsync(ct)) return;
 
         var active = await db.Projects
             .Where(p => p.StreakCount > 0

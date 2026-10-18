@@ -643,6 +643,35 @@ const ENDPOINTS = [
     desc: 'Admin-only. Delete an announcement. 204 on success.',
     params: [{ name: 'id', placeholder: 'announcement uuid' }],
   },
+  {
+    id: 'settings-public',
+    group: 'settings',
+    method: 'GET',
+    path: '/api/settings',
+    auth: false,
+    desc: 'Every global setting keyed by name ({ ships_paused: { paused, message }, ... }). Paused endpoints answer 503 { error, paused }.',
+  },
+  {
+    id: 'settings-admin',
+    group: 'settings',
+    method: 'GET',
+    path: '/api/admin/settings',
+    auth: true,
+    desc: 'Admin-only. Every setting with label, description, custom/default message and who last changed it.',
+  },
+  {
+    id: 'settings-update',
+    group: 'settings',
+    method: 'PATCH',
+    path: '/api/admin/settings/{key}',
+    auth: true,
+    desc: 'Admin-only. Switch a setting and/or set its message (max 500, "" = default). Keys: ships_paused, resubmissions_paused, project_creation_paused, journaling_paused, streaks_paused. Ending a streak pause forgives the paused days.',
+    params: [{ name: 'key', placeholder: 'ships_paused' }],
+    body: {
+      paused: true,
+      message: '',
+    },
+  },
 ];
 
 // Display order and labels for the groups above.
@@ -660,6 +689,7 @@ const GROUP_LABELS = {
   hackatime: 'Hackatime',
   lapse: 'Lapse',
   announcements: 'Announcements',
+  settings: 'Settings',
 };
 
 // ---------------------------------------------------------------- boot

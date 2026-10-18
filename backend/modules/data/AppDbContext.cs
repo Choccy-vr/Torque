@@ -7,6 +7,7 @@ using Torque.Grants;
 using Torque.Payouts;
 using Torque.Projects;
 using Torque.Reviews;
+using Torque.Settings;
 using Torque.Shipments;
 using Torque.Streaks;
 using Torque.Users;
@@ -31,6 +32,7 @@ public class AppDbContext : DbContext
     public DbSet<ProjectStreakDay> ProjectStreakDays => Set<ProjectStreakDay>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
     public DbSet<Grant> Grants => Set<Grant>();
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -76,6 +78,8 @@ public class AppDbContext : DbContext
             .IsUnique();
         builder.Entity<Grant>()
             .HasIndex(g => g.Fulfilled);
+        builder.Entity<AppSetting>()
+            .HasKey(s => s.Key);
 
         // Encrypted at rest — see TokenEncryptor. Never expose this on a DTO.
         var tokenConverter = new ValueConverter<string?, string?>(

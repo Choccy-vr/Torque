@@ -1,7 +1,9 @@
-import { RotateCw } from "lucide-react";
+import { CirclePause, RotateCw } from "lucide-react";
+import { pausedMessage, useSettings } from "../lib/settings.js";
 
 // Building blocks shared by the in-app pages (profile, project): redlined
-// section headings and the dashed empty / inline-error placeholders.
+// section headings, the dashed empty / inline-error placeholders, and the
+// slim notice strip.
 
 // `action` sits at the heading's far end (e.g. the project's "New entry").
 export function Section({ id, title, count, action, children }) {
@@ -50,5 +52,36 @@ export function RetryButton({ onClick }) {
             <RotateCw aria-hidden="true" className="size-4" />
             Try again
         </button>
+    );
+}
+
+// One slim line about where things stand, with an optional action at its end.
+// `attention` (full coral edge and icon) is for something the reader must act on.
+export function Notice({ icon: Icon, attention = false, action, children }) {
+    return (
+        // Phones: the action drops under the sentence; wider, it sits at the end.
+        <section
+            className={`grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 rounded-2xl border-2 bg-(--card) px-4 py-3 text-(--text) sm:flex sm:items-center sm:gap-x-4 sm:px-5 ${attention ? "border-(--accent)" : "border-(--accent)/55"}`}
+        >
+            <Icon aria-hidden="true" className={`mt-0.5 size-5 shrink-0 sm:mt-0 ${attention ? "text-(--accent)" : "text-(--text)/85"}`} />
+            <p className="min-w-0 flex-1 leading-relaxed text-(--text)/90">{children}</p>
+            {action && <div className="col-start-2 -ml-3 sm:ml-0">{action}</div>}
+        </section>
+    );
+}
+
+// A notice per admin switch in `keys` that's on (see lib/settings.js), with
+// the message the admin set. Nothing while settings load or nothing's paused.
+export function PauseNotices({ keys, className = "" }) {
+    const settings = useSettings();
+    const messages = keys.map((key) => [key, pausedMessage(settings, key)]).filter(([, message]) => message);
+
+    // Stays mounted (hidden while empty) so a pause that lands later is announced.
+    return (
+        <div role="status" className={`flex flex-col gap-3 empty:hidden ${className}`}>
+            {messages.map(([key, message]) => (
+                <Notice key={key} icon={CirclePause}>{message}</Notice>
+            ))}
+        </div>
     );
 }

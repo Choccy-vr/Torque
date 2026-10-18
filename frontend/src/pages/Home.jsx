@@ -6,6 +6,8 @@ import Markdown from "../components/Markdown.jsx";
 import ProjectCard, { ProjectCardSkeleton } from "../components/ProjectCard.jsx";
 import { getAnnouncements, getMyProjects, getStaffPicks } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
+import { PauseNotices } from "../components/PageParts.jsx";
+import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
 
 // Scrolls sideways when the cards don't fit. Bleeds to the panel's inner edges
 // (negative margin + matching padding) so cards scroll edge to edge, and is
@@ -16,6 +18,16 @@ const MESSAGE = "flex grow flex-col items-center justify-center gap-3 text-cente
 export default function Home() {
     const { data: projects, error, loading, reload } = useApi(getMyProjects);
     const hasProjects = projects?.length > 0;
+    const settings = useSettings();
+    const creationPaused = Boolean(pausedMessage(settings, PAUSE.projectCreation));
+    // Only the pauses this builder would run into; journaling's notice already
+    // says streaks are paused, so the streak one would repeat it.
+    const pauseKeys = [
+        PAUSE.projectCreation,
+        ...(hasProjects ? [PAUSE.ships, PAUSE.journaling] : []),
+        ...(projects?.some((p) => p.status === "Changes_Needed") && !pausedMessage(settings, PAUSE.ships) ? [PAUSE.resubmissions] : []),
+        ...(projects?.some((p) => p.streak > 0) && !pausedMessage(settings, PAUSE.journaling) ? [PAUSE.streaks] : []),
+    ];
 
     // Newest first; ISO timestamps sort correctly as strings.
     const sorted = hasProjects
@@ -25,6 +37,9 @@ export default function Home() {
     return (
         <AppShell title="Dashboard">
             <PageTitle>Dashboard</PageTitle>
+
+            {/* Admin pauses up front: this is where builders land. */}
+            <PauseNotices keys={pauseKeys} className="mt-6 md:mt-8" />
 
             <section
                 aria-labelledby="your-projects"
@@ -73,13 +88,25 @@ export default function Home() {
                             Any hardware project that uses a motor counts. Set up Lapse and Hackatime first, so every hour gets tracked.
                         </p>
                         <div className="mt-3 flex flex-col items-center gap-3 sm:flex-row">
-                            <Link
-                                to="/projects/new"
-                                className="t-btn t-hover inline-flex min-h-11 items-center gap-2 rounded-(--radius) px-8 text-lg font-bold"
-                            >
-                                <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
-                                Add project
-                            </Link>
+                            {creationPaused ? (
+                                // The pause notice above the panel says why.
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="inline-flex min-h-11 items-center gap-2 rounded-(--radius) border-2 border-white/15 bg-white/10 px-8 text-lg font-bold text-(--text)/75 cursor-not-allowed"
+                                >
+                                    <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                                    Add project
+                                </button>
+                            ) : (
+                                <Link
+                                    to="/projects/new"
+                                    className="t-btn t-hover inline-flex min-h-11 items-center gap-2 rounded-(--radius) px-8 text-lg font-bold"
+                                >
+                                    <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                                    Add project
+                                </Link>
+                            )}
                             <Link
                                 to="/docs/getting-started"
                                 className="inline-flex min-h-11 items-center rounded-(--radius) border-2 border-(--accent)/55 px-8 text-lg font-bold text-(--text) transition-all duration-300 ease hover:border-(--accent) hover:bg-(--accent)/15"

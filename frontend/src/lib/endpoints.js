@@ -1,38 +1,44 @@
 import { apiFetch } from './api.js'
+import { notePaused } from './settings.js'
 
 // Typed-ish wrappers around backend endpoints (see backend/README.md).
 // Each one resolves to the parsed JSON body or throws an ApiError.
 
 export class ApiError extends Error {
-    constructor(status, message) {
+    // `paused` is the setting's key when an admin switch blocked the request.
+    constructor(status, message, paused = null) {
         super(message || `Request failed (${status})`)
         this.status = status
+        this.paused = paused
     }
 }
 
 async function getJson(path) {
     const res = await apiFetch(path)
-    if (!res.ok) throw new ApiError(res.status, await res.text().catch(() => ''))
+    if (!res.ok) throw await apiError(res)
     return res.json()
 }
 
 async function sendJson(method, path, body) {
     const res = await apiFetch(path, { method, body: JSON.stringify(body) })
-    if (!res.ok) throw new ApiError(res.status, await readError(res))
+    if (!res.ok) throw await apiError(res)
     return res.status === 204 ? null : res.json()
 }
 
 // The backend answers most failures with a plain sentence ("Title is
-// required!"), but model-binding failures come back as problem+json.
-async function readError(res) {
+// required!"), but model-binding failures come back as problem+json, and
+// paused actions (and bans) as { error }.
+async function apiError(res) {
     const text = await res.text().catch(() => '')
+    let body
     try {
-        const body = JSON.parse(text)
-        const first = body.errors && Object.values(body.errors).flat()[0]
-        return first || body.title || text
+        body = JSON.parse(text)
     } catch {
-        return text
+        return new ApiError(res.status, text)
     }
+    if (body?.paused) notePaused(body.paused, body.error)
+    const first = body?.errors && Object.values(body.errors).flat()[0]
+    return new ApiError(res.status, first || body?.error || body?.title || text, body?.paused ?? null)
 }
 
 // The Navbar remounts on every page, so the profile is fetched once per page
@@ -142,4 +148,14 @@ export function getHackatimeHours(projectNames) {
 // { trackedHours, uncappedHours, maxHours, hackatimeLinked, hackatimeReachable }
 export function getJournalPreview(projectId) {
     return getJson(`api/devlog/preview/${encodeURIComponent(projectId)}`)
+}
+
+// GET api/admin/settings — AdminSettingDto[] (admins only; 403 otherwise)
+export function getAdminSettings() {
+    return getJson('api/admin/settings')
+}
+
+// PATCH api/admin/settings/{key} — AdminSettingDto. { paused?, message? }; message "" = default.
+export function updateSetting(key, changes) {
+    return sendJson('PATCH', `api/admin/settings/${encodeURIComponent(key)}`, changes)
 }
