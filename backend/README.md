@@ -67,7 +67,7 @@ Leave these blank to switch the feature off. The rest of the backend still works
 | `HACKATIME_REDIRECT_URI` | `http://localhost:5267/auth/hackatime/callback` | Must exactly match the redirect URI registered on the Hackatime OAuth app |
 | `HACKATIME_BASE_URL` | `https://hackatime.hackclub.com` | Leave as is |
 | `LAPSE_PROGRAM_KEY` | program key | Ask a Lapse admin. Lets reviewers see a project's timelapses |
-| `LAPSE_BASE_URL` | `https://lapse.hackclub.com` | Leave as is |
+| `LAPSE_BASE_URL` | `https://api.lapse.hackclub.com` | Leave as is |
 | `AIRTABLE_API_KEY` | personal access token (`pat...`) | Create one at [airtable.com/create/tokens](https://airtable.com/create/tokens) with the `data.records:write` scope and access to the base |
 | `AIRTABLE_BASE_ID` | `app...` | The `app...` part of the base's URL in Airtable |
 | `AIRTABLE_TABLE_NAME` | `YSWS Project Submission` | Name of the table approved projects get pushed to |

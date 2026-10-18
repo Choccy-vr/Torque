@@ -86,15 +86,13 @@ public class LapseService
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ProgramKey);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
+            // An unknown email is a 200 with `user: null`, so a 404 here means the route
+            // itself is missing (wrong LAPSE_BASE_URL) — log it rather than caching a miss.
             var response = await _http.SendAsync(request);
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            if (!response.IsSuccessStatusCode)
             {
-                // intentional miss — cache the null below
-            }
-            else if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Lapse queryByEmail failed: {Status}", response.StatusCode);
-                return null; // don't cache transient failures
+                _logger.LogWarning("Lapse queryByEmail failed: {Status} ({Url})", response.StatusCode, request.RequestUri);
+                return null; // don't cache failures
             }
             else
             {
