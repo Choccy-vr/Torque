@@ -24,7 +24,7 @@ values read from `backend/.env`:
 |---|---|
 | `SUPABASE_URL` | Which Supabase instance to talk to |
 | `SUPABASE_ANON_KEY` | Public client key — `supabase status` prints it |
-| `TESTING_OIDC_PROVIDER` | Provider identifier passed to `signInWithOAuth`, e.g. `custom:hackclub-auth` |
+| `OIDC_PROVIDER` | Provider identifier passed to `signInWithOAuth`, e.g. `custom:hackclub-auth` |
 
 `/testing/*` is only mapped when `ASPNETCORE_ENVIRONMENT=Development`, so none of
 this exists in a production build.

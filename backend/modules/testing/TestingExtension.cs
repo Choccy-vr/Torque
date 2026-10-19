@@ -36,7 +36,7 @@ public static class TestingExtension
         {
             supabaseUrl = config["SUPABASE_URL"],
             supabaseAnonKey = config["SUPABASE_ANON_KEY"],
-            oidcProvider = config["TESTING_OIDC_PROVIDER"]
+            oidcProvider = config["OIDC_PROVIDER"]
         }));
 
         // Runs an Airtable push pass right now (instead of waiting for the worker's next

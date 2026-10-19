@@ -55,7 +55,7 @@ Then fill it in. The backend **won't start** without the required ones.
 |---|---|---|
 | `SUPABASE_ANON_KEY` | a key starting with `eyJ` | `ANON_KEY` in `supabase status -o env` |
 | `SUPABASE_SERVICE_ROLE_KEY` | a key starting with `eyJ` | `SERVICE_ROLE_KEY` in `supabase status -o env`. Server-only, never put it in the frontend |
-| `TESTING_OIDC_PROVIDER` | `custom:hackclub-auth` | The OIDC provider name configured in Supabase auth |
+| `OIDC_PROVIDER` | `custom:hackclub-auth` | The OIDC provider name configured in Supabase auth. Both the testing harness and the Docker frontend sign in with it |
 
 #### Optional integrations
 
@@ -120,11 +120,48 @@ want to shut the containers down too. Your data is kept between restarts.
 <http://localhost:5267/testing/> that signs in over OIDC and sends authenticated
 requests to every endpoint below. See [testing/README.md](testing/README.md).
 
+## Deploying with Docker
+
+Production runs as **one Docker container** built from the [`Dockerfile`](../Dockerfile)
+in the repo root. The image builds the frontend, then the backend serves the site and the API from
+one URL: `/api/*` is the API, and every other path is the React app. Because both are on
+one origin, the frontend needs no `VITE_*` build vars and there's no CORS to set up. On
+boot the container also applies any pending database migrations by itself, so you never
+run `dotnet ef database update` in production.
+
+### Try the image locally first
+
+With Supabase running (`supabase start`), from the **repo root**:
+
+```bash
+docker compose up --build
+```
+
+Then open <http://localhost:8080>. This reads `backend/.env` just like `dotnet watch`
+does. `Ctrl-C` stops it.
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Postgres URL, `postgres://user:pass@host:port/db` (or `DB_CONNECTION_STRING`) |
+| `FRONTEND_URL` | The public URL, e.g. `https://torque.hackclub.com` (used in Slack links + CORS) |
+| `SUPABASE_URL`, `SUPABASE_JWT_SECRET`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | From the hosted Supabase project's settings |
+| `OIDC_PROVIDER` | `custom:hackclub-auth` |
+| `TOKEN_ENCRYPTION_KEY` | A **new** `openssl rand -base64 32` for production. Keep it safe; changing it later breaks saved Hackatime links |
+| `HACKATIME_REDIRECT_URI` | `https://<your-domain>/...` callback, also registered on the Hackatime OAuth app |
+| Everything under [Optional integrations](#optional-integrations) | Same as local |
+
+`SUPABASE_URL`, `SUPABASE_ANON_KEY` and `OIDC_PROVIDER` reach the browser through
+`/config.js`, so those are the only values the frontend sees. Never expose the service-role key or the JWT secret.
+
+Other knobs: `PORT` (default `8080`), and `MIGRATE_ON_STARTUP=false` to skip the
+automatic migrations.
+
 ## Endpoints
 
 | Method | Route | Auth required | Description |
 |---|---|---|---|
 | GET | `api/health` | No | return JSON |
+| GET | `config.js` | No | Docker image only (not `dotnet run`). JavaScript that sets `window.__TORQUE_CONFIG__` to the frontend's runtime config: `supabaseUrl`, `supabaseAnonKey`, `oidcProvider` (from `OIDC_PROVIDER`) and `apiUrl` (always `""`, same origin). Every other non-`api/` path serves the frontend's `index.html` |
 | GET | `api/user/{id:guid}` | No | Get public profile (no PII) by user ID, including their Slack user ID (for linking to their Slack profile) |
 | GET | `api/user/me` | YES | Get authenticated user's own profile, including `timeZone` (streak timezone, null until set) `streakFreezes` (read-only; everyone starts with 3) and `completedFirstTimeSetup` (false until `me/onboarding` is called) |
 | PUT | `api/user/me/onboarding` | YES | First-time setup: set your username, bio and profile picture, and mark `completedFirstTimeSetup` true. Can be called again to change them (every field is overwritten). 400 on invalid input; 409 if the username is taken (case-insensitive). Body (JSON): `username` (string, required, 3–30 chars: letters, numbers, `_`, `-`), `bio` (string, optional, max 500), `profilePictureUrl` (http(s) URL, optional — omitted/`""` clears it) |

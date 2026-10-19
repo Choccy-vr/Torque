@@ -1,0 +1,15 @@
+# Runs the production image locally, to check it works before deploying.
+#   supabase start            # local DB + auth, same as normal dev
+#   docker compose up --build # then open http://localhost:8080
+# Reads backend/.env. Host networking lets the container reach Supabase on 127.0.0.1
+# exactly like `dotnet run` does (Linux only; Docker Desktop needs host networking on).
+name: torque
+services:
+  torque:
+    build: .
+    env_file: backend/.env
+    environment:
+      PORT: "8080"
+      FRONTEND_URL: http://localhost:8080
+    network_mode: host
+    restart: unless-stopped
