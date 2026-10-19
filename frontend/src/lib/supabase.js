@@ -1,11 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 import { config } from './config.js'
+import { isCallbackPopup } from './hackatimePending.js'
 
 // sessionStorage instead of the default localStorage: the session is scoped to
 // this tab and wiped when it closes, rather than sitting on disk indefinitely.
-// Falls back to memory-only if storage is blocked (e.g. some private modes).
+// Falls back to memory-only if storage is blocked (e.g. some private modes),
+// and in the Hackatime popup, which must stay signed out (hackatimePending.js).
 function tabStorage() {
     try {
+        if (isCallbackPopup()) throw new Error('signed-out popup')
         const s = window.sessionStorage
         s.setItem('__probe', '1')
         s.removeItem('__probe')

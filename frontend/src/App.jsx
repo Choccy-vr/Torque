@@ -15,7 +15,9 @@ import AdminShips from './pages/admin/Ships.jsx'
 import AdminShip from './pages/admin/Ship.jsx'
 import AdminAnnouncements from './pages/admin/Announcements.jsx'
 import AdminSettings from './pages/admin/Settings.jsx'
+import HackatimeCallback from './pages/HackatimeCallback.jsx'
 import { AuthProvider, RequireAuth } from './lib/auth.jsx'
+import { CALLBACK_PATH } from './lib/hackatimePending.js'
 import './App.css'
 
 // Fumadocs + shiki are heavy, so the docs only load when visited.
@@ -67,6 +69,8 @@ function AppRoutes() {
                 <Route path="/admin/ships/:id" element={<RequireAuth><AdminShip /></RequireAuth>} />
                 <Route path="/admin/announcements" element={<RequireAuth><AdminAnnouncements /></RequireAuth>} />
                 <Route path="/admin/settings" element={<RequireAuth><AdminSettings /></RequireAuth>} />
+                {/* Not behind RequireAuth: the popup copy of this page is signed out on purpose. */}
+                <Route path={CALLBACK_PATH} element={<HackatimeCallback />} />
             </Routes>
         </div>
     )

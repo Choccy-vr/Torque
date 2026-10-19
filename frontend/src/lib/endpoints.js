@@ -134,6 +134,22 @@ export function createShip(body) {
     return sendJson('POST', 'api/ships/create', body)
 }
 
+// GET api/hackatime/status — { connected }
+export function getHackatimeStatus() {
+    return getJson('api/hackatime/status')
+}
+
+// POST api/hackatime/start — { url, state }: the Hackatime authorize URL, and the
+// state to hold onto and echo back as `storedState` in the callback
+export function startHackatime() {
+    return sendJson('POST', 'api/hackatime/start')
+}
+
+// POST api/hackatime/callback — links Hackatime to the signed-in user
+export function finishHackatime(code, state, storedState) {
+    return sendJson('POST', 'api/hackatime/callback', { code, state, storedState })
+}
+
 // GET api/hackatime/projects — { projects: string[] }
 export function getHackatimeProjects() {
     return getJson('api/hackatime/projects')

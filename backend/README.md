@@ -64,7 +64,7 @@ Leave these blank to switch the feature off. The rest of the backend still works
 | Variable | What to put | Where it comes from |
 |---|---|---|
 | `HACKATIME_CLIENT_ID`, `HACKATIME_CLIENT_SECRET` | OAuth app credentials | Create an OAuth app on [Hackatime](https://hackatime.hackclub.com). Without these, the `api/hackatime/*` endpoints return 503 |
-| `HACKATIME_REDIRECT_URI` | `http://localhost:5267/auth/hackatime/callback` | Must exactly match the redirect URI registered on the Hackatime OAuth app |
+| `HACKATIME_REDIRECT_URI` | `http://localhost:5173/auth/hackatime/callback` | Where Hackatime sends people back after they approve access: the frontend's `/auth/hackatime/callback` page (Vite on 5173 locally, `https://<your-domain>/auth/hackatime/callback` in production). Must exactly match a redirect URI registered on the Hackatime OAuth app. The testing harness has its own callback at `http://localhost:5267/auth/hackatime/callback`; register that one too if you use it |
 | `HACKATIME_BASE_URL` | `https://hackatime.hackclub.com` | Leave as is |
 | `LAPSE_PROGRAM_KEY` | program key | Ask a Lapse admin. Lets reviewers see a project's timelapses |
 | `LAPSE_BASE_URL` | `https://api.lapse.hackclub.com` | Leave as is |

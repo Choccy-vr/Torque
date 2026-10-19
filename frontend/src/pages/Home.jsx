@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ChevronLeft, ChevronRight, Plus, RotateCw, X } from "lucide-react";
+import { ArrowRight, Check, ChevronLeft, ChevronRight, Plus, RotateCw, X } from "lucide-react";
 import AppShell, { PageTitle } from "../components/AppShell.jsx";
+import ConnectHackatime from "../components/ConnectHackatime.jsx";
 import Markdown from "../components/Markdown.jsx";
 import ProjectCard, { ProjectCardSkeleton } from "../components/ProjectCard.jsx";
-import { getAnnouncements, getMyProjects, getStaffPicks } from "../lib/endpoints.js";
+import { getAnnouncements, getHackatimeStatus, getMyProjects, getStaffPicks } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
 import { PauseNotices } from "../components/PageParts.jsx";
 import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
@@ -114,6 +115,7 @@ export default function Home() {
                                 Read the setup guide
                             </Link>
                         </div>
+                        <HackatimeSetup />
                     </div>
                 )}
             </section>
@@ -122,6 +124,30 @@ export default function Home() {
 
             <StaffPicks />
         </AppShell>
+    );
+}
+
+// The Hackatime half of "set up Lapse and Hackatime first": a Connect button
+// until it's linked, then a quiet confirmation. Nothing while it loads or if
+// the status can't be read, since the project form offers the button too.
+function HackatimeSetup() {
+    const { data, reload } = useApi(getHackatimeStatus);
+    if (!data) return null;
+    if (data.connected) {
+        return (
+            <p className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-(--text)/85">
+                <Check aria-hidden="true" className="size-4 text-(--accent)" strokeWidth={2.5} />
+                Hackatime connected
+            </p>
+        );
+    }
+    return (
+        <div className="mt-5 flex flex-col items-center gap-3 border-t-2 border-white/10 pt-5">
+            <p className="max-w-md text-sm leading-relaxed text-(--text)/80 [text-wrap:balance]">
+                Hackatime tracks your firmware time, so connect it before you start coding.
+            </p>
+            <ConnectHackatime onConnected={reload} center />
+        </div>
     );
 }
 
