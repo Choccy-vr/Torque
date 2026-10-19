@@ -48,7 +48,7 @@ function ProfileView({ userId }) {
         projects: projectList.length,
         journals: projectList.reduce((sum, p) => sum + (p.devlogIds?.length ?? 0), 0),
     };
-
+    
     return (
         <AppShell title={user.username}>
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start xl:grid-cols-[18rem_minmax(0,1fr)] xl:gap-10">

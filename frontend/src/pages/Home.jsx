@@ -6,6 +6,7 @@ import Markdown from "../components/Markdown.jsx";
 import ProjectCard, { ProjectCardSkeleton } from "../components/ProjectCard.jsx";
 import { getAnnouncements, getMyProjects, getStaffPicks } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
+import Onboarding from "../components/Onboarding.jsx";
 
 // Scrolls sideways when the cards don't fit. Bleeds to the panel's inner edges
 // (negative margin + matching padding) so cards scroll edge to edge, and is
@@ -23,7 +24,11 @@ export default function Home() {
         : [];
 
     return (
+        <>
         <AppShell title="Dashboard">
+
+            <Onboarding></Onboarding>
+
             <PageTitle>Dashboard</PageTitle>
 
             <section
@@ -95,6 +100,8 @@ export default function Home() {
 
             <StaffPicks />
         </AppShell>
+        </>
+
     );
 }
 
