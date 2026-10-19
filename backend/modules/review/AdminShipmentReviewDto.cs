@@ -7,6 +7,8 @@ public record AdminShipmentReviewDto
     public Guid ProjectId { get; init; }
     public Guid ShipmentId { get; init; }
     public Guid ReviewerId { get; init; }
+    // Filled in by the admin ship lookup only
+    public string? ReviewerUsername { get; init; }
 
     public ShipmentReviewStatus Status { get; init; }
 

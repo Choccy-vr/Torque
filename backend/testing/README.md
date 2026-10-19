@@ -45,6 +45,8 @@ Append to the `ENDPOINTS` array at the top of `app.js`:
 }
 ```
 
+A query parameter that can be left blank takes `optional: true` (e.g. `path: '/api/admin/ships?q={q}'`, `params: [{ name: 'q', placeholder: '...', optional: true }]`); left empty, its `q={q}` pair is dropped from the URL.
+
 An endpoint that needs a request header (like `airtable-approve`'s webhook secret) can
 list it as `headers: [{ name: 'X-Webhook-Secret', placeholder: '...' }]`, which renders a
 masked input whose value is sent as that header when filled in.

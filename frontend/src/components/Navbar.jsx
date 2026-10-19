@@ -1,6 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
 import { useCallback } from "react";
-import { BookOpen, CircleUserRound, Compass, FolderOpen, Gauge, LogIn, LogOut, Settings2, Zap } from "lucide-react";
+import { BookOpen, CircleUserRound, Compass, FolderOpen, Gauge, LogIn, LogOut, ShieldCheck, Zap } from "lucide-react";
 import { useAuth } from "../lib/useAuth.js";
 import { getMyProfile } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
@@ -16,8 +16,8 @@ const links = [
     { name: "Profile", path: "/profile", icon: CircleUserRound },
 ];
 
-// Only for admins: the global switches (pause ships, journaling, ...).
-const ADMIN_LINK = { name: "Admin", path: "/admin/settings", icon: Settings2 };
+// Only for admins: the admin area (users, projects, ships, announcements, settings).
+const ADMIN_LINK = { name: "Admin", path: "/admin", icon: ShieldCheck };
 
 // Active = coral wash + full coral border; the label stays Chalk White so it
 // keeps 6:1 contrast (coral text on the wash is only 2.4:1).

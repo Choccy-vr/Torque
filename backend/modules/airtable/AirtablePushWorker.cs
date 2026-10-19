@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Torque.Data;
 using Torque.Projects;
+using Torque.Settings;
 using Torque.Shipments;
 
 namespace Torque.Airtable;
@@ -67,6 +68,8 @@ public class AirtablePushWorker : BackgroundService
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var builder = scope.ServiceProvider.GetRequiredService<AirtableSubmissionBuilder>();
         var airtable = scope.ServiceProvider.GetRequiredService<AirtableClient>();
+        // While payouts are paused, approved ships wait here instead of heading to final approval.
+        if (await scope.ServiceProvider.GetRequiredService<SettingsService>().IsPausedAsync(SettingKeys.PayoutsPaused, ct)) return;
 
         var pending = await db.Shipments
             .Where(s => s.Status == ShipmentStatus.approved && s.AirtableRecordId == null)

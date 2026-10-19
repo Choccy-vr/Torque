@@ -1,60 +1,47 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useId, useRef, useState } from "react";
 import { CirclePause, Pencil } from "lucide-react";
-import AppShell, { PageHeader } from "../components/AppShell.jsx";
-import { Empty, InlineError } from "../components/PageParts.jsx";
-import { BTN_GHOST, BTN_PRIMARY, FOCUS, FormError, INPUT } from "../components/Form.jsx";
-import Switch from "../components/Switch.jsx";
-import { getAdminSettings, getMyProfile, updateSetting } from "../lib/endpoints.js";
-import { errorText } from "../lib/forms.js";
-import { isAdmin, loadSettings } from "../lib/settings.js";
-import { useApi } from "../lib/useApi.js";
+import AdminShell from "../../components/admin/AdminShell.jsx";
+import { InlineError } from "../../components/PageParts.jsx";
+import { BTN_GHOST, BTN_PRIMARY, FOCUS, FormError, INPUT } from "../../components/Form.jsx";
+import Switch from "../../components/Switch.jsx";
+import { getAdminSettings, updateSetting } from "../../lib/endpoints.js";
+import { errorText } from "../../lib/forms.js";
+import { loadSettings } from "../../lib/settings.js";
+import { formatWhen } from "../../lib/projects.js";
+import { useApi } from "../../lib/useApi.js";
 
 // Mirrors AdminSettingsController's limit.
 const MAX_MESSAGE = 500;
 
-const formatWhen = (iso) =>
-    new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
-
 const TEXT_ACTION = `-my-2 -ml-3 inline-flex min-h-11 shrink-0 items-center gap-2 self-start rounded-(--radius) px-3 font-medium text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 transition-all duration-300 ease hover:bg-white/10 ${FOCUS}`;
 
 // /admin/settings — the global switches (api/admin/settings): pause ships,
-// resubmissions, new projects, journaling or streaks for everyone, and
-// what builders are told while they're paused.
+// resubmissions, new projects, journaling, streaks or payouts for everyone,
+// and what builders are told while they're paused.
 export default function AdminSettings() {
-    const me = useApi(getMyProfile);
-    const admin = isAdmin(me.data);
-    const fetchSettings = useCallback(() => (admin ? getAdminSettings() : Promise.resolve(null)), [admin]);
-    const settings = useApi(fetchSettings);
+    return (
+        <AdminShell title="Settings">
+            <SettingsPanel />
+        </AdminShell>
+    );
+}
+
+function SettingsPanel() {
+    const settings = useApi(getAdminSettings);
 
     return (
-        <AppShell title="Global settings">
-            <PageHeader
-                title="Global settings"
-                lede="Global switches for everyone on Torque. Each one applies the moment you flip it, and builders see its message wherever it blocks them."
-            />
-
-            <div className="mt-8">
-                {/* No data and no error yet also covers the render where `admin` has just
-                    turned true and the settings fetch hasn't started. */}
-                {me.loading || (admin && !settings.data && !settings.error) ? (
-                    <SettingsSkeleton />
-                ) : me.error ? (
-                    <InlineError what="your profile" onRetry={me.reload} />
-                ) : !admin || settings.error?.status === 403 ? (
-                    <Empty
-                        title="Admins only"
-                        action={<Link to="/home" className={BTN_PRIMARY}>Back to the dashboard</Link>}
-                    >
-                        These switches pause parts of Torque for everyone, so only admins can see them.
-                    </Empty>
-                ) : settings.error ? (
-                    <InlineError what="the settings" onRetry={settings.reload} />
-                ) : (
-                    <SettingsList initial={settings.data} />
-                )}
-            </div>
-        </AppShell>
+        <div className="flex flex-col gap-6">
+            <p className="max-w-[62ch] leading-relaxed text-(--text)/85">
+                Global switches for everyone on Torque. Each one applies the moment you flip it, and builders see its message wherever it blocks them.
+            </p>
+            {settings.loading && !settings.data ? (
+                <SettingsSkeleton />
+            ) : settings.error ? (
+                <InlineError what="the settings" onRetry={settings.reload} />
+            ) : (
+                <SettingsList initial={settings.data} />
+            )}
+        </div>
     );
 }
 
@@ -66,7 +53,7 @@ function SettingsList({ initial }) {
     const pausedCount = rows.filter((row) => row.paused).length;
 
     return (
-        <section aria-labelledby="switches" className="t-card px-5 py-2 text-(--text) sm:px-8">
+        <section aria-labelledby="switches" className="t-card px-5 py-2 text-(--text)! sm:px-8">
             <h2 id="switches" className="sr-only">
                 Switches ({pausedCount === 0 ? "nothing paused" : `${pausedCount} paused`})
             </h2>
@@ -259,7 +246,7 @@ function MessageEditor({ setting, busy, onSave, onCancel }) {
 
 function SettingsSkeleton() {
     return (
-        <div aria-busy="true" aria-label="Loading settings" className="t-card flex flex-col divide-y-2 divide-white/10 px-5 py-2 sm:px-8">
+        <div aria-busy="true" aria-label="Loading settings" className="t-card flex flex-col divide-y-2 divide-white/10 px-5 py-2 sm:px-8 text-(--text)!">
             {[0, 1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex flex-col gap-4 py-6">
                     <div className="flex items-start justify-between gap-5">

@@ -30,7 +30,7 @@ public class LapseController : ControllerBase
 
         var reviewer = await _db.Users.FindAsync(userId);
         if (reviewer is null) return NotFound();
-        if (reviewer.Role is null || !reviewer.Role.Contains("reviewer")) return Forbid();
+        if (reviewer.Role is null || !(reviewer.Role.Contains("reviewer") || reviewer.Role.Contains("admin"))) return Forbid();
 
         var project = await _db.Projects.FindAsync(id);
         if (project is null) return NotFound();

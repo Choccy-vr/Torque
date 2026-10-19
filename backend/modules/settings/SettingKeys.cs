@@ -14,6 +14,7 @@ public static class SettingKeys
     public const string ProjectCreationPaused = "project_creation_paused";
     public const string JournalingPaused = "journaling_paused";
     public const string StreaksPaused = "streaks_paused";
+    public const string PayoutsPaused = "payouts_paused";
 
     public static readonly IReadOnlyList<SettingDefinition> All =
     [
@@ -37,6 +38,10 @@ public static class SettingKeys
             "Pause streaks",
             "Missed days don't reset streaks or spend freezes, and they're forgiven when you switch this off. Journaling still extends streaks.",
             "Streaks are paused right now, so a missed day won't break your streak."),
+        new(PayoutsPaused,
+            "Pause payouts",
+            "Approved ships stop going to Airtable for final approval, so no Volts are paid and no grants are created. They queue up and go out when you switch this off. A final approval Airtable sends while this is on is refused; re-run that automation afterwards.",
+            "Payouts are paused for a bit. Approved ships are queued and will be paid out once they're back on, so you won't lose anything."),
     ];
 
     // Either of these stops missed streak days from being settled.

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Landing from './pages/Landing.jsx'
 import Home from './pages/Home.jsx'
 import Projects from './pages/Projects.jsx'
@@ -7,7 +7,14 @@ import Project from './pages/Project.jsx'
 import NewProject from './pages/NewProject.jsx'
 import Explore from './pages/Explore.jsx'
 import Profile from './pages/Profile.jsx'
-import AdminSettings from './pages/AdminSettings.jsx'
+import AdminUsers from './pages/admin/Users.jsx'
+import AdminUser from './pages/admin/User.jsx'
+import AdminProjects from './pages/admin/Projects.jsx'
+import AdminProject from './pages/admin/Project.jsx'
+import AdminShips from './pages/admin/Ships.jsx'
+import AdminShip from './pages/admin/Ship.jsx'
+import AdminAnnouncements from './pages/admin/Announcements.jsx'
+import AdminSettings from './pages/admin/Settings.jsx'
 import { AuthProvider, RequireAuth } from './lib/auth.jsx'
 import './App.css'
 
@@ -51,6 +58,14 @@ function AppRoutes() {
                 <Route path="/docs/*" element={<Suspense fallback={<div className="min-h-screen" />}><Docs /></Suspense>} />
                 <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
                 <Route path="/profile/:id" element={<Profile />} />
+                <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
+                <Route path="/admin/users" element={<RequireAuth><AdminUsers /></RequireAuth>} />
+                <Route path="/admin/users/:id" element={<RequireAuth><AdminUser /></RequireAuth>} />
+                <Route path="/admin/projects" element={<RequireAuth><AdminProjects /></RequireAuth>} />
+                <Route path="/admin/projects/:id" element={<RequireAuth><AdminProject /></RequireAuth>} />
+                <Route path="/admin/ships" element={<RequireAuth><AdminShips /></RequireAuth>} />
+                <Route path="/admin/ships/:id" element={<RequireAuth><AdminShip /></RequireAuth>} />
+                <Route path="/admin/announcements" element={<RequireAuth><AdminAnnouncements /></RequireAuth>} />
                 <Route path="/admin/settings" element={<RequireAuth><AdminSettings /></RequireAuth>} />
             </Routes>
         </div>
