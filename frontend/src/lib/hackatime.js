@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { finishHackatime, startHackatime } from './endpoints.js'
 import { clearPending, readPending, savePending } from './hackatimePending.js'
 
@@ -59,6 +59,43 @@ export function useHackatimeResult(onResult) {
         window.addEventListener(RESULT_EVENT, handler)
         return () => window.removeEventListener(RESULT_EVENT, handler)
     }, [onResult])
+}
+
+// The connect button's behaviour, for any button that starts it: `connect` to
+// call on click, `waiting` while Hackatime is open, and `error` once it fails.
+// Calls `onConnected` once the account is linked.
+export function useConnectHackatime(onConnected) {
+    const [waiting, setWaiting] = useState(false)
+    const [error, setError] = useState(null)
+    const watchRef = useRef(null)
+
+    const stopWatching = () => clearInterval(watchRef.current)
+    useEffect(() => stopWatching, [])
+
+    useHackatimeResult(useCallback((result) => {
+        stopWatching()
+        setWaiting(false)
+        if (result.ok) onConnected?.()
+        else setError(result.message)
+    }, [onConnected]))
+
+    async function connect() {
+        if (waiting) return
+        setError(null)
+        setWaiting(true)
+        try {
+            const popup = await connectHackatime()
+            // Closing the popup without finishing just puts the button back.
+            watchRef.current = setInterval(() => {
+                if (popup.closed) { stopWatching(); setWaiting(false) }
+            }, 500)
+        } catch (e) {
+            setWaiting(false)
+            setError(describeHackatimeError(e))
+        }
+    }
+
+    return { connect, waiting, error }
 }
 
 function announce(result) {

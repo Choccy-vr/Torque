@@ -1,11 +1,14 @@
-import {useState} from 'react'
-import {ArrowLeft, ArrowRight, Check} from "lucide-react";
-import { supabase } from '../lib/supabase.js'
+import {useCallback, useEffect, useState} from 'react'
+import {ArrowLeft, ArrowRight, Check, LoaderCircle} from "lucide-react";
+import { useOutletContext } from 'react-router-dom'
+import { completeOnboarding, getHackatimeStatus, getMyProfile, joinSlackChannels } from '../lib/endpoints.js'
+import { useConnectHackatime } from '../lib/hackatime.js'
+import { FieldError } from './Form.jsx'
 
 const steps = [
     {
         title: "Profile Information",
-        description: "Pick a username, description, and profile picture that will show up to people who view your profile.",
+        description: "Pick a username, bio, and profile picture that will show up to people who view your profile.",
     },
     {
         title: "Hackatime Setup",
@@ -18,15 +21,35 @@ const steps = [
 ];
 
 export default function Onboarding({ onComplete = () => {} }) {
+    const { markOnboarded } = useOutletContext() ?? {}
 
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
     const [page, setPage] = useState(1);
+    const [hackatimeConnected, setHackatimeConnected] = useState(false)
+    const onHackatimeConnected = useCallback(() => setHackatimeConnected(true), [])
+    const hackatime = useConnectHackatime(onHackatimeConnected)
     const [formData, setFormData] = useState({
         username: "",
-        description: "",
+        bio: "",
         profilePicture: null,
+        slackInvite: null,
     })
+
+    // Fill in whatever the account already has, without overwriting typing.
+    useEffect(() => {
+        getMyProfile()
+            .then((profile) => setFormData((prev) => ({
+                ...prev,
+                username: prev.username || profile.username || "",
+                bio: prev.bio || profile.bio || "",
+                profilePicture: prev.profilePicture ?? profile.profilePictureUrl ?? null,
+            })))
+            .catch(() => {})
+        getHackatimeStatus()
+            .then(({ connected }) => { if (connected) setHackatimeConnected(true) })
+            .catch(() => {})
+    }, [])
 
     const isFirstPage = page === 1;
     const isLastPage = page === 3;
@@ -63,15 +86,27 @@ export default function Onboarding({ onComplete = () => {} }) {
         setSaving(true)
         setError('')
 
-        console.log(saving)
-        const { error } = await supabase.auth.updateUser({ data: { onboarded: true } })
-        setSaving(false)
-
-        if (error) {
-            console.error(error)
-            setError(error.message)
+        try {
+            await completeOnboarding({
+                username: formData.username,
+                bio: formData.bio,
+                profilePictureUrl: formData.profilePicture ?? "",
+            })
+        } catch (err) {
+            setSaving(false)
+            // A taken or invalid username is fixed on the first step.
+            if (err.status === 400 || err.status === 409) setPage(1)
+            setError(err.status ? err.message : "Couldn't reach the server. Check your connection and try again.")
             return
         }
+
+        // Slack invites are a bonus: a failure here mustn't trap someone in onboarding.
+        if (formData.slackInvite) {
+            await joinSlackChannels().catch((err) => console.error(err))
+        }
+
+        setSaving(false)
+        markOnboarded?.()
         onComplete(formData)
     }
 
@@ -138,25 +173,25 @@ export default function Onboarding({ onComplete = () => {} }) {
                                          </div>
 
                                          <div className="mt-4">
-                                             <label htmlFor="description" className="text-sm font-medium">
-                                                 Description
+                                             <label htmlFor="bio" className="text-sm font-medium">
+                                                 Bio
                                                  <span className="ml-2 opacity-40">
                                                     (Optional)
                                                  </span>
                                              </label>
 
                                              <textarea
-                                                 id="description"
-                                                 name="description"
+                                                 id="bio"
+                                                 name="bio"
                                                  maxLength={160}
                                                  onChange={updateField}
-                                                 value={formData.description}
+                                                 value={formData.bio}
                                                  rows={4}
                                                  placeholder="Write a short description about yourself..."
                                                  className="w-full resize-none rounded-xl border-2 border-(--accent)/30 bg-(--bg) p-4 text-sm outline-none transition-all placeholder:opacity-40 focus:border-(--accent)"
                                              />
                                              <p className="text-right text-xs opacity-50">
-                                                 {formData.description.length}/160
+                                                 {formData.bio.length}/160
                                              </p>
                                          </div>
                                      </div>
@@ -165,38 +200,69 @@ export default function Onboarding({ onComplete = () => {} }) {
                                  {page === 2 && (
                                      <div>
                                          <div className="rounded-xl border border-(--accent)/25 p-5">
-                                             <label htmlFor="hackatime" className="text-sm text-center font-medium">
-                                                 You will be redirected to the Hackatime Authorization Page
-                                             </label>
+                                             <p className="text-sm text-center font-medium">
+                                                 {hackatimeConnected
+                                                     ? "Your Hackatime account is linked. You're all set for this step."
+                                                     : "Hackatime will open so you can approve access."}
+                                             </p>
                                              <button
-                                                 onClick={() => {
-                                                     window.location.href = "api/hackatime/start";
-                                                 }}
+                                                 onClick={hackatime.connect}
+                                                 disabled={hackatimeConnected}
+                                                 aria-disabled={hackatime.waiting || undefined}
                                                  type="button"
-                                                 className="flex items-center w-full max-w-md justify-center gap-2 mt-2 rounded-xl bg-(--accent) px-5 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+                                                 className="flex items-center w-full max-w-md justify-center gap-2 mt-2 rounded-xl bg-(--accent) px-5 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-[0.98] aria-disabled:cursor-wait disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/60 disabled:hover:brightness-100 disabled:active:scale-100"
                                              >
-                                                 Link Hackatime
+                                                 {hackatimeConnected ? (
+                                                     <>
+                                                         <Check size={18} aria-hidden="true" />
+                                                         Hackatime Linked
+                                                     </>
+                                                 ) : hackatime.waiting ? (
+                                                     <>
+                                                         <LoaderCircle size={18} aria-hidden="true" className="motion-safe:animate-spin" />
+                                                         Waiting for Hackatime…
+                                                     </>
+                                                 ) : (
+                                                     "Link Hackatime"
+                                                 )}
                                              </button>
+                                             <div aria-live="polite" className="mt-2">
+                                                 <FieldError>{hackatime.error}</FieldError>
+                                             </div>
                                          </div>
                                      </div>
                                  )}
 
                                  {page === 3 && (
                                      <div>
-                                        <div className="rounded-xl border border-(--accent)/25 p-5">
-                                            <label htmlFor="hackatime" className="text-sm text-center font-medium">
-                                                You will be redirected to the Hack Club Slack
-                                            </label>
-                                            <button
-                                                onClick={() => {
-                                                    window.location.href = "https://hackclub.com/slack/";
-                                                }}
-                                                type="button"
-                                                className="flex items-center w-full max-w-md justify-center gap-2 mt-2 rounded-xl bg-(--accent) px-5 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
-                                            >
-                                                Join The Slack
-                                            </button>
-                                         </div>
+                                        <fieldset className="rounded-xl border border-(--accent)/25 p-5">
+                                            <legend className="sr-only">Slack invite</legend>
+                                            <p className="text-sm font-medium">
+                                                Do you want to be invited to the Torque Slack channels?
+                                            </p>
+                                            <div className="mt-3 grid grid-cols-2 gap-3">
+                                                {[
+                                                    { value: true, label: "Yes, invite me" },
+                                                    { value: false, label: "No thanks" },
+                                                ].map(({ value, label }) => (
+                                                    <label
+                                                        key={label}
+                                                        className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-(--accent)/30 px-4 py-3 text-sm font-semibold transition-all duration-200 hover:bg-(--accent)/10 has-checked:border-(--accent) has-checked:bg-(--accent)/15 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--text)"
+                                                    >
+                                                        <input
+                                                            type="radio"
+                                                            name="slackInvite"
+                                                            required
+                                                            checked={formData.slackInvite === value}
+                                                            onChange={() => setFormData((prev) => ({ ...prev, slackInvite: value }))}
+                                                            className="sr-only"
+                                                        />
+                                                        {formData.slackInvite === value && <Check size={16} aria-hidden="true" />}
+                                                        {label}
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </fieldset>
                                      </div>
                                  )}
                              </div>
@@ -221,13 +287,21 @@ export default function Onboarding({ onComplete = () => {} }) {
 
                             <button
                                 type="submit"
-                                className="flex items-center justify-center gap-2 rounded-xl bg-(--accent) px-5 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+                                disabled={saving}
+                                className="flex items-center justify-center gap-2 rounded-xl bg-(--accent) px-5 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
                             >
                                 {isLastPage ? (
-                                    <>
-                                        Finish
-                                        <Check size={18} />
-                                    </>
+                                    saving ? (
+                                        <>
+                                            Finishing…
+                                            <LoaderCircle size={18} aria-hidden="true" className="motion-safe:animate-spin" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            Finish
+                                            <Check size={18} />
+                                        </>
+                                    )
                                 ) : (
                                     <>
                                         Continue

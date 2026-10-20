@@ -58,6 +58,15 @@ export function clearMyProfile() {
     profilePromise = null
 }
 
+// PUT api/user/me/onboarding — saves username, bio and profile picture, and sets
+// completedFirstTimeSetup. Every field is overwritten, so pass the current picture
+// to keep it.
+export async function completeOnboarding({ username, bio, profilePictureUrl }) {
+    const result = await sendJson('PUT', 'api/user/me/onboarding', { username, bio, profilePictureUrl })
+    clearMyProfile()
+    return result
+}
+
 // GET api/project/me — PrivateProjectDto[]
 export function getMyProjects() {
     return getJson('api/project/me')
@@ -132,6 +141,12 @@ export function createDevlog(body) {
 // POST api/ships/create — the new shipment
 export function createShip(body) {
     return sendJson('POST', 'api/ships/create', body)
+}
+
+// POST api/slack/channels/join — { results: [{ channelId, status }] }: invites
+// the signed-in user to Torque's Slack channels
+export function joinSlackChannels() {
+    return sendJson('POST', 'api/slack/channels/join')
 }
 
 // GET api/hackatime/status — { connected }

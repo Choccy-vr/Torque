@@ -7,7 +7,6 @@ import Markdown from "../components/Markdown.jsx";
 import ProjectCard, { ProjectCardSkeleton } from "../components/ProjectCard.jsx";
 import { getAnnouncements, getHackatimeStatus, getMyProjects, getStaffPicks } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
-import Onboarding from "../components/Onboarding.jsx";
 import { PauseNotices } from "../components/PageParts.jsx";
 import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
 
@@ -39,8 +38,6 @@ export default function Home() {
     return (
         <>
         <AppShell title="Dashboard">
-
-            <Onboarding></Onboarding>
 
             <PageTitle>Dashboard</PageTitle>
 
