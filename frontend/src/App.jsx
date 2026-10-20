@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Landing from './pages/Landing.jsx'
 import Home from './pages/Home.jsx'
@@ -16,7 +16,10 @@ import AdminShip from './pages/admin/Ship.jsx'
 import AdminAnnouncements from './pages/admin/Announcements.jsx'
 import AdminSettings from './pages/admin/Settings.jsx'
 import HackatimeCallback from './pages/HackatimeCallback.jsx'
-import { AuthProvider, RequireAuth } from './lib/auth.jsx'
+import Onboarding from './components/Onboarding.jsx'
+import RequireOnboarding from './components/RequireOnboarding.jsx'
+import { AuthProvider, RequireAuth, RequireGuest } from './lib/auth.jsx'
+import { useAuth } from './lib/useAuth.js'
 import { CALLBACK_PATH } from './lib/hackatimePending.js'
 import './App.css'
 
@@ -33,6 +36,7 @@ function sectionOf(pathname) {
 }
 
 function AppRoutes() {
+    const { user, loading } = useAuth();
     const { pathname } = useLocation()
     const section = sectionOf(pathname)
 
@@ -51,26 +55,41 @@ function AppRoutes() {
     return (
         <div key={section} className="t-page">
             <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/home" element={<RequireAuth><Home /></RequireAuth>} />
-                <Route path="/projects" element={<RequireAuth><Projects /></RequireAuth>} />
-                <Route path="/projects/new" element={<RequireAuth><NewProject /></RequireAuth>} />
-                <Route path="/projects/:id" element={<Project />} />
-                <Route path="/explore" element={<Explore />} />
-                <Route path="/docs/*" element={<Suspense fallback={<div className="min-h-screen" />}><Docs /></Suspense>} />
-                <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
-                <Route path="/profile/:id" element={<Profile />} />
-                <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
-                <Route path="/admin/users" element={<RequireAuth><AdminUsers /></RequireAuth>} />
-                <Route path="/admin/users/:id" element={<RequireAuth><AdminUser /></RequireAuth>} />
-                <Route path="/admin/projects" element={<RequireAuth><AdminProjects /></RequireAuth>} />
-                <Route path="/admin/projects/:id" element={<RequireAuth><AdminProject /></RequireAuth>} />
-                <Route path="/admin/ships" element={<RequireAuth><AdminShips /></RequireAuth>} />
-                <Route path="/admin/ships/:id" element={<RequireAuth><AdminShip /></RequireAuth>} />
-                <Route path="/admin/announcements" element={<RequireAuth><AdminAnnouncements /></RequireAuth>} />
-                <Route path="/admin/settings" element={<RequireAuth><AdminSettings /></RequireAuth>} />
-                {/* Not behind RequireAuth: the popup copy of this page is signed out on purpose. */}
-                <Route path={CALLBACK_PATH} element={<HackatimeCallback />} />
+                <Route path="/" element={<RequireGuest> <Landing/> </RequireGuest>} />
+                <Route element={<RequireOnboarding user={user} loading={loading} />}>
+                    <Route path="/home" element={<RequireAuth><Home /></RequireAuth>} />
+                    <Route
+                        path="/onboarding"
+                        element={
+                            <RequireAuth>
+                                <>
+                                    <div inert aria-hidden="true">
+                                        <Home />
+                                    </div>
+                                    <Onboarding />
+                                </>
+                            </RequireAuth>
+                        }
+                    />
+                    <Route path="/projects" element={<RequireAuth><Projects /></RequireAuth>} />
+                    <Route path="/projects/new" element={<RequireAuth><NewProject /></RequireAuth>} />
+                    <Route path="/projects/:id" element={<Project />} />
+                    <Route path="/explore" element={<Explore />} />
+                    <Route path="/docs/*" element={<Suspense fallback={<div className="min-h-screen" />}><Docs /></Suspense>} />
+                    <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+                    <Route path="/profile/:id" element={<Profile />} />
+                    <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
+                    <Route path="/admin/users" element={<RequireAuth><AdminUsers /></RequireAuth>} />
+                    <Route path="/admin/users/:id" element={<RequireAuth><AdminUser /></RequireAuth>} />
+                    <Route path="/admin/projects" element={<RequireAuth><AdminProjects /></RequireAuth>} />
+                    <Route path="/admin/projects/:id" element={<RequireAuth><AdminProject /></RequireAuth>} />
+                    <Route path="/admin/ships" element={<RequireAuth><AdminShips /></RequireAuth>} />
+                    <Route path="/admin/ships/:id" element={<RequireAuth><AdminShip /></RequireAuth>} />
+                    <Route path="/admin/announcements" element={<RequireAuth><AdminAnnouncements /></RequireAuth>} />
+                    <Route path="/admin/settings" element={<RequireAuth><AdminSettings /></RequireAuth>} />
+                    {/* Not behind RequireAuth: the popup copy of this page is signed out on purpose. */}
+                    <Route path={CALLBACK_PATH} element={<HackatimeCallback />} />
+                </Route>
             </Routes>
         </div>
     )

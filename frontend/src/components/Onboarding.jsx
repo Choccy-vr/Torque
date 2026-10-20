@@ -1,5 +1,7 @@
 import {useState} from 'react'
 import {ArrowLeft, ArrowRight, Check} from "lucide-react";
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase.js'
 
 const steps = [
     {
@@ -18,6 +20,9 @@ const steps = [
 
 export default function Onboarding({ onComplete = () => {} }) {
 
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState('')
+    const navigate = useNavigate()
     const [page, setPage] = useState(1);
     const [formData, setFormData] = useState({
         username: "",
@@ -55,14 +60,24 @@ export default function Onboarding({ onComplete = () => {} }) {
         }
     }
 
-    function handleSubmit(e) {
-        e.preventDefault();
+    async function handleSubmit(e) {
+        e.preventDefault()
+        setSaving(true)
+        setError('')
 
-        onComplete(formData);
+        const { error } = await supabase.auth.updateUser({ data: { onboarded: true } })
+        setSaving(false)
+
+        if (error) {
+            console.error(error)
+            setError(error.message)
+            return
+        }
+        onComplete(formData)
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 sm:p-8">
 
             <div className="relative flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl border-2 border-(--accent)/55 bg-(--bg) shadow-2xl transition-all duration-300 ease-in-out">
                 <div className="h-1 w-full bg-(--accent)/15">
@@ -188,6 +203,7 @@ export default function Onboarding({ onComplete = () => {} }) {
                              </div>
                         </div>
 
+                        {error && <p role="alert" className="px-5 pb-2 text-sm text-red-400 sm:px-12">{error}</p>}
                         <div className="flex items-center justify-between gap-4 border-t border-(--accent)/20 p-5 sm:px-12 sm:py-6">
                             <button
                                 type="button"

@@ -87,3 +87,10 @@ export function RequireAuth({ children }) {
     if (!session) return <Navigate to="/" replace />
     return children
 }
+
+export function RequireGuest({ children }) {
+    const { session, loading } = useAuth()
+    if (loading) return <div className="min-h-screen" />
+    if (session) return <Navigate to="/home" replace />
+    return children
+}
