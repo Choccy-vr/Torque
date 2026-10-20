@@ -1,49 +1,76 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, Plus, X } from "lucide-react";
-import { getHackatimeHours, getHackatimeProjects } from "../../lib/endpoints.js";
+import { getHackatimeHours, getHackatimeProjects, getHackatimeStatus } from "../../lib/endpoints.js";
 import { splitList } from "../../lib/forms.js";
 import { useApi } from "../../lib/useApi.js";
+import ConnectHackatime from "../ConnectHackatime.jsx";
 import { Field, FOCUS, INPUT } from "../Form.jsx";
 
 const formatTime = (h) => (h == null ? "–" : `${Number.isInteger(h) ? h : h.toFixed(1)}h`);
 
-// Your Hackatime projects with their all-time hours, most tracked first.
+// Your Hackatime projects with their all-time hours, most tracked first, or
+// `connected: false` when there's no Hackatime account to read them from.
 async function loadProjects() {
+    const { connected } = await getHackatimeStatus();
+    if (!connected) return { connected, projects: [] };
     const { projects } = await getHackatimeProjects();
-    if (projects.length === 0) return [];
+    if (projects.length === 0) return { connected, projects: [] };
     // Hours are a nicety: if that call fails, still offer the names.
     const hours = await getHackatimeHours(projects).then((r) => r.perProject ?? {}, () => ({}));
-    return projects
-        .map((name) => ({ name, hours: hours[name] ?? null }))
-        .sort((a, b) => (b.hours ?? -1) - (a.hours ?? -1) || a.name.localeCompare(b.name));
+    return {
+        connected,
+        projects: projects
+            .map((name) => ({ name, hours: hours[name] ?? null }))
+            .sort((a, b) => (b.hours ?? -1) - (a.hours ?? -1) || a.name.localeCompare(b.name)),
+    };
 }
 
 // Linked Hackatime projects as removable tags, plus a dropdown of the rest
 // with their tracked time. `hint={false}` drops the explainer line. Falls back to a comma-separated list when
-// Hackatime isn't connected.
+// Hackatime isn't connected, with a button to connect it.
 export default function HackatimePicker({ value, onChange, hint = true }) {
-    const { data, loading, error } = useApi(loadProjects);
+    const { data, loading, error, reload } = useApi(loadProjects);
     const fieldsetRef = useRef(null);
+
+    // Connecting swaps the Connect button for the picker, so hand keyboard
+    // focus to the picker instead of dropping it on the page.
+    const focusPicker = useRef(false);
+    const onConnected = useCallback(() => {
+        focusPicker.current = true;
+        reload();
+    }, [reload]);
+    useEffect(() => {
+        if (!focusPicker.current || !data) return;
+        focusPicker.current = false;
+        requestAnimationFrame(() => fieldsetRef.current?.querySelector("[data-picker]")?.focus());
+    }, [data]);
 
     if (loading) {
         return <div aria-busy="true" aria-label="Loading Hackatime projects" className="h-20 rounded-2xl bg-white/10 motion-safe:animate-pulse" />;
     }
 
-    if (error || data.length === 0) {
+    if (error || data.projects.length === 0) {
+        const notConnected = !error && !data.connected;
         return (
-            <Field
-                label="Hackatime projects"
-                optional
-                hint={error
-                    ? "Couldn't reach Hackatime, so type the project names, separated by commas."
-                    : "Names of the Hackatime projects that track this build's firmware time, separated by commas."}
-            >
-                {(p) => <input {...p} defaultValue={value.join(", ")} onChange={(e) => onChange(splitList(e.target.value))} className={INPUT} />}
-            </Field>
+            <div className="flex flex-col gap-3">
+                <Field
+                    label="Hackatime projects"
+                    optional
+                    hint={error
+                        ? "Couldn't reach Hackatime, so type the project names, separated by commas."
+                        : notConnected
+                            ? "Connect Hackatime to pick from your projects and count their firmware time, or type the names, separated by commas."
+                            : "Names of the Hackatime projects that track this build's firmware time, separated by commas."}
+                >
+                    {(p) => <input {...p} defaultValue={value.join(", ")} onChange={(e) => onChange(splitList(e.target.value))} className={INPUT} />}
+                </Field>
+                {notConnected && <ConnectHackatime onConnected={onConnected} />}
+            </div>
         );
     }
 
-    const hoursOf = new Map(data.map((p) => [p.name, p.hours]));
+    const projects = data.projects;
+    const hoursOf = new Map(projects.map((p) => [p.name, p.hours]));
     // Unlinking removes the focused button, so hand focus to the next tag's
     // button (or the dropdown) once the list re-renders.
     const remove = (name, i) => {
@@ -84,7 +111,7 @@ export default function HackatimePicker({ value, onChange, hint = true }) {
                 </ul>
             )}
             <ProjectDropdown
-                options={data.filter((p) => !value.includes(p.name))}
+                options={projects.filter((p) => !value.includes(p.name))}
                 onPick={(name) => onChange([...value, name])}
             />
             {hint && (

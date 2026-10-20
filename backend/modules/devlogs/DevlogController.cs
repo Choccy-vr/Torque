@@ -6,6 +6,7 @@ using Torque.Data;
 using Torque.Extensions;
 using Torque.Hackatime;
 using Torque.Projects;
+using Torque.Settings;
 using Torque.Streaks;
 // A controller for devlog data
 // endpoint: /api/devlog/<command>
@@ -169,6 +170,7 @@ public class DevlogController : ControllerBase
 
     //Create Devlog
     [Authorize]
+    [PausedBy(SettingKeys.JournalingPaused)]
     [HttpPost("create")]
     public async Task<IActionResult> Create([FromBody] CreateDevlogDto dto)
     {

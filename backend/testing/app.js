@@ -78,6 +78,54 @@ const ENDPOINTS = [
     },
   },
   {
+    id: 'admin-user-search',
+    group: 'users',
+    method: 'GET',
+    path: '/api/admin/user/search?q={q}',
+    auth: true,
+    desc: 'Admin-only. Search users by username, name, email, Slack ID or Hackatime/HC id (or exact id), newest first, max 50. Empty q lists the newest.',
+    params: [{ name: 'q', placeholder: 'search text (optional)', optional: true }],
+  },
+  {
+    id: 'admin-user-get',
+    group: 'users',
+    method: 'GET',
+    path: '/api/admin/user/{id}',
+    auth: true,
+    desc: 'Admin-only. Everything about a user (internal note, watchlist, roles, banned, hackatimeLinked, ...). Never the Hackatime token.',
+    params: [{ name: 'id', placeholder: 'user uuid' }],
+  },
+  {
+    id: 'admin-user-update',
+    group: 'users',
+    method: 'PATCH',
+    path: '/api/admin/user/{id}',
+    auth: true,
+    desc: 'Admin-only. Edit internalNote (max 5000, "" clears), watchlisted, streakFreezes (0–100). Omitted fields unchanged.',
+    params: [{ name: 'id', placeholder: 'user uuid' }],
+    body: { internalNote: 'Checked their Lapse, all good.', watchlisted: false, streakFreezes: 3 },
+  },
+  {
+    id: 'admin-user-ban',
+    group: 'users',
+    method: 'POST',
+    path: '/api/admin/user/{id}/ban',
+    auth: true,
+    desc: "Admin-only. Ban/unban a user (a 'banned' role entry). Can't ban yourself.",
+    params: [{ name: 'id', placeholder: 'user uuid' }],
+    body: { banned: true },
+  },
+  {
+    id: 'admin-user-roles',
+    group: 'users',
+    method: 'PUT',
+    path: '/api/admin/user/{id}/roles',
+    auth: true,
+    desc: "Admin-only. Replace staff roles (admin, reviewer); a ban is kept. Can't remove your own admin.",
+    params: [{ name: 'id', placeholder: 'user uuid' }],
+    body: { roles: ['reviewer'] },
+  },
+  {
     id: 'admin-user-timezone',
     group: 'users',
     method: 'PATCH',
@@ -218,6 +266,34 @@ const ENDPOINTS = [
     body: {
       isArchived: true,
     },
+  },
+  {
+    id: 'admin-project-search',
+    group: 'projects',
+    method: 'GET',
+    path: '/api/admin/project/search?q={q}&status={status}',
+    auth: true,
+    desc: 'Admin-only. Every project (any status, archived too) by title, id or owner username, newest first, max 50. Optional: status (Unshipped, Unreviewed, Claimed, Fraud_Pending, Changes_Needed, Approved, Perm_Rejected); ownerId and archived can be added to the path.',
+    params: [{ name: 'q', placeholder: 'search text (optional)', optional: true }, { name: 'status', placeholder: 'status (optional)', optional: true }],
+  },
+  {
+    id: 'admin-project-get',
+    group: 'projects',
+    method: 'GET',
+    path: '/api/admin/project/{id}',
+    auth: true,
+    desc: 'Admin-only. Everything about a project, private fields included.',
+    params: [{ name: 'id', placeholder: 'project uuid' }],
+  },
+  {
+    id: 'admin-project-update',
+    group: 'projects',
+    method: 'PATCH',
+    path: '/api/admin/project/{id}',
+    auth: true,
+    desc: 'Admin-only. Override tier (1–4, even after a final approval), isArchived (409 while in review) and/or exceptional.',
+    params: [{ name: 'id', placeholder: 'project uuid' }],
+    body: { tier: 2, exceptional: false },
   },
   {
     id: 'project-staff-pick-set',
@@ -381,6 +457,24 @@ const ENDPOINTS = [
       whatAreWeDoingWell: 'Clear docs',
       howCanWeImprove: 'More examples',
     },
+  },
+  {
+    id: 'admin-ships-list',
+    group: 'ships',
+    method: 'GET',
+    path: '/api/admin/ships?q={q}&status={status}',
+    auth: true,
+    desc: 'Admin-only. Ships newest first, max 50. q matches a ship/project/user id, project title or username. Optional status: unreviewed, approved, rejected, perm_rejected, needs_changes; userId/projectId can be added to the path.',
+    params: [{ name: 'q', placeholder: 'search text (optional)', optional: true }, { name: 'status', placeholder: 'status (optional)', optional: true }],
+  },
+  {
+    id: 'admin-ships-get',
+    group: 'ships',
+    method: 'GET',
+    path: '/api/admin/ships/{id}',
+    auth: true,
+    desc: 'Admin-only. One ship with survey answers, payout, Airtable state and every review (with internal notes).',
+    params: [{ name: 'id', placeholder: 'shipment uuid' }],
   },
   {
     id: 'review-pending',
@@ -590,7 +684,7 @@ const ENDPOINTS = [
     method: 'GET',
     path: '/api/admin/project/{id}/lapse',
     auth: true,
-    desc: "Reviewer-only. lapse.hackclub.com timelapses for a project's owner, filtered to the project's linked Hackatime project names. 403 unless the signed-in user has the reviewer role.",
+    desc: "Reviewers and admins. lapse.hackclub.com timelapses for a project's owner, filtered to the project's linked Hackatime project names. 403 unless the signed-in user has the reviewer or admin role.",
     params: [{ name: 'id', placeholder: 'project uuid' }],
   },
   {
@@ -643,6 +737,35 @@ const ENDPOINTS = [
     desc: 'Admin-only. Delete an announcement. 204 on success.',
     params: [{ name: 'id', placeholder: 'announcement uuid' }],
   },
+  {
+    id: 'settings-public',
+    group: 'settings',
+    method: 'GET',
+    path: '/api/settings',
+    auth: false,
+    desc: 'Every global setting keyed by name ({ ships_paused: { paused, message }, ... }). Paused endpoints answer 503 { error, paused }.',
+  },
+  {
+    id: 'settings-admin',
+    group: 'settings',
+    method: 'GET',
+    path: '/api/admin/settings',
+    auth: true,
+    desc: 'Admin-only. Every setting with label, description, custom/default message and who last changed it.',
+  },
+  {
+    id: 'settings-update',
+    group: 'settings',
+    method: 'PATCH',
+    path: '/api/admin/settings/{key}',
+    auth: true,
+    desc: 'Admin-only. Switch a setting and/or set its message (max 500, "" = default). Keys: ships_paused, resubmissions_paused, project_creation_paused, journaling_paused, streaks_paused, payouts_paused. Ending a streak pause forgives the paused days.',
+    params: [{ name: 'key', placeholder: 'ships_paused' }],
+    body: {
+      paused: true,
+      message: '',
+    },
+  },
 ];
 
 // Display order and labels for the groups above.
@@ -660,6 +783,7 @@ const GROUP_LABELS = {
   hackatime: 'Hackatime',
   lapse: 'Lapse',
   announcements: 'Announcements',
+  settings: 'Settings',
 };
 
 // ---------------------------------------------------------------- boot
@@ -890,9 +1014,16 @@ function sendEndpoint(ep) {
   let path = ep.path;
   for (const p of ep.params ?? []) {
     const value = $(`p-${ep.id}-${p.name}`).value.trim();
+    // An empty optional query param drops its `name={name}` pair.
+    if (!value && p.optional) {
+      path = path.replace(new RegExp(`[?&][^?&=]+=\\{${p.name}\\}`), '');
+      continue;
+    }
     if (!value) return renderError(`${ep.method} ${ep.path}`, `Path parameter "${p.name}" is empty.`);
     path = path.replace(`{${p.name}}`, encodeURIComponent(value));
   }
+  // Dropping the first query pair can leave "&a=b" with no "?".
+  if (!path.includes('?')) path = path.replace('&', '?');
 
   let body;
   if (ep.body) {

@@ -1,38 +1,44 @@
 import { apiFetch } from './api.js'
+import { notePaused } from './settings.js'
 
 // Typed-ish wrappers around backend endpoints (see backend/README.md).
 // Each one resolves to the parsed JSON body or throws an ApiError.
 
 export class ApiError extends Error {
-    constructor(status, message) {
+    // `paused` is the setting's key when an admin switch blocked the request.
+    constructor(status, message, paused = null) {
         super(message || `Request failed (${status})`)
         this.status = status
+        this.paused = paused
     }
 }
 
 async function getJson(path) {
     const res = await apiFetch(path)
-    if (!res.ok) throw new ApiError(res.status, await res.text().catch(() => ''))
+    if (!res.ok) throw await apiError(res)
     return res.json()
 }
 
 async function sendJson(method, path, body) {
     const res = await apiFetch(path, { method, body: JSON.stringify(body) })
-    if (!res.ok) throw new ApiError(res.status, await readError(res))
+    if (!res.ok) throw await apiError(res)
     return res.status === 204 ? null : res.json()
 }
 
 // The backend answers most failures with a plain sentence ("Title is
-// required!"), but model-binding failures come back as problem+json.
-async function readError(res) {
+// required!"), but model-binding failures come back as problem+json, and
+// paused actions (and bans) as { error }.
+async function apiError(res) {
     const text = await res.text().catch(() => '')
+    let body
     try {
-        const body = JSON.parse(text)
-        const first = body.errors && Object.values(body.errors).flat()[0]
-        return first || body.title || text
+        body = JSON.parse(text)
     } catch {
-        return text
+        return new ApiError(res.status, text)
     }
+    if (body?.paused) notePaused(body.paused, body.error)
+    const first = body?.errors && Object.values(body.errors).flat()[0]
+    return new ApiError(res.status, first || body?.error || body?.title || text, body?.paused ?? null)
 }
 
 // The Navbar remounts on every page, so the profile is fetched once per page
@@ -128,6 +134,22 @@ export function createShip(body) {
     return sendJson('POST', 'api/ships/create', body)
 }
 
+// GET api/hackatime/status — { connected }
+export function getHackatimeStatus() {
+    return getJson('api/hackatime/status')
+}
+
+// POST api/hackatime/start — { url, state }: the Hackatime authorize URL, and the
+// state to hold onto and echo back as `storedState` in the callback
+export function startHackatime() {
+    return sendJson('POST', 'api/hackatime/start')
+}
+
+// POST api/hackatime/callback — links Hackatime to the signed-in user
+export function finishHackatime(code, state, storedState) {
+    return sendJson('POST', 'api/hackatime/callback', { code, state, storedState })
+}
+
 // GET api/hackatime/projects — { projects: string[] }
 export function getHackatimeProjects() {
     return getJson('api/hackatime/projects')
@@ -142,4 +164,113 @@ export function getHackatimeHours(projectNames) {
 // { trackedHours, uncappedHours, maxHours, hackatimeLinked, hackatimeReachable }
 export function getJournalPreview(projectId) {
     return getJson(`api/devlog/preview/${encodeURIComponent(projectId)}`)
+}
+
+// GET api/admin/settings — AdminSettingDto[] (admins only; 403 otherwise)
+export function getAdminSettings() {
+    return getJson('api/admin/settings')
+}
+
+// PATCH api/admin/settings/{key} — AdminSettingDto. { paused?, message? }; message "" = default.
+export function updateSetting(key, changes) {
+    return sendJson('PATCH', `api/admin/settings/${encodeURIComponent(key)}`, changes)
+}
+
+// ---------------------------------------------------------------- admin
+// Everything below is admin-only (403 otherwise). See backend/README.md.
+
+// Drops empty values so "no filter" isn't sent as ?status=
+function query(params) {
+    const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+    return entries.length ? `?${new URLSearchParams(entries)}` : ''
+}
+
+// GET api/admin/user/search — AdminUserSummaryDto[], newest first, max 50
+export function searchAdminUsers(q) {
+    return getJson(`api/admin/user/search${query({ q })}`)
+}
+
+// GET api/admin/user/{id} — AdminUserDto
+export function getAdminUser(id) {
+    return getJson(`api/admin/user/${encodeURIComponent(id)}`)
+}
+
+// PATCH api/admin/user/{id} — AdminUserDto. { internalNote?, watchlisted?, streakFreezes? }
+export function updateAdminUser(id, changes) {
+    return sendJson('PATCH', `api/admin/user/${encodeURIComponent(id)}`, changes)
+}
+
+// POST api/admin/user/{id}/ban — AdminUserDto
+export function setUserBanned(id, banned) {
+    return sendJson('POST', `api/admin/user/${encodeURIComponent(id)}/ban`, { banned })
+}
+
+// PUT api/admin/user/{id}/roles — AdminUserDto. roles: subset of ["admin", "reviewer"]
+export function setUserRoles(id, roles) {
+    return sendJson('PUT', `api/admin/user/${encodeURIComponent(id)}/roles`, { roles })
+}
+
+// PATCH api/admin/user/{id}/timezone — { id, timeZone }
+export function setUserTimeZone(id, timeZone) {
+    return sendJson('PATCH', `api/admin/user/${encodeURIComponent(id)}/timezone`, { timeZone })
+}
+
+// GET api/admin/user/{id}/volts/history — { id, volts, entries: LedgerEntryDto[] }
+export function getUserVoltsHistory(id) {
+    return getJson(`api/admin/user/${encodeURIComponent(id)}/volts/history`)
+}
+
+// POST api/admin/user/{id}/volts — { id, volts }. amount is signed.
+export function adjustUserVolts(id, amount, reason) {
+    return sendJson('POST', `api/admin/user/${encodeURIComponent(id)}/volts`, { amount, reason })
+}
+
+// GET api/admin/project/search — AdminProjectSummaryDto[]. { q?, status?, ownerId?, archived? }
+export function searchAdminProjects(params = {}) {
+    return getJson(`api/admin/project/search${query(params)}`)
+}
+
+// GET api/admin/project/{id} — AdminProjectDto
+export function getAdminProject(id) {
+    return getJson(`api/admin/project/${encodeURIComponent(id)}`)
+}
+
+// PATCH api/admin/project/{id} — AdminProjectDto. { tier?, isArchived?, exceptional? }
+export function updateAdminProject(id, changes) {
+    return sendJson('PATCH', `api/admin/project/${encodeURIComponent(id)}`, changes)
+}
+
+// POST api/admin/project/{id}/staff-pick — PublicProjectDto
+export function setStaffPick(id, isStaffPick) {
+    return sendJson('POST', `api/admin/project/${encodeURIComponent(id)}/staff-pick`, { isStaffPick })
+}
+
+// GET api/admin/project/{id}/lapse — { timelapses: TimelapseDto[] }
+export function getProjectTimelapses(id) {
+    return getJson(`api/admin/project/${encodeURIComponent(id)}/lapse`)
+}
+
+// GET api/admin/ships — AdminShipmentSummaryDto[]. { q?, status?, userId?, projectId? }
+export function searchAdminShips(params = {}) {
+    return getJson(`api/admin/ships${query(params)}`)
+}
+
+// GET api/admin/ships/{id} — AdminShipmentDetailDto (with reviews)
+export function getAdminShip(id) {
+    return getJson(`api/admin/ships/${encodeURIComponent(id)}`)
+}
+
+// POST api/admin/announcement/create — AnnouncementDto. { title, body (markdown) }
+export function createAnnouncement(body) {
+    return sendJson('POST', 'api/admin/announcement/create', body)
+}
+
+// PATCH api/admin/announcement/{id} — AnnouncementDto. { title?, body? }
+export function updateAnnouncement(id, changes) {
+    return sendJson('PATCH', `api/admin/announcement/${encodeURIComponent(id)}`, changes)
+}
+
+// DELETE api/admin/announcement/{id} — 204
+export function deleteAnnouncement(id) {
+    return sendJson('DELETE', `api/admin/announcement/${encodeURIComponent(id)}`)
 }

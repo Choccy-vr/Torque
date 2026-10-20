@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-    Archive, ArchiveRestore, ArrowUpRight, ChevronDown, CircleAlert, Clock, FileText, Flame, FolderGit2,
+    Archive, ArchiveRestore, ArrowUpRight, ChevronDown, CircleAlert, CirclePause, Clock, FileText, Flame, FolderGit2,
     Globe, NotebookPen, Pencil, Plus, Ship, Sparkles, Star, Zap,
 } from "lucide-react";
 import AppShell from "../components/AppShell.jsx";
 import ProjectStatusBadge from "../components/ProjectStatusBadge.jsx";
 import { ExpandableText, JournalEntry, JournalSkeleton, PagedTimeline, TimelineItem } from "../components/Journal.jsx";
-import { Empty, InlineError, RetryButton, Section } from "../components/PageParts.jsx";
+import { Empty, InlineError, Notice, PauseNotices, RetryButton, Section } from "../components/PageParts.jsx";
 import { BTN_GHOST, BTN_OUTLINE, BTN_PRIMARY, FOCUS, FormError } from "../components/Form.jsx";
 import { errorText } from "../lib/forms.js";
 import ProjectEditForm from "../components/project/ProjectEditForm.jsx";
@@ -15,12 +15,14 @@ import Cover from "../components/project/Cover.jsx";
 import CoverPicker from "../components/project/CoverPicker.jsx";
 import ShipForm from "../components/project/ShipForm.jsx";
 import JournalComposer from "../components/project/JournalComposer.jsx";
+import Switch from "../components/Switch.jsx";
 import {
     getDevlogs, getMyProfile, getMyProjects, getMyShips, getProject, getUserProfile, setProjectArchived, setStreakFreezesPaused, updateProject,
 } from "../lib/endpoints.js";
 import { SHIP_STATUS, formatDay } from "../lib/projects.js";
 import { useApi } from "../lib/useApi.js";
 import { useAuth } from "../lib/useAuth.js";
+import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
 import fallbackAvatar from "../assets/img.png";
 
 // /projects/:id — one project, for anyone. Its owner also gets their private
@@ -68,6 +70,7 @@ function ProjectPage({ projectApi, isOwner }) {
 
     const mine = useApi(fetchMine);
     const ships = useApi(fetchShips);
+    const settings = useSettings();
     const owner = useApi(fetchOwner);
     const devlogs = useApi(fetchDevlogs);
 
@@ -111,17 +114,26 @@ function ProjectPage({ projectApi, isOwner }) {
     // (the server has the exact figure; this mirrors it).
     const unpaidHours = Math.max(0, roundHours((project.totalHours ?? 0) - (project.totalHoursApproved ?? 0)));
     const hoursNeeded = Math.ceil((1 - unpaidHours) * 10) / 10;
+    // Admin switches (lib/settings.js). Resubmitting after "changes needed"
+    // can be paused on its own while first ships keep going.
+    const shipPauseKey = pausedMessage(settings, PAUSE.ships) || project.status !== "Changes_Needed" ? PAUSE.ships : PAUSE.resubmissions;
+    const shipPaused = pausedMessage(settings, shipPauseKey);
+    const journalPaused = pausedMessage(settings, PAUSE.journaling);
+    const shippable = !archived && !inReview && project.status !== "Perm_Rejected";
     const blocked = {
         ship: archived ? "Unarchive this project to ship it."
             : inReview ? "In review. You can ship again once a reviewer has looked at it."
             : project.status === "Perm_Rejected" ? "Permanently rejected, so it can't be shipped again."
+            : shipPaused ? shipPaused
             : !priv ? "Checking your hours…"
             : unpaidHours < 1 ? `Journal ${hoursNeeded}h more to ship.`
             : null,
         edit: archived ? "Unarchive to edit." : inReview ? "Can't edit while it's in review." : null,
         archive: inReview ? "Can't archive while it's in review." : null,
-        journal: archived ? "Unarchive this project to journal on it." : null,
+        journal: archived ? "Unarchive this project to journal on it." : journalPaused,
     };
+    // Paused switches the owner would otherwise run into on this project.
+    const pauseKeys = isOwner && !archived ? [...(shippable ? [shipPauseKey] : []), PAUSE.journaling] : [];
     // The grant a design ship asked for lands on that ship: the newest
     // final-approved design ship that requested funding.
     const grantShipId = project.grantStatus !== "None"
@@ -178,16 +190,19 @@ function ProjectPage({ projectApi, isOwner }) {
 
                     {/* Hidden while a form is open, so its action doesn't compete with the form's. */}
                     {(panel === null || panel === "journal") && (
-                        <StatusNotice
-                            project={project}
-                            isOwner={isOwner}
-                            owner={owner.data}
-                            latestShip={projectShips[0]}
-                            canJournal={!blocked.journal}
-                            onCompose={() => setPanel("journal")}
-                            onUnarchive={() => setArchived(false)}
-                            hoursNeeded={priv && unpaidHours < 1 ? hoursNeeded : 0}
-                        />
+                        <div className="flex flex-col gap-3 empty:hidden">
+                            <StatusNotice
+                                project={project}
+                                isOwner={isOwner}
+                                owner={owner.data}
+                                latestShip={projectShips[0]}
+                                canJournal={!blocked.journal}
+                                onCompose={() => setPanel("journal")}
+                                onUnarchive={() => setArchived(false)}
+                                hoursNeeded={priv && unpaidHours < 1 ? hoursNeeded : 0}
+                            />
+                            <PauseNotices keys={pauseKeys} />
+                        </div>
                     )}
                 </div>
 
@@ -474,8 +489,17 @@ function Byline({ project, owner }) {
 // The project's numbers as one line under the byline, the way a drawing's
 // title block reads. Owners also see their Volts, and their streak opens to
 // its multiplier and freeze setting.
+// Why missed days aren't counting right now, if an admin paused streaks
+// (journaling being paused pauses them too). Null otherwise.
+function useStreakPause() {
+    const settings = useSettings();
+    return pausedMessage(settings, PAUSE.streaks)
+        ?? (pausedMessage(settings, PAUSE.journaling) && "Streaks are paused while journaling is, so a missed day won't break your streak.");
+}
+
 function Stats({ project, isOwner, onStreakChanged }) {
     const [streakOpen, setStreakOpen] = useState(false);
+    const streakPaused = Boolean(useStreakPause());
     const hours = roundHours(project.totalHours);
     const journals = project.devlogIds?.length ?? 0;
     const days = project.streak ?? 0;
@@ -502,6 +526,7 @@ function Stats({ project, isOwner, onStreakChanged }) {
                             {days > 0
                                 ? <span><b className="font-bold text-(--text)">{days}-day</b> streak</span>
                                 : <span>No streak yet</span>}
+                            {streakPaused && <span className="text-(--text)/75">· paused</span>}
                             <ChevronDown aria-hidden="true" className={`size-4 shrink-0 transition-transform duration-300 ease ${streakOpen ? "rotate-180" : ""}`} />
                         </button>
                     </li>
@@ -538,6 +563,7 @@ function StreakDetails({ id, project, onChanged }) {
     const [error, setError] = useState(null);
     const on = !project.streakFreezesPaused;
     const multiplier = (1 + 0.01 * (project.streak ?? 0)).toFixed(2);
+    const paused = useStreakPause();
 
     async function toggle() {
         setSaving(true);
@@ -554,6 +580,14 @@ function StreakDetails({ id, project, onChanged }) {
 
     return (
         <div id={id} className="flex flex-col gap-4 rounded-2xl border-2 border-white/10 bg-(--bg)/45 px-4 py-4 sm:px-5">
+            {paused && (
+                <div className="border-b-2 border-white/10 pb-4">
+                    <p className="flex max-w-[65ch] items-start gap-2.5 leading-relaxed text-(--text)">
+                        <CirclePause aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-(--text)/85" />
+                        {paused}
+                    </p>
+                </div>
+            )}
             <p className="max-w-[65ch] leading-relaxed text-(--text)/90">
                 <b className="font-bold text-(--text) tabular-nums">×{multiplier}</b> Volts multiplier. Each day with an hour or more
                 journaled adds 0.01×, up to {project.maxStreak} days at Level {project.tier}.
@@ -567,25 +601,7 @@ function StreakDetails({ id, project, onChanged }) {
                             : "A missed day resets this streak, saving your freezes for your other projects."}
                     </p>
                 </div>
-                <button
-                    type="button"
-                    role="switch"
-                    aria-checked={on}
-                    aria-labelledby="freeze-label"
-                    aria-describedby="freeze-hint"
-                    disabled={saving}
-                    onClick={toggle}
-                    className={`relative mt-0.5 inline-flex h-8 w-14 shrink-0 items-center rounded-full border-2 transition-all duration-300 ease before:absolute before:-inset-2 before:content-[''] disabled:cursor-wait disabled:opacity-70 ${FOCUS} ${
-                        on ? "border-(--accent) bg-(--accent)" : "border-white/30 bg-(--bg)/70 hover:border-white/50"
-                    }`}
-                >
-                    <span
-                        aria-hidden="true"
-                        className={`absolute size-5.5 rounded-full transition-all duration-300 ease motion-reduce:transition-none ${
-                            on ? "left-[calc(100%-1.5rem)] bg-(--btn-text)" : "left-0.5 bg-(--text)/85"
-                        }`}
-                    />
-                </button>
+                <Switch on={on} busy={saving} onToggle={toggle} aria-labelledby="freeze-label" aria-describedby="freeze-hint" />
             </div>
             <FormError>{error}</FormError>
         </div>
@@ -705,19 +721,6 @@ function StatusNotice({ project, isOwner, owner, latestShip, canJournal, onCompo
     return null;
 }
 
-function Notice({ icon: Icon, attention = false, action, children }) {
-    return (
-        // Phones: the action drops under the sentence; wider, it sits at the end.
-        <section
-            className={`grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 rounded-2xl border-2 bg-(--card) px-4 py-3 text-(--text) sm:flex sm:items-center sm:gap-x-4 sm:px-5 ${attention ? "border-(--accent)" : "border-(--accent)/55"}`}
-        >
-            <Icon aria-hidden="true" className={`mt-0.5 size-5 shrink-0 sm:mt-0 ${attention ? "text-(--accent)" : "text-(--text)/85"}`} />
-            <p className="min-w-0 flex-1 leading-relaxed text-(--text)/90">{children}</p>
-            {action && <div className="col-start-2 -ml-3 sm:ml-0">{action}</div>}
-        </section>
-    );
-}
-
 // ---------------------------------------------------------------- timeline
 
 function TimelineSection({ project, owner, isOwner, devlogs, ships, grantShipId, composing, journalBlocked, onCompose, onPosted, onCancel, onEdit }) {
@@ -730,10 +733,21 @@ function TimelineSection({ project, owner, isOwner, devlogs, ships, grantShipId,
     const capped = total > entries.length && !devlogs.loading;
 
     const action = isOwner && !composing && (
-        <button type="button" data-opens="journal" disabled={Boolean(journalBlocked)} onClick={onCompose} className={BTN_OUTLINE}>
-            <NotebookPen aria-hidden="true" className="size-4.5" />
-            New entry
-        </button>
+        <Tip text={journalBlocked}>
+            {(tip) => (
+                <button
+                    type="button"
+                    data-opens="journal"
+                    aria-disabled={journalBlocked ? true : undefined}
+                    aria-describedby={tip}
+                    onClick={journalBlocked ? undefined : onCompose}
+                    className={`${BTN_OUTLINE} aria-disabled:cursor-not-allowed aria-disabled:border-white/15 aria-disabled:bg-transparent aria-disabled:text-(--text)/75 aria-disabled:hover:border-white/15 aria-disabled:hover:bg-transparent`}
+                >
+                    <NotebookPen aria-hidden="true" className="size-4.5" />
+                    New entry
+                </button>
+            )}
+        </Tip>
     );
 
     return (

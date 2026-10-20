@@ -24,3 +24,30 @@ export const formatHours = (h) => `${Number.isInteger(h) ? h : h.toFixed(1)} ${h
 
 export const formatDay = (iso) =>
     new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+
+// The admin area names every backend status exactly (builders see the softer
+// labels above). Coral still marks the ones waiting on someone.
+export const ADMIN_PROJECT_STATUS = {
+    Unshipped: { label: "Unshipped" },
+    Unreviewed: { label: "Unreviewed", attention: true },
+    Claimed: { label: "Claimed" },
+    Fraud_Pending: { label: "Fraud pending" },
+    Changes_Needed: { label: "Changes needed" },
+    Approved: { label: "Approved" },
+    Perm_Rejected: { label: "Perm rejected" },
+};
+
+export const ADMIN_SHIP_STATUS = {
+    unreviewed: { label: "Unreviewed", attention: true },
+    approved: { label: "Approved" },
+    rejected: { label: "Rejected" },
+    perm_rejected: { label: "Perm rejected" },
+    needs_changes: { label: "Changes needed" },
+};
+
+// Date and time, for admin records where the hour matters.
+export const formatWhen = (iso) =>
+    new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+
+// The backend sends 0001-01-01 for timestamps that were never set.
+export const isSet = (iso) => Boolean(iso) && new Date(iso).getFullYear() > 2000;

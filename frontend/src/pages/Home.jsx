@@ -1,12 +1,15 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ChevronLeft, ChevronRight, Plus, RotateCw, X } from "lucide-react";
+import { ArrowRight, Check, ChevronLeft, ChevronRight, Plus, RotateCw, X } from "lucide-react";
 import AppShell, { PageTitle } from "../components/AppShell.jsx";
+import ConnectHackatime from "../components/ConnectHackatime.jsx";
 import Markdown from "../components/Markdown.jsx";
 import ProjectCard, { ProjectCardSkeleton } from "../components/ProjectCard.jsx";
-import { getAnnouncements, getMyProjects, getStaffPicks } from "../lib/endpoints.js";
+import { getAnnouncements, getHackatimeStatus, getMyProjects, getStaffPicks } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
 import Onboarding from "../components/Onboarding.jsx";
+import { PauseNotices } from "../components/PageParts.jsx";
+import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
 
 // Scrolls sideways when the cards don't fit. Bleeds to the panel's inner edges
 // (negative margin + matching padding) so cards scroll edge to edge, and is
@@ -17,6 +20,16 @@ const MESSAGE = "flex grow flex-col items-center justify-center gap-3 text-cente
 export default function Home() {
     const { data: projects, error, loading, reload } = useApi(getMyProjects);
     const hasProjects = projects?.length > 0;
+    const settings = useSettings();
+    const creationPaused = Boolean(pausedMessage(settings, PAUSE.projectCreation));
+    // Only the pauses this builder would run into; journaling's notice already
+    // says streaks are paused, so the streak one would repeat it.
+    const pauseKeys = [
+        PAUSE.projectCreation,
+        ...(hasProjects ? [PAUSE.ships, PAUSE.journaling] : []),
+        ...(projects?.some((p) => p.status === "Changes_Needed") && !pausedMessage(settings, PAUSE.ships) ? [PAUSE.resubmissions] : []),
+        ...(projects?.some((p) => p.streak > 0) && !pausedMessage(settings, PAUSE.journaling) ? [PAUSE.streaks] : []),
+    ];
 
     // Newest first; ISO timestamps sort correctly as strings.
     const sorted = hasProjects
@@ -30,6 +43,9 @@ export default function Home() {
             <Onboarding></Onboarding>
 
             <PageTitle>Dashboard</PageTitle>
+
+            {/* Admin pauses up front: this is where builders land. */}
+            <PauseNotices keys={pauseKeys} className="mt-6 md:mt-8" />
 
             <section
                 aria-labelledby="your-projects"
@@ -78,13 +94,25 @@ export default function Home() {
                             Any hardware project that uses a motor counts. Set up Lapse and Hackatime first, so every hour gets tracked.
                         </p>
                         <div className="mt-3 flex flex-col items-center gap-3 sm:flex-row">
-                            <Link
-                                to="/projects/new"
-                                className="t-btn t-hover inline-flex min-h-11 items-center gap-2 rounded-(--radius) px-8 text-lg font-bold"
-                            >
-                                <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
-                                Add project
-                            </Link>
+                            {creationPaused ? (
+                                // The pause notice above the panel says why.
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="inline-flex min-h-11 items-center gap-2 rounded-(--radius) border-2 border-white/15 bg-white/10 px-8 text-lg font-bold text-(--text)/75 cursor-not-allowed"
+                                >
+                                    <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                                    Add project
+                                </button>
+                            ) : (
+                                <Link
+                                    to="/projects/new"
+                                    className="t-btn t-hover inline-flex min-h-11 items-center gap-2 rounded-(--radius) px-8 text-lg font-bold"
+                                >
+                                    <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                                    Add project
+                                </Link>
+                            )}
                             <Link
                                 to="/docs/getting-started"
                                 className="inline-flex min-h-11 items-center rounded-(--radius) border-2 border-(--accent)/55 px-8 text-lg font-bold text-(--text) transition-all duration-300 ease hover:border-(--accent) hover:bg-(--accent)/15"
@@ -92,6 +120,7 @@ export default function Home() {
                                 Read the setup guide
                             </Link>
                         </div>
+                        <HackatimeSetup />
                     </div>
                 )}
             </section>
@@ -102,6 +131,30 @@ export default function Home() {
         </AppShell>
         </>
 
+    );
+}
+
+// The Hackatime half of "set up Lapse and Hackatime first": a Connect button
+// until it's linked, then a quiet confirmation. Nothing while it loads or if
+// the status can't be read, since the project form offers the button too.
+function HackatimeSetup() {
+    const { data, reload } = useApi(getHackatimeStatus);
+    if (!data) return null;
+    if (data.connected) {
+        return (
+            <p className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-(--text)/85">
+                <Check aria-hidden="true" className="size-4 text-(--accent)" strokeWidth={2.5} />
+                Hackatime connected
+            </p>
+        );
+    }
+    return (
+        <div className="mt-5 flex flex-col items-center gap-3 border-t-2 border-white/10 pt-5">
+            <p className="max-w-md text-sm leading-relaxed text-(--text)/80 [text-wrap:balance]">
+                Hackatime tracks your firmware time, so connect it before you start coding.
+            </p>
+            <ConnectHackatime onConnected={reload} center />
+        </div>
     );
 }
 

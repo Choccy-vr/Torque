@@ -7,6 +7,7 @@ using Npgsql;
 using Torque.Data;
 using Torque.Payouts;
 using Torque.Projects;
+using Torque.Settings;
 using Torque.Shipments;
 using Torque.Slack;
 using Torque.Streaks;
@@ -30,8 +31,9 @@ public class AirtableWebhookController : ControllerBase
     private readonly ILogger<AirtableWebhookController> _logger;
     private readonly SlackNotifier _slack;
     private readonly SlackOptions _slackOptions;
+    private readonly SettingsService _settings;
 
-    public AirtableWebhookController(AppDbContext db, PayoutService payouts, AirtableOptions options, ILogger<AirtableWebhookController> logger, SlackNotifier slack, SlackOptions slackOptions)
+    public AirtableWebhookController(AppDbContext db, PayoutService payouts, AirtableOptions options, ILogger<AirtableWebhookController> logger, SlackNotifier slack, SlackOptions slackOptions, SettingsService settings)
     {
         _db = db;
         _payouts = payouts;
@@ -39,6 +41,7 @@ public class AirtableWebhookController : ControllerBase
         _logger = logger;
         _slack = slack;
         _slackOptions = slackOptions;
+        _settings = settings;
     }
 
     // Final approval: credits the ship's hours (optionally adjusted), pays the Volts (build
@@ -53,6 +56,10 @@ public class AirtableWebhookController : ControllerBase
             _logger.LogWarning("Rejected Airtable webhook call with a bad secret from {Ip}", HttpContext.Connection.RemoteIpAddress);
             return Unauthorized();
         }
+        // Checked after the secret so the pause isn't visible to random callers. The
+        // automation run fails and can be re-run once payouts are back on.
+        var paused = await _settings.PausedResultAsync(SettingKeys.PayoutsPaused);
+        if (paused is not null) return paused;
 
         if (dto.ShipmentId is null || dto.ShipmentId == Guid.Empty) return BadRequest("ShipmentId is required!");
         if (dto.OverrideHours is < 0 || (dto.OverrideHours is { } h && !float.IsFinite(h)))

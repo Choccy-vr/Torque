@@ -24,7 +24,7 @@ values read from `backend/.env`:
 |---|---|
 | `SUPABASE_URL` | Which Supabase instance to talk to |
 | `SUPABASE_ANON_KEY` | Public client key — `supabase status` prints it |
-| `TESTING_OIDC_PROVIDER` | Provider identifier passed to `signInWithOAuth`, e.g. `custom:hackclub-auth` |
+| `OIDC_PROVIDER` | Provider identifier passed to `signInWithOAuth`, e.g. `custom:hackclub-auth` |
 
 `/testing/*` is only mapped when `ASPNETCORE_ENVIRONMENT=Development`, so none of
 this exists in a production build.
@@ -44,6 +44,8 @@ Append to the `ENDPOINTS` array at the top of `app.js`:
   body: { text: 'hello' },          // prefills the JSON body editor
 }
 ```
+
+A query parameter that can be left blank takes `optional: true` (e.g. `path: '/api/admin/ships?q={q}'`, `params: [{ name: 'q', placeholder: '...', optional: true }]`); left empty, its `q={q}` pair is dropped from the URL.
 
 An endpoint that needs a request header (like `airtable-approve`'s webhook secret) can
 list it as `headers: [{ name: 'X-Webhook-Secret', placeholder: '...' }]`, which renders a

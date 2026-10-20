@@ -6,7 +6,7 @@ public static class LapseExtension
     {
         var options = new LapseOptions
         {
-            BaseUrl = (config["LAPSE_BASE_URL"] ?? "https://lapse.hackclub.com").TrimEnd('/'),
+            BaseUrl = (config["LAPSE_BASE_URL"] ?? "https://api.lapse.hackclub.com").TrimEnd('/'),
             ProgramKey = config["LAPSE_PROGRAM_KEY"]
         };
 

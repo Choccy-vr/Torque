@@ -37,7 +37,7 @@ echo "    $(node -p "require('$REPO_ROOT/node_modules/@supabase/supabase-js/pack
 # 3. Env sanity ------------------------------------------------------------
 say "Checking backend/.env"
 [ -f "$BACKEND_DIR/.env" ] || die "backend/.env is missing — copy backend/example.env and fill it in"
-for key in SUPABASE_URL SUPABASE_ANON_KEY TESTING_OIDC_PROVIDER; do
+for key in SUPABASE_URL SUPABASE_ANON_KEY OIDC_PROVIDER; do
   grep -q "^${key}=." "$BACKEND_DIR/.env" || die "$key is missing or empty in backend/.env (see example.env)"
 done
 

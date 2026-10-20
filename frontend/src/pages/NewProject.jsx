@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CirclePause } from "lucide-react";
 import AppShell from "../components/AppShell.jsx";
 import CoverPicker, { NOT_A_LINK } from "../components/project/CoverPicker.jsx";
 import HackatimePicker from "../components/project/HackatimePicker.jsx";
@@ -8,6 +8,8 @@ import { LevelPicker } from "../components/project/ProjectEditForm.jsx";
 import { BTN_GHOST, BTN_PRIMARY, Field, FieldError, FOCUS, FormError, INPUT } from "../components/Form.jsx";
 import { createProject } from "../lib/endpoints.js";
 import { errorText, isHttpUrl } from "../lib/forms.js";
+import { PauseNotices } from "../components/PageParts.jsx";
+import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
 
 // Mirrors CreateProjectDto (backend/modules/projects): title and tier are
 // required, everything else is optional and editable later.
@@ -61,6 +63,9 @@ export default function NewProject() {
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState({});
     const formRef = useRef(null);
+    // Filling the form in still works while creating is paused (nothing is
+    // lost); only Create is held back, and the notice up top says why.
+    const paused = pausedMessage(useSettings(), PAUSE.projectCreation);
 
     const clearErrors = (...keys) => setErrors((e) => {
         const rest = { ...e };
@@ -92,6 +97,7 @@ export default function NewProject() {
 
     async function submit(e) {
         e.preventDefault();
+        if (paused) return;
         const found = validate(values);
         if (Object.keys(found).length > 0) return showErrors(found);
 
@@ -109,6 +115,8 @@ export default function NewProject() {
             const project = await createProject(body);
             navigate(`/projects/${project.id}`);
         } catch (err) {
+            // A pause switched on after this page loaded: the notice shows it.
+            if (err?.paused) return setSaving(false);
             const message = errorText(err);
             const field = err?.status === 400 && SERVER_FIELD.find(([pattern]) => pattern.test(message))?.[1];
             if (field) showErrors({ [field]: message });
@@ -127,6 +135,8 @@ export default function NewProject() {
                     <ArrowLeft aria-hidden="true" className="size-4.5" />
                     My projects
                 </Link>
+
+                <PauseNotices keys={[PAUSE.projectCreation]} />
 
                 <form
                     ref={formRef}
@@ -183,8 +193,20 @@ export default function NewProject() {
 
                         <div className="flex flex-col gap-4 border-t-2 border-white/15 pt-6">
                             <FormError>{errors.form}</FormError>
+                            {paused && (
+                                <p id="create-paused" className="flex max-w-[65ch] items-start gap-2.5 leading-relaxed text-(--text)/90">
+                                    <CirclePause aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-(--text)/85" />
+                                    {paused} Your answers stay here until then.
+                                </p>
+                            )}
                             <div className="flex flex-wrap gap-3">
-                                <button type="submit" disabled={saving} className={`${BTN_PRIMARY} px-8 text-lg`}>
+                                <button
+                                    type="submit"
+                                    disabled={saving}
+                                    aria-disabled={paused ? true : undefined}
+                                    aria-describedby={paused ? "create-paused" : undefined}
+                                    className={`${BTN_PRIMARY} px-8 text-lg aria-disabled:cursor-not-allowed aria-disabled:border-white/15 aria-disabled:bg-white/10 aria-disabled:text-(--text)/75 aria-disabled:hover:border-white/15 aria-disabled:hover:bg-white/10`}
+                                >
                                     {saving ? "Creating…" : "Create project"}
                                 </button>
                                 <Link to="/projects" className={`${BTN_GHOST} ${saving ? "pointer-events-none opacity-60" : ""}`}>

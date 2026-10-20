@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Torque.Data;
 using Torque.Extensions;
 using Torque.Hackatime;
+using Torque.Settings;
 using Torque.Streaks;
 // A controller for project data
 // endpoint: /api/project/<command>
@@ -287,6 +288,7 @@ public class ProjectController : ControllerBase
 
     //Create Project
     [Authorize]
+    [PausedBy(SettingKeys.ProjectCreationPaused)]
     [HttpPost("create")]
     public async Task<IActionResult> Create([FromBody] CreateProjectDto dto)
     {
