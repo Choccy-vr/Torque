@@ -1,6 +1,5 @@
 import {useState} from 'react'
 import {ArrowLeft, ArrowRight, Check} from "lucide-react";
-import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 
 const steps = [
@@ -22,7 +21,6 @@ export default function Onboarding({ onComplete = () => {} }) {
 
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
-    const navigate = useNavigate()
     const [page, setPage] = useState(1);
     const [formData, setFormData] = useState({
         username: "",
@@ -65,6 +63,7 @@ export default function Onboarding({ onComplete = () => {} }) {
         setSaving(true)
         setError('')
 
+        console.log(saving)
         const { error } = await supabase.auth.updateUser({ data: { onboarded: true } })
         setSaving(false)
 

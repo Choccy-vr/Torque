@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useContext } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Landing from './pages/Landing.jsx'
 import Home from './pages/Home.jsx'
