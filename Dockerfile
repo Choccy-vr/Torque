@@ -32,11 +32,11 @@ COPY --from=frontend /frontend/dist ./wwwroot
 ENV ASPNETCORE_ENVIRONMENT=Production \
     ASPNETCORE_FORWARDEDHEADERS_ENABLED=true \
     ASPNETCORE_HTTP_PORTS= \
-    PORT=8080
+    PORT=80
 ENV DOTNET_gcServer=0 \
     DOTNET_GCHeapHardLimitPercent=0x4B
 
 
-EXPOSE 8080
+EXPOSE 80
 USER $APP_UID
 ENTRYPOINT ["dotnet", "torque-backend.dll"]
