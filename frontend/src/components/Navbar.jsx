@@ -128,7 +128,7 @@ export default function Navbar() {
 function UserPlate({ onSignOut }) {
     const { user } = useAuth();
     const { data: profile, loading } = useApi(getMyProfile);
-    const name = profile?.username || user?.user_metadata?.name || user?.user_metadata?.full_name || "Your profile";
+    const name = profile?.username || user?.name || "Your profile";
 
     return (
         <div className="mt-auto flex flex-col rounded-2xl border-2 border-white/10 bg-(--bg)/45 p-1 transition-all duration-300 ease has-[a[aria-current=page]]:border-(--accent) has-[a[aria-current=page]]:bg-(--accent)/15">

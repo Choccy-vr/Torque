@@ -96,6 +96,8 @@ public class AirtablePushWorker : BackgroundService
                 : null;
 
             var fields = await builder.BuildAsync(shipment, project, user, review);
+            // Keeps an HCA token refresh the builder did, even if the push below fails.
+            if (db.ChangeTracker.HasChanges()) await db.SaveChangesAsync(ct);
             var recordId = fields is null ? null : await airtable.CreateRecordAsync(fields);
 
             if (recordId is null)

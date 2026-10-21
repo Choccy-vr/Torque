@@ -37,7 +37,7 @@ builder.Services.AddScoped<EnsureUserExistsFilter>();
 builder.Services.AddFrontendCors(builder.Configuration);
 builder.Services.AddTokenEncryption(builder.Configuration);
 builder.Services.AddAppDatabase(builder.Configuration);
-builder.Services.AddSupabaseAuth(builder.Configuration);
+builder.Services.AddHackClubAuth(builder.Configuration);
 builder.Services.AddHackatime(builder.Configuration);
 builder.Services.AddLapse(builder.Configuration);
 builder.Services.AddAirtable(builder.Configuration);
@@ -56,7 +56,9 @@ if (!app.Environment.IsDevelopment() && app.Configuration["MIGRATE_ON_STARTUP"] 
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
 }
 
+app.UseForwardedProto();
 app.UseCors(CorsExtensions.FrontendPolicy);
+app.UseCsrfHeaderCheck();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();

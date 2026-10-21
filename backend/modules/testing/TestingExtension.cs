@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Torque.Airtable;
+using Torque.Auth;
 using Torque.Data;
 using Torque.Devlogs;
 using Torque.Projects;
@@ -32,11 +33,10 @@ public static class TestingExtension
         });
 
         // The harness reads everything it needs from .env through here, nothing is baked into the page
-        app.MapGet("/testing/config", (IConfiguration config) => Results.Ok(new
+        app.MapGet("/testing/config", (HcaOptions hca) => Results.Ok(new
         {
-            supabaseUrl = config["SUPABASE_URL"],
-            supabaseAnonKey = config["SUPABASE_ANON_KEY"],
-            oidcProvider = config["OIDC_PROVIDER"]
+            hcaUrl = hca.Authority,
+            csrfHeader = AuthExtension.CsrfHeader,
         }));
 
         // Runs an Airtable push pass right now (instead of waiting for the worker's next

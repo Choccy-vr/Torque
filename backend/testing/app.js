@@ -4,14 +4,29 @@
 
 const $ = (id) => document.getElementById(id);
 
-let sb = null;                 // the Supabase client (window.supabase is the library itself)
-let session = null;
+let session = null;            // { user } from GET /auth/me, or null when signed out
 let config = null;
 
 // Mirrors the endpoint table in backend/README.md.
 // `auth: true` means the action carries [Authorize].
 // `group` maps 1:1 to the backend module (modules/<group>) and drives the section headings below.
 const ENDPOINTS = [
+  {
+    id: 'auth-me',
+    group: 'auth',
+    method: 'GET',
+    path: '/auth/me',
+    auth: true,
+    desc: 'Who the session cookie belongs to: { id, name, email }. 401 when signed out. Sign in with the button above (GET /auth/login → Hack Club Auth → /auth/callback).',
+  },
+  {
+    id: 'auth-logout',
+    group: 'auth',
+    method: 'POST',
+    path: '/auth/logout',
+    auth: true,
+    desc: 'Clears the session cookie. 204.',
+  },
   {
     id: 'health',
     group: 'misc',
@@ -770,6 +785,7 @@ const ENDPOINTS = [
 
 // Display order and labels for the groups above.
 const GROUP_LABELS = {
+  auth: 'Auth',
   misc: 'Misc',
   users: 'Users',
   projects: 'Projects',
@@ -804,31 +820,16 @@ async function boot() {
     return;
   }
 
-  const missing = ['supabaseUrl', 'supabaseAnonKey', 'oidcProvider'].filter((k) => !config[k]);
-  if (missing.length) {
+  if (!config.hcaUrl) {
     setPill('pill-config', 'config · incomplete', 'err');
-    showAuthError(`Missing from backend/.env: ${missing.join(', ')}`);
+    showAuthError('Missing HCA settings from backend/.env (see example.env)');
     return;
   }
 
   setPill('pill-config', 'config · loaded', 'ok');
-  $('auth-provider-line').textContent = `${config.oidcProvider} via ${config.supabaseUrl}`;
-  $('btn-signin').textContent = `Sign in with ${config.oidcProvider.replace(/^custom:/, '')}`;
+  $('auth-provider-line').textContent = `Hack Club Auth via ${config.hcaUrl}`;
 
-  sb = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
-
-  // PKCE: supabase-js exchanges the ?code= on load, then we tidy the URL.
-  sb.auth.onAuthStateChange((_event, next) => {
-    session = next;
-    renderAuth();
-  });
-  const { data } = await sb.auth.getSession();
-  session = data.session;
-  renderAuth();
-
-  if (new URLSearchParams(location.search).has('code')) {
-    history.replaceState(null, '', location.pathname);
-  }
+  await loadSession();
 
   pingBackend();
 }
@@ -846,13 +847,23 @@ async function pingBackend() {
 
 // ---------------------------------------------------------------- auth
 
+// The session is the backend's HttpOnly cookie, so the page can't read it; it asks
+// /auth/me whose it is instead.
+async function loadSession() {
+  try {
+    const res = await fetch('/auth/me');
+    session = res.ok ? { user: await res.json() } : null;
+  } catch {
+    session = null;
+  }
+  renderAuth();
+}
+
 function renderAuth() {
   const signedIn = !!session;
   $('btn-signin').disabled = signedIn;
-  $('btn-refresh').disabled = !signedIn;
   $('btn-signout').disabled = !signedIn;
   $('auth-details').hidden = !signedIn;
-  $('auth-raw').hidden = !signedIn;
   $('auth-user-raw').hidden = !signedIn;
 
   if (!signedIn) {
@@ -860,41 +871,31 @@ function renderAuth() {
     return;
   }
 
-  const claims = decodeJwt(session.access_token);
-  setPill('pill-auth', `auth · ${session.user.email ?? session.user.id.slice(0, 8)}`, 'ok');
+  setPill('pill-auth', `auth · ${session.user.email || session.user.id.slice(0, 8)}`, 'ok');
   $('auth-sub').textContent = session.user.id;
-  $('auth-email').textContent = session.user.email ?? '(none)';
-  $('auth-jwt').textContent = JSON.stringify(claims, null, 2);
+  $('auth-email').textContent = session.user.email || '(none)';
+  $('auth-name').textContent = session.user.name || '(none)';
   $('auth-user').textContent = JSON.stringify(session.user, null, 2);
-
-  const expiresAt = new Date((session.expires_at ?? 0) * 1000);
-  const mins = Math.round((expiresAt - Date.now()) / 60000);
-  $('auth-exp').textContent =
-    mins > 0 ? `${expiresAt.toLocaleTimeString()} (in ${mins} min)` : 'expired — refresh the session';
 }
 
-function decodeJwt(token) {
-  try {
-    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(decodeURIComponent(escape(atob(payload))));
-  } catch {
-    return { error: 'could not decode token' };
-  }
-}
-
-async function signIn() {
+function signIn() {
   hideAuthError();
-  const { error } = await sb.auth.signInWithOAuth({
-    provider: config.oidcProvider,
-    options: { redirectTo: location.origin + location.pathname },
-  });
-  if (error) showAuthError(`Sign-in failed: ${error.message}`);
+  const returnTo = location.origin + location.pathname;
+  location.href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
-async function refreshSession() {
-  const { error } = await sb.auth.refreshSession();
-  if (error) showAuthError(`Refresh failed: ${error.message}`);
-  else hideAuthError();
+async function signOut() {
+  await fetch('/auth/logout', { method: 'POST', headers: { [config.csrfHeader]: '1' } }).catch(() => null);
+  session = null;
+  renderAuth();
+}
+
+// Headers + credentials for a request: with auth the session cookie goes along (and
+// writes add the CSRF header the backend wants with it); without, no cookie is sent.
+function requestInit(method, auth, headers = {}) {
+  const unsafe = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+  if (auth && unsafe) headers[config.csrfHeader] = '1';
+  return { method, headers, credentials: auth ? 'same-origin' : 'omit' };
 }
 
 function showAuthError(msg) {
@@ -1060,13 +1061,12 @@ function runBundle(ep) {
 // failing response) so the caller can stop.
 async function bundleStep(method, path, body) {
   const label = `${method} ${path}`;
-  const headers = { Authorization: `Bearer ${session.access_token}` };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const init = requestInit(method, true, body !== undefined ? { 'Content-Type': 'application/json' } : {});
 
   const started = performance.now();
   let res, text;
   try {
-    res = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    res = await fetch(path, { ...init, body: body === undefined ? undefined : JSON.stringify(body) });
     text = await res.text();
   } catch (err) {
     renderError(label, `Network error: ${err.message}`);
@@ -1136,10 +1136,7 @@ async function loginToHackatime() {
 
   let start;
   try {
-    const res = await fetch('/api/hackatime/start', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
+    const res = await fetch('/api/hackatime/start', requestInit('POST', true));
     const text = await res.text();
     const parsed = safeJson(text);
     if (!res.ok) {
@@ -1180,11 +1177,7 @@ async function loginToHackatime() {
     let res, text;
     try {
       res = await fetch('/api/hackatime/callback', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
+        ...requestInit('POST', true, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({ code, state: returnedState, storedState: start.state }),
       });
       text = await res.text();
@@ -1214,17 +1207,13 @@ function safeJson(text) {
 async function send({ method, path, body, auth, endpointId, headers: extraHeaders }) {
   const label = `${method} ${path}`;
 
-  const headers = { ...extraHeaders };
-  if (auth) {
-    if (!session) return renderError(label, 'Not signed in — sign in first or untick "auth".');
-    headers.Authorization = `Bearer ${session.access_token}`;
-  }
-  if (body) headers['Content-Type'] = 'application/json';
+  if (auth && !session) return renderError(label, 'Not signed in — sign in first or untick "auth".');
+  const init = requestInit(method, auth, { ...extraHeaders, ...(body ? { 'Content-Type': 'application/json' } : {}) });
 
   const started = performance.now();
   let res, text;
   try {
-    res = await fetch(path, { method, headers, body });
+    res = await fetch(path, { ...init, body });
     text = await res.text();
   } catch (err) {
     return renderError(label, `Network error: ${err.message}`);
@@ -1290,42 +1279,12 @@ function renderHint(label, status) {
   el.hidden = true;
   el.innerHTML = '';
 
-  if (label.includes('/api/user/me') && status === 404 && session) {
-    const claims = decodeJwt(session.access_token);
-    const meta = session.user.user_metadata ?? {};
-    const sql = seedSql(session.user, claims, meta);
-    el.innerHTML =
-      '<strong>Expected until the user is provisioned.</strong> The token is valid, but nothing ' +
-      'inserts a row into <code>public.users</code> when someone signs in, so ' +
-      '<code>_db.Users.FindAsync(sub)</code> comes back empty. Seed one by hand:';
-    const pre = document.createElement('pre');
-    pre.textContent = sql;
-    const copy = document.createElement('button');
-    copy.className = 'mini';
-    copy.textContent = 'copy SQL';
-    copy.addEventListener('click', () => copyText(sql, copy));
-    el.append(pre, copy);
-    el.hidden = false;
-    return;
-  }
-
   if (status === 401) {
     el.textContent =
-      'Unauthorized — no valid bearer token reached the endpoint. Check the "auth" tick box, and ' +
-      'that the session has not expired (refresh it above).';
+      'Unauthorized — no session cookie reached the endpoint. Check the "auth" tick box, and ' +
+      'that you are still signed in (sign in again above).';
     el.hidden = false;
   }
-}
-
-function seedSql(user, claims, meta) {
-  const q = (v) => `'${String(v ?? '').replace(/'/g, "''")}'`;
-  const username = meta.preferred_username ?? meta.name ?? (user.email ?? '').split('@')[0] ?? 'tester';
-  return [
-    'insert into users (id, username, email, bio, name, slack_user_id, verification_status, ysws_eligible, created_at)',
-    `values (${q(user.id)}, ${q(username)}, ${q(user.email)}, '', ${q(meta.name)},`,
-    `        ${q(meta.slack_id)}, ${meta.verification_status === true || meta.verification_status === 'verified'}, ${meta.ysws_eligible === true}, now())`,
-    'on conflict (id) do nothing;',
-  ].join('\n');
 }
 
 function renderError(label, message) {
@@ -1369,12 +1328,7 @@ function addHistory(entry) {
 
 function wireStaticHandlers() {
   $('btn-signin').addEventListener('click', signIn);
-  $('btn-signout').addEventListener('click', () => sb.auth.signOut());
-  $('btn-refresh').addEventListener('click', refreshSession);
-
-  $('btn-copy-token').addEventListener('click', (e) => {
-    if (session) copyText(session.access_token, e.target);
-  });
+  $('btn-signout').addEventListener('click', signOut);
 
   document.querySelectorAll('[data-copy]').forEach((btn) => {
     btn.addEventListener('click', () => copyText($(btn.dataset.copy).textContent, btn));

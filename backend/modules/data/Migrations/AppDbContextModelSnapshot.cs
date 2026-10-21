@@ -22,6 +22,29 @@ namespace torque_backend.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("text")
+                        .HasColumnName("friendly_name");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("text")
+                        .HasColumnName("xml");
+
+                    b.HasKey("Id")
+                        .HasName("pk_data_protection_keys");
+
+                    b.ToTable("data_protection_keys", (string)null);
+                });
+
             modelBuilder.Entity("Torque.Announcements.Announcement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -653,6 +676,18 @@ namespace torque_backend.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("hc_user_id");
 
+                    b.Property<string>("HcaAccessToken")
+                        .HasColumnType("text")
+                        .HasColumnName("hca_access_token");
+
+                    b.Property<string>("HcaRefreshToken")
+                        .HasColumnType("text")
+                        .HasColumnName("hca_refresh_token");
+
+                    b.Property<DateTime?>("HcaTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("hca_token_expires_at");
+
                     b.Property<string>("InternalNote")
                         .HasColumnType("text")
                         .HasColumnName("internal_note");
@@ -710,6 +745,11 @@ namespace torque_backend.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_users");
+
+                    b.HasIndex("HcUserID")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_hc_user_id")
+                        .HasFilter("hc_user_id <> ''");
 
                     b.ToTable("users", (string)null);
                 });

@@ -22,8 +22,6 @@ public static class AirtableExtension
             TableName = string.IsNullOrWhiteSpace(config["AIRTABLE_TABLE_NAME"])
                 ? "YSWS Project Submission"
                 : config["AIRTABLE_TABLE_NAME"]!,
-            SupabaseUrl = config["SUPABASE_URL"]?.TrimEnd('/'),
-            SupabaseServiceRoleKey = config["SUPABASE_SERVICE_ROLE_KEY"],
             WebhookSecret = config["AIRTABLE_WEBHOOK_SECRET"]
         };
 
@@ -57,13 +55,7 @@ public static class AirtableExtension
             return services;
         }
 
-        if (string.IsNullOrEmpty(options.SupabaseServiceRoleKey))
-        {
-            Console.WriteLine("[Airtable] SUPABASE_SERVICE_ROLE_KEY not set — rows will be pushed without birthday/address");
-        }
-
         services.AddHttpClient<AirtableClient>();
-        services.AddHttpClient<SupabaseUserClient>();
         services.AddScoped<AirtableSubmissionBuilder>();
         // Singleton + hosted so the dev-only test harness can trigger a pass on demand.
         services.AddSingleton<AirtablePushWorker>();

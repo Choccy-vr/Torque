@@ -1,0 +1,1 @@
+SELECT * FROM auth.config limit 50;

@@ -1,24 +1,26 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
-import { supabase } from './supabase.js'
-import { config } from './config.js'
+import { apiFetch, apiUrl } from './api.js'
 import { AuthContext, useAuth } from './useAuth.js'
 import { clearMyProfile } from './endpoints.js'
 
 const DEV_MODE = import.meta.env.DEV
 
-// Dev login (dev builds only): a fake, token-less session so the UI can be
-// clicked through without the OIDC provider. Only active once devLogin() has
-// been used — otherwise dev builds go through the real Supabase flow below.
+// Dev login (dev builds only): a fake, cookie-less session so the UI can be
+// clicked through without Hack Club Auth. Only active once devLogin() has
+// been used — otherwise dev builds go through the real sign-in below.
 const DEV_SESSION = {
     user: {
         id: 'dev-user',
         email: 'dev@example.com',
-        user_metadata: { full_name: 'Dev User' },
+        name: 'Dev User',
     },
 }
 const isDevLogin = () => DEV_MODE && sessionStorage.getItem('dev-login') === 'true'
 
+// Sign-in is run by the backend: /auth/login sends the browser to Hack Club Auth,
+// which returns to the backend, which sets an HttpOnly session cookie and redirects
+// back here. All this side ever does is ask /auth/me who that cookie belongs to.
 export function AuthProvider({ children }) {
     const [devLoggedIn] = useState(isDevLogin)
     const [session, setSession] = useState(devLoggedIn ? DEV_SESSION : null)
@@ -27,36 +29,30 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         if (devLoggedIn) return
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, next) => {
-            setSession(next)
-        })
+        let cancelled = false
+        apiFetch('auth/me')
+            .then((res) => (res.ok ? res.json() : null))
+            .catch(() => null)
+            .then((user) => {
+                if (cancelled) return
+                setSession(user ? { user } : null)
+                setLoading(false)
+            })
 
-        // Resolves after supabase-js has exchanged any ?code= from the OIDC redirect.
-        supabase.auth.getSession().then(({ data }) => {
-            setSession(data.session)
-            setLoading(false)
-
-            const url = new URL(window.location.href)
-            if (url.searchParams.has('code')) {
-                url.searchParams.delete('code')
-                window.history.replaceState(null, '', url.pathname + url.search + url.hash)
-            }
-        })
-
-        return () => subscription.unsubscribe()
+        return () => {
+            cancelled = true
+        }
     }, [devLoggedIn])
 
     const value = {
         session,
         user: session?.user ?? null,
         loading,
-        signIn: (redirectPath = '/home') =>
-            supabase.auth.signInWithOAuth({
-                provider: config.oidcProvider,
-                options: { redirectTo: window.location.origin + redirectPath },
-            }),
+        signIn: (redirectPath = '/home') => {
+            window.location.href = apiUrl(`auth/login?returnTo=${encodeURIComponent(redirectPath)}`)
+        },
 
-        signOut: () => {
+        signOut: async () => {
             if (devLoggedIn) {
                 sessionStorage.removeItem('dev-login')
                 setSession(null)
@@ -65,7 +61,8 @@ export function AuthProvider({ children }) {
             }
 
             clearMyProfile()
-            return supabase.auth.signOut()
+            await apiFetch('auth/logout', { method: 'POST' }).catch(() => null)
+            setSession(null)
         },
 
         devLogin: (redirectPath = '/home') => {

@@ -16,14 +16,11 @@ public static class FrontendExtension
         if (root is null || !File.Exists(Path.Combine(root, "index.html"))) return app;
 
         // Runtime frontend config, so one image works anywhere without rebuilding the
-        // VITE_* vars in. Only public values: the anon key is meant to ship to browsers.
-        app.MapGet("/config.js", (IConfiguration config, HttpContext context) =>
+        // VITE_* vars in. Only public values belong here.
+        app.MapGet("/config.js", (HttpContext context) =>
         {
             var json = JsonSerializer.Serialize(new
             {
-                supabaseUrl = config["SUPABASE_URL"],
-                supabaseAnonKey = config["SUPABASE_ANON_KEY"],
-                oidcProvider = config["OIDC_PROVIDER"],
                 apiUrl = "",
             });
             context.Response.Headers.CacheControl = "no-cache";

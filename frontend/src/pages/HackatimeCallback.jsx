@@ -13,8 +13,7 @@ const EXPIRED = "This connection link expired or was opened in another browser. 
 // In the popup, it hands the code to the Torque tab that opened it, which
 // finishes the link. Without a popup, it finishes here and returns to `returnTo`.
 // What Hackatime sent back, and the connection this browser has in flight.
-// Read on the first render: AuthProvider strips ?code= from the URL once the
-// Supabase session loads.
+// Read once, on the first render.
 function readArrival() {
     const params = new URLSearchParams(window.location.search);
     return {

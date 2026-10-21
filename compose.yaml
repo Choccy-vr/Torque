@@ -1,15 +1,41 @@
-# Runs the production image locally, to check it works before deploying.
-#   supabase start            # local DB + auth, same as normal dev
-#   docker compose up --build # then open http://localhost:8080
-# Reads backend/.env. Host networking lets the container reach Supabase on 127.0.0.1
-# exactly like `dotnet run` does (Linux only; Docker Desktop needs host networking on).
+# Local Postgres, plus the production image for checking it works before deploying.
+#   docker compose up -d db     # just the database, for `dotnet run` (backend/.env points at 127.0.0.1:5432)
+#   docker compose up --build   # database + app, then open http://localhost:8080
+# The app reads backend/.env; DB_CONNECTION_STRING and FRONTEND_URL are overridden here so
+# it reaches the db container and serves the site on :8080. Add
+# http://localhost:8080/auth/callback to the HCA app's redirect URIs to sign in through it.
 name: torque
 services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: torque
+      POSTGRES_PASSWORD: torque
+      POSTGRES_DB: torque
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U torque -d torque"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+
   torque:
     build: .
     env_file: backend/.env
     environment:
       PORT: "8080"
       FRONTEND_URL: http://localhost:8080
-    network_mode: host
+      DB_CONNECTION_STRING: Host=db;Port=5432;Database=torque;Username=torque;Password=torque
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  pgdata:

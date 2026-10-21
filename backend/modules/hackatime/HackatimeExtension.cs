@@ -13,11 +13,9 @@ public static class HackatimeExtension
             ClientSecret = config["HACKATIME_CLIENT_SECRET"],
             RedirectUri = config["HACKATIME_REDIRECT_URI"] ?? "http://localhost:9999/auth/hackatime/callback",
             BaseUrl = (config["HACKATIME_BASE_URL"] ?? "https://hackatime.hackclub.com").TrimEnd('/'),
-            // Reuses the Supabase JWT secret to HMAC-sign OAuth `state` — it's already
-            // the one signing secret this backend holds, and state-signing doesn't need
-            // a secret of its own.
-            StateSecret = config["SUPABASE_JWT_SECRET"]
-                ?? throw new InvalidOperationException("Missing SUPABASE_JWT_SECRET")
+            // HMAC key for the OAuth `state`.
+            StateSecret = config["OAUTH_STATE_SECRET"]
+                ?? throw new InvalidOperationException("Missing OAUTH_STATE_SECRET")
         };
 
         if (string.IsNullOrEmpty(options.ClientId) || string.IsNullOrEmpty(options.ClientSecret))

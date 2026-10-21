@@ -10,28 +10,36 @@ The backend for Torque written in C#.
 |---|---|---|
 | .NET 10 SDK | Builds and runs the backend | [Download page](https://dotnet.microsoft.com/download) |
 | EF Core CLI | Applies database migrations | `dotnet tool install --global dotnet-ef` |
-| Docker | Supabase runs locally in Docker containers | [Docker Desktop](https://docs.docker.com/desktop/) or [Docker Engine](https://docs.docker.com/engine/install/) on Linux. Make sure the daemon is running (`docker ps` shouldn't error) |
-| Supabase CLI | Runs the local database and auth | [Installing the Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started#installing-the-supabase-cli) |
-| Node.js + npm | Only for the [testing harness](#testing) | [nodejs.org](https://nodejs.org) or your package manager |
+| Docker | Runs the local Postgres (the `db` service in [`compose.yaml`](../compose.yaml)) | [Docker Desktop](https://docs.docker.com/desktop/) or [Docker Engine](https://docs.docker.com/engine/install/) on Linux. Make sure the daemon is running (`docker ps` shouldn't error) |
 
-### 2. Start Supabase
+### 2. Start Postgres
 
-From the **repo root** (where the `supabase/` folder is):
+From the **repo root**:
 
 ```bash
-supabase start
+docker compose up -d db
 ```
 
-The first run downloads the Docker images and takes a few minutes. Later runs
-take a few seconds. When it's done, print every value you'll need for `.env`:
+That's a plain `postgres:17` on `127.0.0.1:5432` (database, user and password are all
+`torque`), with its data kept in a Docker volume between restarts. Any other Postgres
+works too; just point `DB_CONNECTION_STRING` at it.
 
-```bash
-supabase status -o env
-```
+### 3. Create a Hack Club Auth app
 
-Supabase Studio (a web UI for the database) is at <http://127.0.0.1:54323>.
+Sign-in is [Hack Club Auth](https://auth.hackclub.com) (HCA) over OIDC, run by the
+backend itself. Create an app at
+[auth.hackclub.com/developer/apps](https://auth.hackclub.com/developer/apps) and add these
+redirect URIs:
 
-### 3. Create `backend/.env`
+- `http://localhost:5267/auth/callback` (local `dotnet run`)
+- `http://localhost:8080/auth/callback` (the Docker image via `docker compose`)
+- `https://<your-domain>/auth/callback` (production)
+
+The default scopes include `address` and `birthdate`, which the Airtable push needs and
+which only HQ-official apps can request. With a community app, set
+`HCA_SCOPES=openid profile email name slack_id verification_status`.
+
+### 4. Create `backend/.env`
 
 ```bash
 cp backend/example.env backend/.env
@@ -43,19 +51,14 @@ Then fill it in. The backend **won't start** without the required ones.
 
 | Variable | What to put | Where it comes from |
 |---|---|---|
-| `DB_CONNECTION_STRING` | `Host=127.0.0.1;Port=54322;Database=postgres;Username=postgres;Password=postgres` | The local Supabase Postgres (`DB_URL` in `supabase status -o env`). Local Postgres has no SSL, so leave out the `SSL Mode`/`Trust Server Certificate` parts from `example.env` |
-| `SUPABASE_URL` | `http://127.0.0.1:54321` | `API_URL` in `supabase status -o env` |
-| `SUPABASE_JWT_SECRET` | the long secret string | `JWT_SECRET` in `supabase status -o env`. Used to verify users' login tokens |
-| `FRONTEND_URL` | `http://localhost:5173` | Where the frontend runs (`npm run dev` in `frontend/` uses port 5173). Only this origin is allowed through CORS |
-| `TOKEN_ENCRYPTION_KEY` | a random base64 key | Generate one with `openssl rand -base64 32`. Encrypts stored tokens, so don't change it later or the saved Hackatime connections become unreadable |
+| `DB_CONNECTION_STRING` | `Host=127.0.0.1;Port=5432;Database=torque;Username=torque;Password=torque` | The compose `db` service. A hosted Postgres usually also wants `SSL Mode=Require` |
+| `HCA_CLIENT_ID`, `HCA_CLIENT_SECRET` | OIDC app credentials | The HCA app from step 3 |
+| `OAUTH_STATE_SECRET` | a random string | Generate one with `openssl rand -hex 32`. Signs the Hackatime OAuth `state` |
+| `FRONTEND_URL` | `http://localhost:5173` | Where the frontend runs (`npm run dev` in `frontend/` uses port 5173). Only this origin is allowed through CORS, and it's where sign-in sends people back to. Use `localhost` here and in the frontend's `VITE_API_URL` (not `127.0.0.1`), or the session cookie won't be sent |
+| `TOKEN_ENCRYPTION_KEY` | a random base64 key | Generate one with `openssl rand -base64 32`. Encrypts stored tokens, so don't change it later or the saved Hackatime and HCA tokens become unreadable |
 
-#### Needed for the testing harness / Airtable
-
-| Variable | What to put | Where it comes from |
-|---|---|---|
-| `SUPABASE_ANON_KEY` | a key starting with `eyJ` | `ANON_KEY` in `supabase status -o env` |
-| `SUPABASE_SERVICE_ROLE_KEY` | a key starting with `eyJ` | `SERVICE_ROLE_KEY` in `supabase status -o env`. Server-only, never put it in the frontend |
-| `OIDC_PROVIDER` | `custom:hackclub-auth` | The OIDC provider name configured in Supabase auth. Both the testing harness and the Docker frontend sign in with it |
+`HCA_URL` (default `https://auth.hackclub.com`) and `HCA_SCOPES` (space-separated) are
+optional overrides.
 
 #### Optional integrations
 
@@ -75,7 +78,7 @@ Leave these blank to switch the feature off. The rest of the backend still works
 | `SLACK_BOT_TOKEN` | bot token (`xoxb-...`) | Create a Slack app at [api.slack.com/apps](https://api.slack.com/apps) with the bot scopes `chat:write`, `im:write`, `channels:manage` (to invite to public channels) and `groups:write` (private channels), install it to the workspace, and copy the Bot User OAuth Token. The bot DMs builders when they finish onboarding, ship, get a review back (changes needed / rejected, with the feedback) and get final approval. Blank switches Slack off |
 | `SLACK_JOIN_CHANNELS` | comma-separated channel IDs (`C0123ABC,C0456DEF`) | The channels `api/slack/channels/join` adds a user to (right-click a channel → *Copy link*; the ID is the last part). **Invite the bot to each one first** (`/invite @YourBot`) — Slack refuses invites to channels the bot isn't in |
 
-### 4. Create the database tables
+### 5. Create the database tables
 
 From `backend/`:
 
@@ -88,11 +91,11 @@ Run this again whenever you pull new migrations (new files in
 
 ## Running (every time)
 
-1. Make sure Docker is running, then start Supabase from the **repo root**
+1. Make sure Docker is running, then start Postgres from the **repo root**
    (does nothing if it's already up):
 
    ```bash
-   supabase start
+   docker compose up -d db
    ```
 
 2. Start the backend from **`backend/`** (it reads `.env` from the folder you run
@@ -109,15 +112,15 @@ Check it's up:
 curl http://localhost:5267/api/health
 ```
 
-To stop: `Ctrl-C` the backend, and `supabase stop` (from the repo root) if you
-want to shut the containers down too. Your data is kept between restarts.
+To stop: `Ctrl-C` the backend, and `docker compose stop db` (from the repo root) if
+you want to shut Postgres down too. Your data is kept between restarts.
 
 ## Testing
 
 **DISCLAIMER:** This part was done using AI
 
-`./testing/run.sh` brings up Supabase and the backend, and serves a test harness at
-<http://localhost:5267/testing/> that signs in over OIDC and sends authenticated
+`./testing/run.sh` brings up Postgres and the backend, and serves a test harness at
+<http://localhost:5267/testing/> that signs in with Hack Club Auth and sends authenticated
 requests to every endpoint below. See [testing/README.md](testing/README.md).
 
 ## Deploying with Docker
@@ -131,37 +134,83 @@ run `dotnet ef database update` in production.
 
 ### Try the image locally first
 
-With Supabase running (`supabase start`), from the **repo root**:
+From the **repo root**:
 
 ```bash
 docker compose up --build
 ```
 
 Then open <http://localhost:8080>. This reads `backend/.env` just like `dotnet watch`
-does. `Ctrl-C` stops it.
+does, except that it talks to the compose `db` service and sets `FRONTEND_URL` to
+`http://localhost:8080`. `Ctrl-C` stops it.
 
 | Variable | Value |
 |---|---|
 | `DATABASE_URL` | Postgres URL, `postgres://user:pass@host:port/db` (or `DB_CONNECTION_STRING`) |
 | `FRONTEND_URL` | The public URL, e.g. `https://torque.hackclub.com` (used in Slack links + CORS) |
-| `SUPABASE_URL`, `SUPABASE_JWT_SECRET`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | From the hosted Supabase project's settings |
-| `OIDC_PROVIDER` | `custom:hackclub-auth` |
-| `TOKEN_ENCRYPTION_KEY` | A **new** `openssl rand -base64 32` for production. Keep it safe; changing it later breaks saved Hackatime links |
+| `HCA_CLIENT_ID`, `HCA_CLIENT_SECRET` | The HCA app, with `https://<your-domain>/auth/callback` registered |
+| `OAUTH_STATE_SECRET` | A **new** `openssl rand -hex 32` for production |
+| `TOKEN_ENCRYPTION_KEY` | A **new** `openssl rand -base64 32` for production. Keep it safe; changing it later breaks saved Hackatime links and HCA tokens |
 | `HACKATIME_REDIRECT_URI` | `https://<your-domain>/...` callback, also registered on the Hackatime OAuth app |
 | Everything under [Optional integrations](#optional-integrations) | Same as local |
 
-`SUPABASE_URL`, `SUPABASE_ANON_KEY` and `OIDC_PROVIDER` reach the browser through
-`/config.js`, so those are the only values the frontend sees. Never expose the service-role key or the JWT secret.
+No secrets reach the browser: `/config.js` only tells the frontend the API is on the
+same origin, and the session is an HttpOnly cookie. If a proxy terminates TLS in front of
+the container, it must send `X-Forwarded-Proto` so the OIDC redirect URI and the cookie's
+`Secure` flag use `https`. The cookie-signing keys are stored in Postgres
+(`data_protection_keys`), so restarts and extra instances don't sign anyone out.
 
 Other knobs: `PORT` (default `8080`), and `MIGRATE_ON_STARTUP=false` to skip the
 automatic migrations.
 
+### Moving the data off Supabase (one-off)
+
+Torque used to run on Supabase's Postgres and Supabase Auth. To bring an existing
+database across to a plain Postgres:
+
+1. Dump the app's tables (the `public` schema, which includes `__EFMigrationsHistory`)
+   from Supabase. Use the direct connection string from the project's database
+   settings, not the pooler:
+
+   ```bash
+   pg_dump "$SUPABASE_DB_URL" --schema=public --data-only --no-owner --no-acl -f torque-data.sql
+   ```
+
+2. On the new database, build the schema up to the last migration before the auth
+   switch, load the data, then apply the rest:
+
+   ```bash
+   dotnet ef database update AddAppSettings     # schema only, as of the Supabase days
+   psql "$NEW_DB_URL" -c 'TRUNCATE "__EFMigrationsHistory"'
+   psql "$NEW_DB_URL" -v ON_ERROR_STOP=1 -f torque-data.sql
+   dotnet ef database update                    # applies ReplaceSupabaseAuth
+   ```
+
+   `ReplaceSupabaseAuth` adds a unique index on `users.hc_user_id` (ignoring empty
+   ones). If it fails, two users share an HCA id. Find them with
+   `SELECT hc_user_id, count(*) FROM users WHERE hc_user_id <> '' GROUP BY 1 HAVING count(*) > 1`
+   and merge or clear the duplicates.
+
+3. Everyone signs in again once (Supabase sessions don't carry over). Sign-in finds
+   each existing user by `hc_user_id`, so they keep their id, projects and Volts.
+   Until a user signs in again there are no HCA tokens stored for them, so their
+   approved ships wait in the Airtable push queue until then.
+
 ## Endpoints
+
+"Auth required" means the `torque_session` cookie that `auth/login` sets. Requests
+that send that cookie with any method other than GET/HEAD/OPTIONS must also send an
+`X-Torque-Request` header (any value), or they get a 403. This stops other sites from
+submitting forms with the cookie. The frontend's `apiFetch` adds the header.
 
 | Method | Route | Auth required | Description |
 |---|---|---|---|
 | GET | `api/health` | No | return JSON |
-| GET | `config.js` | No | Docker image only (not `dotnet run`). JavaScript that sets `window.__TORQUE_CONFIG__` to the frontend's runtime config: `supabaseUrl`, `supabaseAnonKey`, `oidcProvider` (from `OIDC_PROVIDER`) and `apiUrl` (always `""`, same origin). Every other non-`api/` path serves the frontend's `index.html` |
+| GET | `config.js` | No | Docker image only (not `dotnet run`). JavaScript that sets `window.__TORQUE_CONFIG__` to the frontend's runtime config: `apiUrl` (always `""`, same origin). Every other non-`api/`, non-`auth/` path serves the frontend's `index.html` |
+| GET | `auth/login` | No | Browser navigation, not `fetch`. Redirects to Hack Club Auth to sign in. Afterwards it sends the browser to `returnTo`: a path on the frontend, or an absolute URL on the frontend's or this API's origin. Defaults to `/home`. Query: `returnTo` (string, optional) |
+| GET | `auth/callback` | No | Where HCA redirects back to (handled by the OIDC middleware, not a controller). Creates or updates the user's row, matched by their HCA `sub`; stores their HCA tokens encrypted; sets the `torque_session` HttpOnly cookie; redirects to `returnTo`. On failure (consent denied, HCA down) it redirects to `FRONTEND_URL/?login=failed` |
+| POST | `auth/logout` | No | Clears the session cookie. 204 |
+| GET | `auth/me` | YES | Who's signed in: `id`, `name`, `email`. 401 when signed out. Works for banned users too |
 | GET | `api/user/{id:guid}` | No | Get public profile (no PII) by user ID, including their Slack user ID (for linking to their Slack profile) |
 | GET | `api/user/me` | YES | Get authenticated user's own profile, including `timeZone` (streak timezone, null until set) `streakFreezes` (read-only; everyone starts with 3) and `completedFirstTimeSetup` (false until `me/onboarding` is called) |
 | PUT | `api/user/me/onboarding` | YES | First-time setup: set your username, bio and profile picture, and mark `completedFirstTimeSetup` true. Can be called again to change them (every field is overwritten). 400 on invalid input; 409 if the username is taken (case-insensitive). Body (JSON): `username` (string, required, 3–30 chars: letters, numbers, `_`, `-`), `bio` (string, optional, max 500), `profilePictureUrl` (http(s) URL, optional — omitted/`""` clears it) |

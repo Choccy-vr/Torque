@@ -33,6 +33,13 @@ public class User
     // expose this on a DTO.
     public string? HackatimeToken { get; set; }
 
+    // Hack Club Auth tokens from sign-in, used to re-read the user's claims (e.g. address
+    // and birthday for the Airtable push). Encrypted at rest like HackatimeToken — never
+    // expose these on a DTO.
+    public string? HcaAccessToken { get; set; }
+    public string? HcaRefreshToken { get; set; }
+    public DateTime? HcaTokenExpiresAt { get; set; }
+
 
     public Guid[]? Projects { get; set; }
 

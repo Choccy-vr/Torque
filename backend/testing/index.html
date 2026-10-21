@@ -25,8 +25,7 @@
       <p class="muted" id="auth-provider-line">&mdash;</p>
 
       <div class="row" id="auth-actions">
-        <button id="btn-signin" class="primary">Sign in with OIDC</button>
-        <button id="btn-refresh" disabled>Refresh session</button>
+        <button id="btn-signin" class="primary">Sign in with Hack Club Auth</button>
         <button id="btn-signout" disabled>Sign out</button>
       </div>
 
@@ -35,16 +34,11 @@
       <dl id="auth-details" class="kv" hidden>
         <dt>user id (sub)</dt><dd><code id="auth-sub"></code> <button class="mini" data-copy="auth-sub">copy</button></dd>
         <dt>email</dt><dd><code id="auth-email"></code></dd>
-        <dt>expires</dt><dd><span id="auth-exp"></span></dd>
-        <dt>access token</dt><dd><button class="mini" id="btn-copy-token">copy bearer token</button></dd>
+        <dt>name</dt><dd><code id="auth-name"></code></dd>
       </dl>
 
-      <details id="auth-raw" hidden>
-        <summary>Decoded JWT payload</summary>
-        <pre id="auth-jwt"></pre>
-      </details>
       <details id="auth-user-raw" hidden>
-        <summary>Supabase user object (OIDC claims land in <code>user_metadata</code>)</summary>
+        <summary><code>GET /auth/me</code> response (the session is an HttpOnly cookie)</summary>
         <pre id="auth-user"></pre>
       </details>
     </section>
@@ -96,7 +90,6 @@
   </div>
 </main>
 
-<script src="vendor/supabase.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

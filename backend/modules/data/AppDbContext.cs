@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Torque.Announcements;
@@ -14,7 +15,7 @@ using Torque.Users;
 
 namespace Torque.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : DbContext, IDataProtectionKeyContext
 {
     private readonly TokenEncryptor _tokenEncryptor;
 
@@ -33,6 +34,8 @@ public class AppDbContext : DbContext
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
     public DbSet<Grant> Grants => Set<Grant>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    // Session-cookie signing keys (see Torque.Auth.AuthExtension).
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -80,6 +83,11 @@ public class AppDbContext : DbContext
             .HasIndex(g => g.Fulfilled);
         builder.Entity<AppSetting>()
             .HasKey(s => s.Key);
+        // Sign-in finds users by their HCA `sub`. Rows that never got one are left out.
+        builder.Entity<User>()
+            .HasIndex(u => u.HcUserID)
+            .IsUnique()
+            .HasFilter("hc_user_id <> ''");
 
         // Encrypted at rest — see TokenEncryptor. Never expose this on a DTO.
         var tokenConverter = new ValueConverter<string?, string?>(
@@ -87,6 +95,12 @@ public class AppDbContext : DbContext
             ciphertext => ciphertext == null ? null : _tokenEncryptor.Decrypt(ciphertext));
         builder.Entity<User>()
             .Property(u => u.HackatimeToken)
+            .HasConversion(tokenConverter);
+        builder.Entity<User>()
+            .Property(u => u.HcaAccessToken)
+            .HasConversion(tokenConverter);
+        builder.Entity<User>()
+            .Property(u => u.HcaRefreshToken)
             .HasConversion(tokenConverter);
     }
 

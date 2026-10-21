@@ -1,7 +1,7 @@
 // The Hackatime connection in flight: the OAuth state to echo back, whether it
 // runs in a popup or in this tab, and where to return to afterwards. Kept in
 // localStorage so the popup and the tab that opened it both see it. No imports,
-// so supabase.js can use it without a cycle.
+// so anything can use it without a cycle.
 
 export const CALLBACK_PATH = '/auth/hackatime/callback'
 
@@ -31,11 +31,4 @@ export function clearPending() {
     } catch {
         // Nothing to clear.
     }
-}
-
-// The callback page, loaded inside the popup. It stays signed out (see
-// supabase.js) so it never refreshes the session token out from under the tab
-// that opened it; that tab finishes the connection instead.
-export function isCallbackPopup() {
-    return window.location.pathname === CALLBACK_PATH && readPending()?.mode === 'popup'
 }

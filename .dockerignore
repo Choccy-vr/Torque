@@ -12,7 +12,6 @@
 **/obj
 frontend/dist
 backend/testing
-supabase
 /*.md
 compose.yaml
 Dockerfile

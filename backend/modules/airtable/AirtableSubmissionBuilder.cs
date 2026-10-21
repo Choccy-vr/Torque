@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Torque.Auth;
 using Torque.Hackatime;
 using Torque.Lapse;
 using Torque.Projects;
@@ -16,27 +17,36 @@ public class AirtableSubmissionBuilder
 {
     private readonly HackatimeService _hackatime;
     private readonly LapseService _lapse;
-    private readonly SupabaseUserClient _supabase;
+    private readonly HcaClient _hca;
+    private readonly ILogger<AirtableSubmissionBuilder> _logger;
 
-    public AirtableSubmissionBuilder(HackatimeService hackatime, LapseService lapse, SupabaseUserClient supabase)
+    public AirtableSubmissionBuilder(HackatimeService hackatime, LapseService lapse, HcaClient hca, ILogger<AirtableSubmissionBuilder> logger)
     {
         _hackatime = hackatime;
         _lapse = lapse;
-        _supabase = supabase;
+        _hca = hca;
+        _logger = logger;
     }
 
-    // Returns null when the submitter's Supabase metadata couldn't be fetched (transient),
-    // so the push is retried instead of creating a row missing name/address/birthday.
+    // Returns null when the submitter's HCA claims couldn't be read, so the push is retried
+    // instead of creating a row missing name/address/birthday. May refresh the user's
+    // stored HCA tokens; the caller saves them.
     public async Task<Dictionary<string, object?>?> BuildAsync(Shipment shipment, Project project, User user, ShipmentReview? review)
     {
-        var metadata = _supabase.Configured
-            ? await _supabase.GetUserMetadataAsync(user.Id)
-            : JsonDocument.Parse("{}").RootElement;
-        if (metadata is null) return null;
+        var info = await _hca.GetUserInfoAsync(user);
+        if (info.Claims is not { } metadata)
+        {
+            if (info.Revoked)
+            {
+                _logger.LogWarning("No usable HCA token for user {UserId}; shipment {ShipmentId} waits until they sign in again",
+                    user.Id, shipment.Id);
+            }
+            return null;
+        }
 
-        var (firstName, lastName) = SplitName(Claim(metadata.Value, "given_name"), Claim(metadata.Value, "family_name"), user.Name);
+        var (firstName, lastName) = SplitName(Claim(metadata, "given_name"), Claim(metadata, "family_name"), user.Name);
 
-        var address = ClaimElement(metadata.Value, "address");
+        var address = ClaimElement(metadata, "address");
         var streetLines = (Str(address, "street_address") ?? "")
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
@@ -66,7 +76,7 @@ public class AirtableSubmissionBuilder
             ["Email"] = user.Email,
             ["Slack ID"] = user.SlackUserID,
             ["GitHub Username"] = GitHubOwner(project.RepoUrl),
-            ["Birthday"] = Claim(metadata.Value, "birthdate"),
+            ["Birthday"] = Claim(metadata, "birthdate"),
 
             ["Address (Line 1)"] = streetLines.FirstOrDefault(),
             ["Address (Line 2)"] = string.Join(", ", streetLines.Skip(1)),
@@ -102,21 +112,10 @@ public class AirtableSubmissionBuilder
             .ToDictionary(f => f.Key, f => f.Value);
     }
 
-    // Supabase stores standard OIDC claims at the top of user_metadata and anything
-    // non-standard under custom_claims (see EnsureUserExistsFilter's slack_id), so check both.
-    private static JsonElement ClaimElement(JsonElement metadata, string name)
-    {
-        if (metadata.ValueKind != JsonValueKind.Object) return default;
-        if (metadata.TryGetProperty(name, out var top) && top.ValueKind != JsonValueKind.Null) return top;
-        if (metadata.TryGetProperty("custom_claims", out var custom)
-            && custom.ValueKind == JsonValueKind.Object
-            && custom.TryGetProperty(name, out var nested)
-            && nested.ValueKind != JsonValueKind.Null)
-        {
-            return nested;
-        }
-        return default;
-    }
+    private static JsonElement ClaimElement(JsonElement metadata, string name) =>
+        metadata.ValueKind == JsonValueKind.Object && metadata.TryGetProperty(name, out var claim) && claim.ValueKind != JsonValueKind.Null
+            ? claim
+            : default;
 
     private static string? Claim(JsonElement metadata, string name)
     {
