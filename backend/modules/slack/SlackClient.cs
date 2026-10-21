@@ -11,6 +11,8 @@ public enum SlackInviteResult
     Failed
 }
 
+public record SlackProfile(string? DisplayName, string? ImageUrl);
+
 public class SlackClient
 {
     private readonly HttpClient _http;
@@ -56,17 +58,41 @@ public class SlackClient
         };
     }
 
+    // The user's Slack display name (falling back to their real name) and profile picture
+    // URL, either null if Slack doesn't have one. Null on any failure. Needs users:read.
+    public async Task<SlackProfile?> GetProfileAsync(string slackId)
+    {
+        // users.info is a read method, which Slack only takes form-encoded, not as JSON.
+        var info = await CallAsync("users.info", new FormUrlEncodedContent([new("user", slackId)]));
+        if (info is not { Ok: true } || !info.Json.TryGetProperty("user", out var user)
+            || !user.TryGetProperty("profile", out var profile))
+        {
+            return null;
+        }
+
+        string? Prop(string name) =>
+            profile.TryGetProperty(name, out var el) && el.ValueKind == JsonValueKind.String && el.GetString() is { Length: > 0 } v
+                ? v
+                : null;
+
+        return new SlackProfile(
+            Prop("display_name") ?? Prop("real_name"),
+            Prop("image_512") ?? Prop("image_192") ?? Prop("image_72"));
+    }
+
     private record SlackResponse(bool Ok, string? Error, JsonElement Json);
+
+    private Task<SlackResponse?> CallAsync(string method, object body) => CallAsync(method, JsonContent.Create(body));
 
     // Slack answers 200 with { ok: false, error } for API errors, so both that and HTTP
     // failures are logged here. Null only when there's no response to read at all.
-    private async Task<SlackResponse?> CallAsync(string method, object body)
+    private async Task<SlackResponse?> CallAsync(string method, HttpContent content)
     {
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, $"https://slack.com/api/{method}")
             {
-                Content = JsonContent.Create(body)
+                Content = content
             };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.BotToken);
 

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Torque.Data;
+using Torque.Slack;
 using Torque.Users;
 
 namespace Torque.Auth;
@@ -176,6 +177,7 @@ public static class AuthExtension
         }
 
         var user = await db.Users.FirstOrDefaultAsync(u => u.HcUserID == hcaSub);
+        var isNew = user is null;
         if (user is null)
         {
             var name = HcaUserSync.Str(claims.Value, "name") ?? "";
@@ -194,11 +196,39 @@ public static class AuthExtension
         }
 
         HcaUserSync.Apply(user, claims.Value);
+        if (isNew) await ApplySlackProfileAsync(user, services);
         HcaClient.StoreTokens(user, tokens.AccessToken, tokens.RefreshToken, tokens.ExpiresIn);
         await db.SaveChangesAsync(context.HttpContext.RequestAborted);
 
         context.Principal = SessionPrincipal(user.Id);
         context.Properties!.SetString(SyncedAtKey, DateTimeOffset.UtcNow.ToString("O"));
+    }
+
+    // New accounts start with their Slack display name and profile picture, which the
+    // onboarding form then prefills. Only on creation, so a user's own picks stick; any
+    // Slack failure just leaves the HCA name and no picture.
+    private static async Task ApplySlackProfileAsync(User user, IServiceProvider services)
+    {
+        if (string.IsNullOrEmpty(user.SlackUserID) || !services.GetRequiredService<SlackOptions>().Configured) return;
+
+        var profile = await services.GetRequiredService<SlackClient>().GetProfileAsync(user.SlackUserID);
+        if (profile is null) return;
+
+        if (ToUsername(profile.DisplayName) is { } username) user.Username = username;
+        if (profile.ImageUrl is { } imageUrl) user.ProfilePictureUrl = imageUrl;
+    }
+
+    // Squeezes a Slack display name into what onboarding accepts (3–30 of letters, numbers,
+    // _ or -): spaces become _, anything else is dropped. Null if too little is left.
+    private static string? ToUsername(string? displayName)
+    {
+        if (displayName is null) return null;
+        var cleaned = new string(displayName.Trim()
+            .Select(c => char.IsWhiteSpace(c) ? '_' : c)
+            .Where(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-')
+            .Take(30)
+            .ToArray());
+        return cleaned.Length >= 3 ? cleaned : null;
     }
 
     // Keeps verification status, Slack id etc. current without waiting for the next
