@@ -115,34 +115,39 @@ public class StreakService
     // spends a freeze (streak holds) or, with none left or freezes paused on the
     // project, resets the streak. Does nothing
     // without an active streak, so freezes are never spent protecting nothing, or while the
-    // streak is paused (for review, or globally by an admin). Caller saves.
-    public async Task ReconcileAsync(Project project, User user, DateOnly today, CancellationToken ct = default)
+    // streak is paused (for review, or globally by an admin). Caller saves, then passes
+    // the result to StreakNotifications.
+    public async Task<StreakChange> ReconcileAsync(Project project, User user, DateOnly today, CancellationToken ct = default)
     {
-        if (project.StreakCount == 0 || project.LastStreakDate is null) return;
-        if (InReview(project.Status)) return;
-        if (await _settings.StreaksPausedAsync(ct)) return;
+        if (project.StreakCount == 0 || project.LastStreakDate is null) return StreakChange.None;
+        if (InReview(project.Status)) return StreakChange.None;
+        if (await _settings.StreaksPausedAsync(ct)) return StreakChange.None;
 
+        var freezesUsed = 0;
         for (var day = project.LastStreakDate.Value.AddDays(1); day < today; day = day.AddDays(1))
         {
             if (user.StreakFreezes <= 0 || project.StreakFreezesPaused)
             {
+                var lost = project.StreakCount;
                 project.StreakCount = 0;
                 project.LastStreakDate = null;
-                return;
+                return new StreakChange(freezesUsed, lost, project.StreakFreezesPaused, ReachedMax: false);
             }
 
             user.StreakFreezes--;
+            freezesUsed++;
             await UpsertDayAsync(project.Id, day, StreakDayStatus.Frozen, trackedSeconds: null, ct);
             project.LastStreakDate = day;
         }
+        return StreakChange.None with { FreezesUsed = freezesUsed };
     }
 
     // Called after a journal is saved: settles missed days, totals the journal's local day
     // and extends the streak the first time that day reaches 1h. Caller saves.
-    public async Task RecordJournalAsync(Devlog devlog, Project project, User user, CancellationToken ct = default)
+    public async Task<StreakChange> RecordJournalAsync(Devlog devlog, Project project, User user, CancellationToken ct = default)
     {
         var today = LocalDate(user, devlog.CreatedAt);
-        await ReconcileAsync(project, user, today, ct);
+        var change = await ReconcileAsync(project, user, today, ct);
 
         var (start, end) = LocalDayBoundsUtc(user, today);
         // The new journal may not be saved yet, so add it on top of what's in the db.
@@ -160,9 +165,13 @@ public class StreakService
 
         if (completed && !alreadyCounted)
         {
-            project.StreakCount = Math.Min(project.StreakCount + 1, MaxStreakForLevel(project.Tier));
+            var max = MaxStreakForLevel(project.Tier);
+            var before = project.StreakCount;
+            project.StreakCount = Math.Min(project.StreakCount + 1, max);
             project.LastStreakDate = today;
+            if (before < max && project.StreakCount == max) change = change with { ReachedMax = true };
         }
+        return change;
     }
 
     // trackedSeconds null = keep what the day already has (e.g. freezing a day that had
@@ -187,4 +196,13 @@ public class StreakService
         day.Status = status;
         if (trackedSeconds is not null) day.TrackedSeconds = trackedSeconds.Value;
     }
+}
+
+// What settling / journaling just did to a project's streak, for the Slack DMs.
+// LostStreak is the streak's length before it reset (null = it didn't);
+// LostWithFreezesPaused = it reset because freezes are paused on the project, not
+// because the owner ran out.
+public record StreakChange(int FreezesUsed, int? LostStreak, bool LostWithFreezesPaused, bool ReachedMax)
+{
+    public static readonly StreakChange None = new(0, null, false, false);
 }

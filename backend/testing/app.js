@@ -378,7 +378,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/testing/streaks/settle',
     auth: true,
-    desc: 'Dev-only. Runs the streak worker pass now: projects that missed a day spend a freeze or reset. Set a project\'s last_streak_date back in Studio first to simulate missed days.',
+    desc: 'Dev-only. Runs the streak worker pass now: projects that missed a day spend a freeze or reset (and DM the owner), and owners past 8 PM local with today\'s hour not done get the streak reminder DM (once a day; clear projects.streak_reminder_sent_for to resend). Set a project\'s last_streak_date back in Studio first to simulate missed days.',
   },
   {
     id: 'devlog-by-id',
@@ -423,7 +423,7 @@ const ENDPOINTS = [
     method: 'GET',
     path: '/api/devlog/preview/{projectId}',
     auth: true,
-    desc: 'What a journal posted now would credit on one of your projects (403 otherwise): trackedHours (Hackatime time since the last journal, max 10), uncappedHours, hackatimeLinked, hackatimeReachable. Nothing is posted. 15/min.',
+    desc: 'What a journal posted now would credit on one of your projects (403 otherwise): trackedHours (Hackatime time since the last journal, max 10; the rest is forfeited), uncappedHours, hackatimeLinked, hackatimeReachable. Nothing is posted. 15/min.',
     params: [{ name: 'projectId', placeholder: 'project uuid' }],
   },
   {
@@ -432,7 +432,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/devlog/create',
     auth: true,
-    desc: 'Creates a devlog on one of your projects (403 otherwise). text is markdown with photos embedded inline; it needs 150+ characters of writing (image markdown not counted), at most 10,000 characters in all, and at least one photo (embedded or in imageUrls). title max 120. trackedHours = Hackatime time since the previous devlog, max 10. Updates the project streak once the day reaches 1h. 400 when title/projectId/text is blank or the rules fail.',
+    desc: 'Creates a devlog on one of your projects (403 otherwise). text is markdown with photos embedded inline; it needs 150+ characters of writing (image markdown not counted), at most 10,000 characters in all, and at least one photo (embedded or in imageUrls). title max 120. trackedHours = Hackatime time since the previous devlog, max 10 (the rest is forfeited); 503 if Hackatime names are linked but Hackatime can't be reached. Updates the project streak once the day reaches 1h. 400 when title/projectId/text is blank or the rules fail.',
     body: {
       projectId: '00000000-0000-0000-0000-000000000000',
       title: 'Test devlog',
@@ -588,7 +588,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/testing/slack/dm',
     auth: true,
-    desc: 'Dev-only. Sends one of the real DM templates to your own Slack ID (never anyone else\'s) and waits for Slack, so sent: true/false is the real result. template: welcome | shipped | approved | changes_needed | rejected. projectTitle and feedback are optional (feedback shows on changes_needed/rejected — try <!channel> to check it stays plain text). 400 no Slack ID / bad template, 503 SLACK_BOT_TOKEN not set.',
+    desc: 'Dev-only. Sends one of the real DM templates to your own Slack ID (never anyone else\'s) and waits for Slack, so sent: true/false is the real result. template: welcome | shipped | approved | changes_needed | rejected | streak_at_risk | streak_freeze_used | streak_lost | streak_maxed (streak ones use sample numbers). projectTitle and feedback are optional (feedback shows on changes_needed/rejected — try <!channel> to check it stays plain text). 400 no Slack ID / bad template, 503 SLACK_BOT_TOKEN not set.',
     body: {
       template: 'changes_needed',
       projectTitle: 'Harness test project',

@@ -345,6 +345,10 @@ namespace torque_backend.Data.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("streak_freezes_paused");
 
+                    b.Property<DateOnly?>("StreakReminderSentFor")
+                        .HasColumnType("date")
+                        .HasColumnName("streak_reminder_sent_for");
+
                     b.Property<int>("Tier")
                         .HasColumnType("integer")
                         .HasColumnName("tier");

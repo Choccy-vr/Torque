@@ -18,8 +18,8 @@ public class Devlog
     // Hackatime time this journal covers: the project's Hackatime total minus the previous
     // journal's snapshot, capped at 10h.
     public double TrackedSeconds { get; set; }
-    // How far into the project's Hackatime total this journal covers (previous snapshot +
-    // TrackedSeconds). Time over the cap carries over to the next journal.
+    // How far into the project's Hackatime total this journal reaches: the project's
+    // Hackatime total when it was posted. Time over the cap is forfeited, not carried over.
     public double HackatimeSecondsSnapshot { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

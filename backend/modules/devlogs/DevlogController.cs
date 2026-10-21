@@ -7,6 +7,7 @@ using Torque.Extensions;
 using Torque.Hackatime;
 using Torque.Projects;
 using Torque.Settings;
+using Torque.Slack;
 using Torque.Streaks;
 // A controller for devlog data
 // endpoint: /api/devlog/<command>
@@ -17,18 +18,22 @@ namespace Torque.Devlogs;
 [Route("api/devlog")]
 public class DevlogController : ControllerBase
 {
-    // Most Hackatime time a single journal can cover; anything over carries to the next.
+    // Most Hackatime time a single journal can cover; anything over is forfeited.
     private const double MaxTrackedSecondsPerJournal = 10 * 3600;
 
     private readonly AppDbContext _db;
     private readonly HackatimeService _hackatime;
     private readonly StreakService _streaks;
+    private readonly SlackNotifier _slack;
+    private readonly SlackOptions _slackOptions;
 
-    public DevlogController(AppDbContext db, HackatimeService hackatime, StreakService streaks)
+    public DevlogController(AppDbContext db, HackatimeService hackatime, StreakService streaks, SlackNotifier slack, SlackOptions slackOptions)
     {
         _db = db;
         _hackatime = hackatime;
         _streaks = streaks;
+        _slack = slack;
+        _slackOptions = slackOptions;
     }
 
     // devlog by ID
@@ -210,7 +215,13 @@ public class DevlogController : ControllerBase
         var user = await _db.Users.FindAsync(userId.Value);
         if (user is null) return Unauthorized();
 
-        var (previousSnapshot, _, trackedSeconds, _) = await PendingTimeAsync(project, userId.Value);
+        var (previousSnapshot, hackatimeTotal, trackedSeconds, uncappedSeconds) = await PendingTimeAsync(project, userId.Value);
+        // No journaling without Hackatime: the entry has to credit the time it covers.
+        if (hackatimeTotal is null)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                "Couldn't reach Hackatime, so this entry can't be posted yet. Check your Hackatime connection and try again.");
+        }
 
         Devlog devlog = new Devlog
         {
@@ -221,16 +232,20 @@ public class DevlogController : ControllerBase
             ImageUrls = imageUrls,
             OwnerUserId = userId.Value,
             TrackedSeconds = trackedSeconds,
-            HackatimeSecondsSnapshot = previousSnapshot + trackedSeconds,
+            // The snapshot moves past all the pending time, not just the credited part, so
+            // anything over the cap is dropped rather than counted on the next journal.
+            HackatimeSecondsSnapshot = previousSnapshot + uncappedSeconds,
         };
 
         _db.Devlogs.Add(devlog);
         project.DevlogIds = [.. project.DevlogIds ?? [], devlog.Id.ToString()];
         // Raw hours tracked = every journal's credited time (what the hours leaderboard ranks on)
         project.TotalHoursRaw += (float)(trackedSeconds / 3600);
-        await _streaks.RecordJournalAsync(devlog, project, user);
+        var streakChange = await _streaks.RecordJournalAsync(devlog, project, user);
         await _db.SaveChangesAsync();
         await tx.CommitAsync();
+
+        StreakNotifications.Send(_slack, _slackOptions, user, project, streakChange);
 
         return CreatedAtAction(nameof(GetById), new { id = devlog.Id }, new PublicDevlogDto
         {
@@ -246,8 +261,10 @@ public class DevlogController : ControllerBase
 
     }
 
-    // The journal covers the Hackatime time logged since the previous journal (capped).
-    // If Hackatime can't be reached it covers nothing, and the next journal picks it up.
+    // The journal covers the Hackatime time logged since the previous journal (capped;
+    // the rest is forfeited). HackatimeTotal is null when Hackatime can't be reached (or
+    // isn't connected while names are linked); Create refuses to post then. Projects with
+    // no linked names get a total of 0 and can journal without Hackatime time.
     private async Task<(double PreviousSnapshot, double? HackatimeTotal, double TrackedSeconds, double UncappedSeconds)> PendingTimeAsync(Project project, Guid userId)
     {
         var previousSnapshot = await _db.Devlogs

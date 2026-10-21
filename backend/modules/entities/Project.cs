@@ -54,6 +54,9 @@ public class Project
     // Owner opted this project out of their streak freezes: a missed day resets its
     // streak instead of spending one, saving them for other projects.
     public bool StreakFreezesPaused { get; set; } = false;
+    // Owner-local day the evening "streak at risk" DM last went out for, so it's sent
+    // once a day at most (see StreakWorker).
+    public DateOnly? StreakReminderSentFor { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace Torque.Slack;
 
 // Send-only Slack bot: DMs builders when they sign up, ship, get final approval or get a
-// review back (see SlackMessages), and lets a user add themselves to the program's
+// review back, and about their streaks (see SlackMessages), and lets a user add themselves to the program's
 // channels. Nothing here takes message text from a request — every message is a template.
 public static class SlackExtension
 {

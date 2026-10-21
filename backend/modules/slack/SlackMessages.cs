@@ -3,6 +3,10 @@ namespace Torque.Slack;
 // Text is the notification / fallback text; Blocks is what Slack renders.
 public record SlackMessage(string Text, object[] Blocks);
 
+// One line of the streak reminder. FreezeWillCover = missing today spends a freeze
+// rather than resetting the streak.
+public record StreakReminderItem(string Title, string Url, int Streak, double JournaledSeconds, bool FreezeWillCover);
+
 // Every DM the bot can send. User-written text (titles, feedback, usernames) goes through
 // Escape so it can't ping <!channel> or smuggle in links.
 public static class SlackMessages
@@ -47,6 +51,70 @@ public static class SlackMessages
         $"{Reviewer(reviewerName)} reviewed *{Escape(projectTitle)}* and it can't be approved or shipped again."
             + Feedback(feedback),
         projectUrl);
+
+    // Evening nudge, one per owner per day, listing every project whose streak today's
+    // missing hour would cost (a freeze or the streak).
+    public static SlackMessage StreakAtRisk(IReadOnlyList<StreakReminderItem> projects, int freezesLeft)
+    {
+        var lines = projects.Select(p =>
+            $"• <{p.Url}|{Escape(p.Title)}>: {Days(p.Streak)} streak, {Duration(p.JournaledSeconds)} of 1h journaled today"
+            + (p.FreezeWillCover ? "" : " — *resets if you miss today*"));
+
+        var footer = projects.All(p => p.FreezeWillCover)
+            ? $"If you miss it, a streak freeze will cover the day (you have {Freezes(freezesLeft)})."
+            : projects.Any(p => p.FreezeWillCover)
+                ? "Freezes will cover the others."
+                : "";
+
+        return Build(
+            projects.Count == 1
+                ? $"Your {Days(projects[0].Streak)} streak on {Escape(projects[0].Title)} ends at midnight"
+                : "Your streaks end at midnight",
+            "Keep your streak going :hourglass_flowing_sand:",
+            "You haven't hit today's hour yet on:\n" + string.Join("\n", lines)
+                + "\n\nJournal an hour before midnight (your time) to keep it going." + (footer == "" ? "" : " " + footer),
+            projects.Count == 1 ? projects[0].Url : null);
+    }
+
+    public static SlackMessage StreakFreezeUsed(string projectTitle, string projectUrl, int streak, int freezesUsed, int freezesLeft) => Build(
+        $"A streak freeze saved your {Days(streak)} streak on {Escape(projectTitle)}",
+        "Streak freeze used :ice_cube:",
+        (freezesUsed == 1
+            ? $"You missed a day on *{Escape(projectTitle)}*, so a streak freeze kept your *{Days(streak)} streak* alive."
+            : $"You missed {freezesUsed} days on *{Escape(projectTitle)}*, so {freezesUsed} streak freezes kept your *{Days(streak)} streak* alive.")
+            + (freezesLeft == 0
+                ? " That was your last one, so the next missed day will reset your streak."
+                : $" You have *{Freezes(freezesLeft)}* left."),
+        projectUrl);
+
+    public static SlackMessage StreakLost(string projectTitle, string projectUrl, int lostStreak, int freezesUsed, bool freezesPaused)
+    {
+        var reason = (freezesPaused, freezesUsed) switch
+        {
+            (true, _) => " Streak freezes are paused on this project, so none were used.",
+            (false, 0) => " You were out of streak freezes.",
+            (false, _) => $" {(freezesUsed == 1 ? "Your last streak freeze" : $"Your last {freezesUsed} streak freezes")} covered the first missed days, then you ran out."
+        };
+        return Build(
+            $"Your {Days(lostStreak)} streak on {Escape(projectTitle)} ended",
+            "Streak lost :broken_heart:",
+            $"*{Escape(projectTitle)}* missed a day, so its *{Days(lostStreak)} streak* reset to 0.{reason}"
+                + " Journal an hour today to start a new one!",
+            projectUrl);
+    }
+
+    public static SlackMessage StreakMaxed(string projectTitle, string projectUrl, int streak, int level, decimal voltsPerHour) => Build(
+        $"{Escape(projectTitle)} hit its max streak!",
+        "Max streak reached! :zap:",
+        $"*{Escape(projectTitle)}* is on a *{Days(streak)} streak*, so it now earns the top rate for level {level}: "
+            + $"*{voltsPerHour:0.#} Volts/hr*. Keep journaling every day to hold it.",
+        projectUrl);
+
+    private static string Days(int n) => $"{n}-day";
+    private static string Freezes(int n) => n == 1 ? "1 freeze" : $"{n} freezes";
+
+    // Only used for under-an-hour amounts
+    private static string Duration(double seconds) => $"{(int)(seconds / 60)}m";
 
     private static string Reviewer(string? reviewerName) =>
         string.IsNullOrWhiteSpace(reviewerName) ? "A reviewer" : $"*{Escape(reviewerName)}*";

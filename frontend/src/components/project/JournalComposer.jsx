@@ -200,7 +200,15 @@ function TimeAdded({ projectId, onEdit }) {
             </>
         );
     } else if (!data.hackatimeReachable) {
-        body = "Couldn't reach Hackatime. Whatever's tracked will count on your next entry.";
+        body = (
+            <>
+                Couldn't reach Hackatime, so you can't post until it's back. Your draft is saved.{" "}
+                <button type="button" onClick={reload} className={`${TEXT_ACTION} gap-1.5`}>
+                    <RotateCw aria-hidden="true" className="size-3.5" />
+                    Try again
+                </button>
+            </>
+        );
     } else if (data.trackedHours < 0.05) {
         body = (
             <>
@@ -209,11 +217,11 @@ function TimeAdded({ projectId, onEdit }) {
             </>
         );
     } else {
-        const carried = data.uncappedHours - data.trackedHours;
+        const forfeited = data.uncappedHours - data.trackedHours;
         body = (
             <>
                 Adds <b className="font-bold text-(--text) tabular-nums">{hoursText(data.trackedHours)}</b> from Hackatime, the time since your last entry.
-                {carried >= 0.1 && <> The other {hoursText(carried)} carry over to your next one ({data.maxHours}h max per entry).</>}
+                {forfeited >= 0.1 && <> The other {hoursText(forfeited)} won't count ({data.maxHours}h max per entry), so journal more often.</>}
             </>
         );
     }

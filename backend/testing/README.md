@@ -75,7 +75,8 @@ The "Custom request" panel handles anything not worth adding permanently.
   table first — this creates real rows.
 - The Streaks section's **settle** row calls the dev-only `POST /testing/streaks/settle`
   (`modules/testing/TestingExtension.cs`), which runs the streak worker pass immediately
-  instead of waiting up to 15 min. To simulate missed days, set a project's
+  instead of waiting up to 15 min, including its Slack DMs (freeze used / streak lost, and
+  the evening reminder for owners past 8 PM local). To simulate missed days, set a project's
   `last_streak_date` back a few days in the database first (`psql` or any Postgres client).
 - The Streaks section's **simulate** rows (`POST /testing/streaks/simulate`) are the
   easy way to test streaks: give an `hours` array (one entry per day, oldest first, last
@@ -86,5 +87,6 @@ The "Custom request" panel handles anything not worth adding permanently.
   outcome. Everything is rolled back afterwards unless `keep: true`.
 - The Slack section's **test DM** row calls the dev-only `POST /testing/slack/dm`
   (`modules/testing/SlackTesting.cs`), which sends one of the real DM templates
-  (`welcome`, `shipped`, `approved`, `changes_needed`, `rejected`) to **your own** Slack ID
+  (`welcome`, `shipped`, `approved`, `changes_needed`, `rejected`, and the streak ones with
+  sample numbers: `streak_at_risk`, `streak_freeze_used`, `streak_lost`, `streak_maxed`) to **your own** Slack ID
   and reports whether Slack accepted it. Needs `SLACK_BOT_TOKEN` in `backend/.env`.
