@@ -19,6 +19,8 @@ public class ShipmentController : ControllerBase
 {
     // Journaled hours a ship needs that no approved ship has credited yet
     private const float MinShipHours = 1;
+    // Each of the three feedback answers
+    private const int MaxAnswerLength = 400;
 
     private readonly AppDbContext _db;
     private readonly PayoutService _payouts;
@@ -123,8 +125,17 @@ public class ShipmentController : ControllerBase
         {
             return BadRequest("HowDidYouHear, WhatAreWeDoingWell and HowCanWeImprove are required!");
         }
+        if (new[] { dto.HowDidYouHear, dto.WhatAreWeDoingWell, dto.HowCanWeImprove }.Any(a => a.Trim().Length > MaxAnswerLength))
+        {
+            return BadRequest($"Each answer must be {MaxAnswerLength} characters or fewer.");
+        }
 
-        var project = await _db.Projects.FindAsync(projectId);
+        // Locks the project row until commit, so two ships sent at once can't both pass
+        // the status check and snapshot the same hours: the second waits, then sees Unreviewed.
+        await using var tx = await _db.Database.BeginTransactionAsync();
+        var project = await _db.Projects
+            .FromSql($"SELECT * FROM projects WHERE id = {projectId} FOR UPDATE")
+            .FirstOrDefaultAsync();
         if (project is null) return BadRequest("ProjectId does not reference an existing project.");
 
         if (project.OwnerUserId != userId.Value) return Forbid();
@@ -143,6 +154,11 @@ public class ShipmentController : ControllerBase
         {
             var paused = await _settings.PausedResultAsync(SettingKeys.ResubmissionsPaused);
             if (paused is not null) return paused;
+        }
+        // The build ship waits until an admin has sent the design ship's grant.
+        if (dto.IsBuildComplete.Value && project.GrantStatus == ProjectGrantStatus.Pending)
+        {
+            return Conflict("Your grant hasn't been sent yet. You can ship your build once it has.");
         }
         var unpaidHours = await _payouts.UnpaidJournalHoursAsync(project.Id);
         if (unpaidHours < MinShipHours)
@@ -168,6 +184,7 @@ public class ShipmentController : ControllerBase
         _db.Shipments.Add(shipment);
         project.Status = ProjectStatus.Unreviewed;
         await _db.SaveChangesAsync();
+        await tx.CommitAsync();
 
         var shipper = await _db.Users.FindAsync(userId.Value);
         _slack.Send(shipper?.SlackUserID, SlackMessages.Shipped(project.Title, _slackOptions.ProjectUrl(project.Id)));

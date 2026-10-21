@@ -191,10 +191,15 @@ public class DevlogController : ControllerBase
             return BadRequest("Text is required");
         }
         var imageUrls = JournalRules.ImageUrls(dto.Text, dto.ImageUrls);
-        var ruleError = JournalRules.Check(dto.Text, imageUrls);
+        var ruleError = JournalRules.Check(dto.Title, dto.Text, imageUrls);
         if (ruleError is not null) return BadRequest(ruleError);
 
-        var project = await _db.Projects.FindAsync(projectId);
+        // Locks the project row until commit, so two journals posted at once can't both
+        // credit the same Hackatime time: the second waits, then sees the first's snapshot.
+        await using var tx = await _db.Database.BeginTransactionAsync();
+        var project = await _db.Projects
+            .FromSql($"SELECT * FROM projects WHERE id = {projectId} FOR UPDATE")
+            .FirstOrDefaultAsync();
         if (project is null)
         {
             return BadRequest("ProjectId does not reference an existing project.");
@@ -210,7 +215,7 @@ public class DevlogController : ControllerBase
         Devlog devlog = new Devlog
         {
             Id = Guid.NewGuid(),
-            Title = dto.Title,
+            Title = dto.Title.Trim(),
             ProjectId = projectId,
             Text = dto.Text,
             ImageUrls = imageUrls,
@@ -225,6 +230,7 @@ public class DevlogController : ControllerBase
         project.TotalHoursRaw += (float)(trackedSeconds / 3600);
         await _streaks.RecordJournalAsync(devlog, project, user);
         await _db.SaveChangesAsync();
+        await tx.CommitAsync();
 
         return CreatedAtAction(nameof(GetById), new { id = devlog.Id }, new PublicDevlogDto
         {

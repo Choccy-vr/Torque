@@ -34,8 +34,10 @@ const SIZES = {
 // column of identical placeholders would carry no information). `quietStatus`
 // draws every status neutral, for views other people see: "Changes needed"
 // is only a call to action for the owner. `hours={false}` leaves out the
-// time tracked (staff picks).
-export default function ProjectCard({ project, compact = false, titleAs, image = true, quietStatus = false, hours: showHours = true }) {
+// time tracked (staff picks). `byline` names the builder under the title
+// (Explore), from the list's ownerUsername. `level` swaps the review status
+// for the project's Level 1–4, which says more to someone browsing.
+export default function ProjectCard({ project, compact = false, titleAs, image = true, quietStatus = false, hours: showHours = true, byline = false, level = false }) {
     const size = compact ? SIZES.compact : SIZES.full;
     // The dashboard and profile nest these under their own h2.
     const Title = titleAs ?? (compact ? "h3" : "h2");
@@ -55,7 +57,15 @@ export default function ProjectCard({ project, compact = false, titleAs, image =
             ))}
 
             <div className={`flex flex-1 flex-col ${size.body}`}>
-                <ProjectStatusBadge status={project.status} quiet={quietStatus} />
+                {level ? (
+                    project.tier >= 1 && project.tier <= 4 && (
+                        <span className="self-start rounded-full border border-white/20 bg-white/5 px-2.5 py-0.5 text-[0.8125rem] font-medium whitespace-nowrap text-(--text)/85">
+                            Level {project.tier}
+                        </span>
+                    )
+                ) : (
+                    <ProjectStatusBadge status={project.status} quiet={quietStatus} />
+                )}
 
                 <Title className={`font-semibold text-balance text-(--heading) ${size.title}`}>
                     <Link
@@ -65,6 +75,10 @@ export default function ProjectCard({ project, compact = false, titleAs, image =
                         {project.title}
                     </Link>
                 </Title>
+
+                {byline && project.ownerUsername && (
+                    <p className="-mt-1 truncate text-sm text-(--text)/80">by {project.ownerUsername}</p>
+                )}
 
                 {project.description && (
                     <p className={`text-(--text)/80 ${size.description}`}>{project.description}</p>
@@ -81,7 +95,7 @@ export default function ProjectCard({ project, compact = false, titleAs, image =
                         {project.voltsGranted > 0 && (
                             <div className="flex items-center gap-1.5">
                                 <dt><Zap aria-label="Volts granted" className="size-4 text-(--accent)" /></dt>
-                                <dd>{project.voltsGranted} Volts</dd>
+                                <dd>{project.voltsGranted.toLocaleString()} Volts</dd>
                             </div>
                         )}
                     </dl>

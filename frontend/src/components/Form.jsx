@@ -8,7 +8,9 @@ import { CircleAlert } from "lucide-react";
 
 // DESIGN.md's focus ring: 2px Chalk White at a 3px offset (coral would only
 // be 2.74:1 against the card).
-export const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--text)";
+// outline-solid is explicit because the inputs' focus:outline-none would
+// otherwise leave the ring's style at none in Tailwind v4.
+export const FOCUS = "focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-3 focus-visible:outline-(--text)";
 
 const BTN = `inline-flex min-h-11 items-center justify-center gap-2 rounded-(--radius) border-2 px-6 font-bold transition-all duration-300 ease disabled:cursor-not-allowed ${FOCUS}`;
 

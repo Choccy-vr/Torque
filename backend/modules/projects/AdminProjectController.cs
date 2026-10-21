@@ -167,6 +167,7 @@ public class AdminProjectController : ControllerBase
             Status = project.Status,
             GrantStatus = project.GrantStatus,
             TotalHours = project.TotalHoursRaw,
+            VoltsGranted = project.VoltsGranted,
             AiUse = project.AiUse,
             DevlogIds = project.DevlogIds,
             Exceptional = project.Exceptional,

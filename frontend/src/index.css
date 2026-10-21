@@ -63,6 +63,29 @@ html, body {
   .t-page { animation: none; }
 }
 
+/* Status pages (404): Orpheus' car pulls up from the left and settles, easing
+   out hard like a motor spinning down. Starts visible, so nothing is lost if
+   the animation never runs. */
+@media (prefers-reduced-motion: no-preference) {
+  .t-drive-in {
+    animation: t-drive-in 1100ms cubic-bezier(0.16, 1, 0.3, 1) 150ms both;
+  }
+}
+
+/* Landing scroll cue: a slow sway down and back, not a bounce. */
+@media (prefers-reduced-motion: no-preference) {
+  .t-nudge { animation: t-nudge 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+}
+
+@keyframes t-nudge {
+  to { transform: translateY(0.5rem); }
+}
+
+@keyframes t-drive-in {
+  from { transform: translateX(-2.5rem) rotate(-1.5deg); }
+  to { transform: none; }
+}
+
 /* Page background: blueprint grid (major + minor lines) */
 .t-bg {
   background-color: var(--bg);

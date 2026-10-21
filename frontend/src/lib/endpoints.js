@@ -289,3 +289,28 @@ export function updateAnnouncement(id, changes) {
 export function deleteAnnouncement(id) {
     return sendJson('DELETE', `api/admin/announcement/${encodeURIComponent(id)}`)
 }
+
+// GET api/project/search — SearchProjectDto[] (with ownerUsername), title matches
+// first, capped at SEARCH_LIMIT
+export const SEARCH_LIMIT = 25
+export function searchProjects(q) {
+    return getJson(`api/project/search?q=${encodeURIComponent(q)}`)
+}
+
+// GET api/project/leaderboard/{hours|volts} — LeaderboardProjectDto[], top 50
+// approved projects
+export function getLeaderboard(kind) {
+    return getJson(`api/project/leaderboard/${kind === 'volts' ? 'volts' : 'hours'}`)
+}
+
+// GET api/user/me/banned — { banned }. Answers even while banned.
+export function getBanStatus() {
+    return getJson('api/user/me/banned')
+}
+
+// PUT api/user/me/timezone — { timeZone }. One-time: 409 once it's set.
+export async function setMyTimeZone(timeZone) {
+    const result = await sendJson('PUT', 'api/user/me/timezone', { timeZone })
+    clearMyProfile()
+    return result
+}

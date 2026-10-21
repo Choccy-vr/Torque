@@ -8,6 +8,9 @@ namespace Torque.Devlogs;
 public static partial class JournalRules
 {
     public const int MinWritingLength = 150;
+    // Whole entry, photo markdown included (the docs' example journal is ~3,400).
+    public const int MaxTextLength = 10000;
+    public const int MaxTitleLength = 120;
 
     // ![alt](url) or ![alt](<url> "title")
     [GeneratedRegex(@"!\[[^\]]*\]\(\s*<?([^\s)>]+)>?(?:\s+""[^""]*"")?\s*\)")]
@@ -22,8 +25,16 @@ public static partial class JournalRules
             .Distinct()];
 
     // Null when the entry is fine, otherwise the reason it isn't.
-    public static string? Check(string text, string[] imageUrls)
+    public static string? Check(string title, string text, string[] imageUrls)
     {
+        if (title.Trim().Length > MaxTitleLength)
+        {
+            return $"Title must be {MaxTitleLength} characters or fewer.";
+        }
+        if (text.Length > MaxTextLength)
+        {
+            return $"Journal entries must be {MaxTextLength} characters or fewer (photo links included).";
+        }
         var writing = MarkdownImage().Replace(text, "").Trim();
         if (writing.Length < MinWritingLength)
         {

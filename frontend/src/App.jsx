@@ -16,6 +16,8 @@ import AdminShip from './pages/admin/Ship.jsx'
 import AdminAnnouncements from './pages/admin/Announcements.jsx'
 import AdminSettings from './pages/admin/Settings.jsx'
 import HackatimeCallback from './pages/HackatimeCallback.jsx'
+import NotFound from './pages/NotFound.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Onboarding from './components/Onboarding.jsx'
 import RequireOnboarding from './components/RequireOnboarding.jsx'
 import { AuthProvider, RequireAuth, RequireGuest } from './lib/auth.jsx'
@@ -54,6 +56,7 @@ function AppRoutes() {
 
     return (
         <div key={section} className="t-page">
+            <ErrorBoundary resetKey={pathname}>
             <Routes>
                 <Route path="/" element={<RequireGuest> <Landing/> </RequireGuest>} />
                 <Route element={<RequireOnboarding user={user} loading={loading} />}>
@@ -89,8 +92,10 @@ function AppRoutes() {
                     <Route path="/admin/settings" element={<RequireAuth><AdminSettings /></RequireAuth>} />
                     {/* Not behind RequireAuth: the popup copy of this page is signed out on purpose. */}
                     <Route path={CALLBACK_PATH} element={<HackatimeCallback />} />
+                    <Route path="*" element={<NotFound />} />
                 </Route>
             </Routes>
+            </ErrorBoundary>
         </div>
     )
 }

@@ -4,12 +4,13 @@ import designImg from '../assets/design.png'
 import buildImg from '../assets/build.png'
 import reviseImg from '../assets/revise.png'
 import shipImg from '../assets/ship.png'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, CircleAlert } from 'lucide-react'
 import { ReactLenis } from 'lenis/react'
 import { useEffect, useState } from 'react'
 import '../App.css'
 import Footer from '../components/Footer'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Notice } from '../components/PageParts.jsx'
 import { useAuth } from '../lib/useAuth.js'
 
 const steps = [
@@ -34,6 +35,9 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState(null);
   const { session, signIn, devLogin } = useAuth();
   const navigate = useNavigate();
+  // The backend sends a failed or cancelled Hack Club Auth sign-in back here.
+  const [params] = useSearchParams();
+  const loginFailed = params.get('login') === 'failed';
 
   const handleLogIn = () => {
     if (session) navigate('/home');
@@ -101,6 +105,26 @@ export default function Home() {
               />
             </form>
 
+            {loginFailed && (
+              <div role="alert" className="mt-6 w-full max-w-xl text-left">
+                <Notice
+                  icon={CircleAlert}
+                  attention
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => signIn('/home')}
+                      className="inline-flex min-h-11 items-center rounded-(--radius) px-3 font-medium whitespace-nowrap text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 transition-all duration-300 ease hover:bg-white/10"
+                    >
+                      Try again
+                    </button>
+                  }
+                >
+                  Sign-in didn't go through. Try again, and approve Torque if Hack Club Auth asks.
+                </Notice>
+              </div>
+            )}
+
             {import.meta.env.DEV && (
                 <a
                     onClick={() => devLogin('/home')}
@@ -121,7 +145,7 @@ export default function Home() {
             }}
             className={`rounded-full p-1 text-(--text) transition-all duration-300 ease ${hideArrow ? "opacity-0 pointer-events-none" : "opacity-100 hover:opacity-80"}`}
           >
-            <ChevronDown aria-hidden="true" className="size-16 motion-safe:animate-bounce" />
+            <ChevronDown aria-hidden="true" className="t-nudge size-16" />
           </button>
         </div>
 

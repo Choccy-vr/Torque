@@ -50,6 +50,7 @@ public class ProjectController : ControllerBase
             Status = project.Status,
             GrantStatus = project.GrantStatus,
             TotalHours = project.TotalHoursRaw,
+            VoltsGranted = project.VoltsGranted,
             AiUse = project.AiUse,
             DevlogIds = project.DevlogIds,
             Exceptional = project.Exceptional,
@@ -105,6 +106,7 @@ public class ProjectController : ControllerBase
             {
                 Id = p.Id,
                 OwnerUserId = p.OwnerUserId.ToString(),
+                OwnerUsername = _db.Users.Where(u => u.Id == p.OwnerUserId).Select(u => u.Username).FirstOrDefault(),
                 Title = p.Title,
                 Description = p.Description,
                 Tier = p.Tier,
@@ -115,6 +117,7 @@ public class ProjectController : ControllerBase
                 Status = p.Status,
                 GrantStatus = p.GrantStatus,
                 TotalHours = p.TotalHoursRaw,
+                VoltsGranted = p.VoltsGranted,
                 AiUse = p.AiUse,
                 DevlogIds = p.DevlogIds,
                 Exceptional = p.Exceptional,
@@ -153,7 +156,12 @@ public class ProjectController : ControllerBase
                 Id = p.Id,
                 Title = p.Title,
                 Description = p.Description,
+                Tier = p.Tier,
                 OwnerUserId = p.OwnerUserId.ToString(),
+                OwnerUsername = _db.Users.Where(u => u.Id == p.OwnerUserId).Select(u => u.Username).FirstOrDefault(),
+                CoverImageUrl = p.CoverImageUrl,
+                TotalHours = p.TotalHoursRaw,
+                VoltsGranted = p.VoltsGranted,
                 Status = p.Status,
                 CreatedAt = p.CreatedAt
             })
@@ -175,6 +183,8 @@ public class ProjectController : ControllerBase
                 Id = p.Id,
                 Title = p.Title,
                 OwnerUserId = p.OwnerUserId.ToString(),
+                OwnerUsername = _db.Users.Where(u => u.Id == p.OwnerUserId).Select(u => u.Username).FirstOrDefault(),
+                CoverImageUrl = p.CoverImageUrl,
                 TotalHoursRaw = p.TotalHoursRaw,
                 VoltsGranted = p.VoltsGranted
             })
@@ -196,6 +206,8 @@ public class ProjectController : ControllerBase
                 Id = p.Id,
                 Title = p.Title,
                 OwnerUserId = p.OwnerUserId.ToString(),
+                OwnerUsername = _db.Users.Where(u => u.Id == p.OwnerUserId).Select(u => u.Username).FirstOrDefault(),
+                CoverImageUrl = p.CoverImageUrl,
                 TotalHoursRaw = p.TotalHoursRaw,
                 VoltsGranted = p.VoltsGranted
             })
@@ -225,6 +237,7 @@ public class ProjectController : ControllerBase
                 Status = p.Status,
                 GrantStatus = p.GrantStatus,
                 TotalHours = p.TotalHoursRaw,
+                VoltsGranted = p.VoltsGranted,
                 AiUse = p.AiUse,
                 DevlogIds = p.DevlogIds,
                 Exceptional = p.Exceptional,

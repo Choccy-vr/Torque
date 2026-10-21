@@ -6,6 +6,8 @@ public record PublicProjectDto
 {
     public Guid Id { get; init; }
     public string OwnerUserId { get; init; } = null!;
+    // Only filled in on lists that show the builder's name (staff picks)
+    public string? OwnerUsername { get; init; }
 
     public string Title { get; init; } = null!;
     public string? Description { get; init; }
@@ -20,6 +22,7 @@ public record PublicProjectDto
     public ProjectGrantStatus GrantStatus { get; init; } = ProjectGrantStatus.None;
 
     public float TotalHours { get; init; } = 0;// raw total hours tracked
+    public int VoltsGranted { get; init; } = 0;
 
     public string? AiUse { get; init; }
 

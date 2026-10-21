@@ -432,7 +432,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/devlog/create',
     auth: true,
-    desc: 'Creates a devlog on one of your projects (403 otherwise). text is markdown with photos embedded inline; it needs 150+ characters of writing (image markdown not counted) and at least one photo (embedded or in imageUrls). trackedHours = Hackatime time since the previous devlog, max 10. Updates the project streak once the day reaches 1h. 400 when title/projectId/text is blank or the rules fail.',
+    desc: 'Creates a devlog on one of your projects (403 otherwise). text is markdown with photos embedded inline; it needs 150+ characters of writing (image markdown not counted), at most 10,000 characters in all, and at least one photo (embedded or in imageUrls). title max 120. trackedHours = Hackatime time since the previous devlog, max 10. Updates the project streak once the day reaches 1h. 400 when title/projectId/text is blank or the rules fail.',
     body: {
       projectId: '00000000-0000-0000-0000-000000000000',
       title: 'Test devlog',
@@ -463,7 +463,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/ships/create',
     auth: true,
-    desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped, Changes_Needed or Approved and has 1h+ of journaled time no approved ship has credited (design vs build is always your isBuildComplete choice), or if any of isBuildComplete, requestedFunding (>= 0) or the three feedback answers are missing. Pauses the project\'s streak until the review ends.',
+    desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped, Changes_Needed or Approved and has 1h+ of journaled time no approved ship has credited (design vs build is always your isBuildComplete choice), or if any of isBuildComplete, requestedFunding (>= 0) or the three feedback answers (max 400 each) are missing. 409 for a build ship while the project's grant is Pending. Pauses the project\'s streak until the review ends.',
     body: {
       projectId: '00000000-0000-0000-0000-000000000000',
       isBuildComplete: false,

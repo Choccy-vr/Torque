@@ -16,6 +16,13 @@ export function SearchField({ label, placeholder }) {
     const [value, setValue] = useParam("q");
     const [text, setText] = useState(value);
 
+    // Back/Forward change the URL under us: show what it now searches for.
+    const [seen, setSeen] = useState(value);
+    if (value !== seen) {
+        setSeen(value);
+        if (value !== text.trim()) setText(value);
+    }
+
     useEffect(() => {
         if (text.trim() === value) return;
         const t = setTimeout(() => setValue(text.trim()), 300);
@@ -32,7 +39,7 @@ export function SearchField({ label, placeholder }) {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 spellCheck={false}
-                className="min-h-12 w-full rounded-(--radius) border-2 border-(--accent)/55 bg-(--card) py-2 pr-13 pl-13 text-(--text) caret-(--accent) transition-all duration-300 ease placeholder:text-(--text)/75 hover:border-(--accent)/80 focus:border-(--accent) focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--text) [&::-webkit-search-cancel-button]:hidden"
+                className="min-h-12 w-full rounded-(--radius) border-2 border-(--accent)/55 bg-(--card) py-2 pr-13 pl-13 text-(--text) caret-(--accent) transition-all duration-300 ease placeholder:text-(--text)/75 hover:border-(--accent)/80 focus:border-(--accent) focus:outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-3 focus-visible:outline-(--text) [&::-webkit-search-cancel-button]:hidden"
             />
             {text && (
                 <button
@@ -53,7 +60,7 @@ export function SearchField({ label, placeholder }) {
 export function FilterSelect({ name, label, options }) {
     const [value, setValue] = useParam(name);
     return (
-        <label className="flex min-h-12 items-center gap-2 rounded-(--radius) border-2 border-white/15 bg-(--card) pr-2 pl-4 text-(--text) transition-colors duration-300 ease focus-within:border-(--accent) hover:border-white/30">
+        <label className="flex min-h-12 items-center gap-2 rounded-(--radius) border-2 border-white/15 bg-(--card) pr-2 pl-4 text-(--text) transition-colors duration-300 ease focus-within:border-(--accent) hover:border-white/30 has-focus-visible:outline-2 has-focus-visible:outline-solid has-focus-visible:outline-offset-3 has-focus-visible:outline-(--text)">
             <span className="text-sm text-(--text)/80">{label}</span>
             <select
                 value={value}
