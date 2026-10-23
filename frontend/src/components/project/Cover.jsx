@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ImageOff } from "lucide-react";
+import { Image, ImageOff } from "lucide-react";
 import { FOCUS } from "../Form.jsx";
 
 // The band across the top of a project card: its cover image, or a gridded
@@ -29,7 +29,9 @@ export default function Cover({ project, onAdd, emptyText = "No cover image" }) 
                 backgroundSize: "22px 22px",
             }}
         >
-            <ImageOff aria-hidden="true" className="size-6 text-(--text)/80" />
+            {failed
+                ? <ImageOff aria-hidden="true" className="size-6 text-(--text)/80" />
+                : <Image aria-hidden="true" className="size-7 text-(--text)/45" strokeWidth={1.5} />}
             <p className="font-medium text-(--text)/85">{failed ? "Cover image couldn't load" : emptyText}</p>
             {onAdd && (
                 <button

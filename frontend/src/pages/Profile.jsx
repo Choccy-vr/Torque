@@ -8,7 +8,7 @@ import { Empty, InlineError, RetryButton, Section } from "../components/PagePart
 import SlackIcon from "../components/SlackIcon.jsx";
 import { getMyProfile, getUserDevlogs, getUserProfile, getUserProjects } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
-import fallbackAvatar from "../assets/img.png";
+import { Avatar } from "../components/EmptyImage.jsx";
 
 // /profile is your own profile, /profile/:id is anyone's. Both render the
 // same public view (no email or other private fields), so what you see of
@@ -111,12 +111,7 @@ function IdentityCard({ user, stats }) {
             className="t-card t-scroll flex flex-col gap-6 p-5 text-(--text) sm:p-6 lg:sticky lg:top-14 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto"
         >
             <div className="flex items-center gap-5 lg:flex-col lg:items-start lg:gap-4">
-                <img
-                    src={user.profilePictureUrl || fallbackAvatar}
-                    onError={(e) => { e.currentTarget.src = fallbackAvatar; }}
-                    alt=""
-                    className="size-20 shrink-0 rounded-[1.25rem] border-2 border-(--accent) bg-(--bg) object-cover sm:size-24"
-                />
+                <Avatar src={user.profilePictureUrl} className="size-20 rounded-[1.25rem] border-(--accent) sm:size-24" />
                 <div className="flex min-w-0 flex-col gap-1">
                     <h1
                         id="profile-name"

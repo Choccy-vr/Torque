@@ -1,19 +1,17 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Clock, Zap } from "lucide-react";
 import ProjectStatusBadge from "./ProjectStatusBadge.jsx";
 import { formatHours } from "../lib/projects.js";
-import Drone from "../assets/drone.png";
+import { CoverImage } from "./EmptyImage.jsx";
 
 // Project card for /projects, and in `compact` form for the dashboard's
 // scrolling row: a fixed-width tile, darker than the panel it sits in, with a
 // short image and a one-line title and description.
-// Cards show the project's cover image, or the drone placeholder without one.
+// Cards show the project's cover image, or an empty frame without one.
 const SIZES = {
     full: {
         shell: "t-card",
         image: "aspect-video",
-        fit: "object-contain p-3 sm:p-4",
         body: "gap-3 px-5 py-6 sm:px-6 lg:px-7",
         title: "text-xl line-clamp-2 sm:text-2xl",
         description: "text-sm line-clamp-3 sm:text-base",
@@ -22,7 +20,6 @@ const SIZES = {
     compact: {
         shell: "w-64 shrink-0 snap-start rounded-[1.25rem] border-2 border-(--accent)/35 bg-(--bg)/60",
         image: "h-24",
-        fit: "object-contain px-4 pt-3",
         body: "gap-2 px-5 py-4",
         title: "text-lg line-clamp-1",
         description: "text-sm line-clamp-1",
@@ -49,9 +46,7 @@ export default function ProjectCard({ project, compact = false, titleAs, image =
         // card is one click target with one accessible name.
         <li className={`group relative flex h-full flex-col overflow-hidden transition-all duration-300 ease hover:-translate-y-0.5 hover:border-(--accent) has-[a:focus-visible]:border-(--accent) motion-reduce:hover:translate-y-0 ${size.shell}`}>
             {image && (compact ? (
-                project.coverImageUrl
-                    ? <img src={project.coverImageUrl} alt="" loading="lazy" onError={(e) => { e.currentTarget.src = Drone; }} className={`${size.image} w-full bg-(--bg) object-cover`} />
-                    : <img src={Drone} alt="" className={`${size.image} ${size.fit} w-full`} />
+                <CoverImage src={project.coverImageUrl} className={`${size.image} w-full`} frame="inset-2.5 rounded-xl" />
             ) : (
                 <ProjectPlate src={project.coverImageUrl} />
             ))}
@@ -106,22 +101,17 @@ export default function ProjectCard({ project, compact = false, titleAs, image =
 }
 
 // The full card's image well: a cover photo fills it edge to edge; without one
-// the drone placeholder sits on a gridded drawing plate. Inside a `group`, the
-// image eases in a touch on hover.
+// an empty dashed frame sits on the gridded drawing plate. Inside a `group`,
+// the photo eases in a touch on hover.
 export function ProjectPlate({ src }) {
-    const [broken, setBroken] = useState(false);
-    const cover = src && !broken;
-
     return (
-        <div className={`t-plate ${SIZES.full.image} w-full overflow-hidden border-b-2 border-white/10`}>
-            <img
-                src={cover ? src : Drone}
-                alt=""
-                loading="lazy"
-                onError={() => setBroken(true)}
-                className={`size-full transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.04] ${cover ? "object-cover" : SIZES.full.fit}`}
-            />
-        </div>
+        <CoverImage
+            src={src}
+            label
+            className={`${SIZES.full.image} w-full border-b-2 border-white/10`}
+            imgClassName="transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.04]"
+            frame="inset-3 rounded-2xl sm:inset-4"
+        />
     );
 }
 

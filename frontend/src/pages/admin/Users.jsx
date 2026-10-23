@@ -6,7 +6,7 @@ import { useParam } from "../../lib/admin.js";
 import { searchAdminUsers } from "../../lib/endpoints.js";
 import { formatDay } from "../../lib/projects.js";
 import { useApi } from "../../lib/useApi.js";
-import fallbackAvatar from "../../assets/img.png";
+import { Avatar as BaseAvatar } from "../../components/EmptyImage.jsx";
 
 // /admin/users — find anyone by username, name, email, Slack or Hackatime id.
 export default function AdminUsers() {
@@ -67,12 +67,5 @@ export function UserTags({ user }) {
 
 // `className` sets size, corners and edge colour (row size by default).
 export function Avatar({ src, className = "size-10 rounded-[0.625rem] border-(--accent)/55" }) {
-    return (
-        <img
-            src={src || fallbackAvatar}
-            onError={(e) => { e.currentTarget.src = fallbackAvatar; }}
-            alt=""
-            className={`${className} shrink-0 border-2 bg-(--bg) object-cover`}
-        />
-    );
+    return <BaseAvatar src={src} className={className} />;
 }

@@ -5,7 +5,7 @@ import { useAuth } from "../lib/useAuth.js";
 import { getMyProfile } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
 import { isAdmin } from "../lib/settings.js";
-import Drone from "../assets/img.png";
+import { Avatar } from "./EmptyImage.jsx";
 import logo from "../assets/logo.png";
 
 const links = [
@@ -140,12 +140,7 @@ function UserPlate({ onSignOut }) {
                 title={loading ? undefined : name}
                 className="flex min-w-0 items-center gap-3 rounded-xl p-2 text-left text-(--text) transition-all duration-300 ease hover:bg-white/10"
             >
-                <img
-                    src={profile?.profilePictureUrl || Drone}
-                    onError={(e) => { e.currentTarget.src = Drone; }}
-                    alt=""
-                    className="size-10 shrink-0 rounded-[0.625rem] border-2 border-(--accent)/55 bg-(--bg) object-cover lg:size-11"
-                />
+                <Avatar src={profile?.profilePictureUrl} className="size-10 rounded-[0.625rem] border-(--accent)/55 lg:size-11" />
                 {loading ? (
                     <div aria-hidden="true" className="flex min-w-0 flex-1 flex-col gap-1.5">
                         <div className="h-4 w-4/5 rounded bg-white/10 motion-safe:animate-pulse" />

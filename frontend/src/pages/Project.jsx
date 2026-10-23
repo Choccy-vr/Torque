@@ -23,7 +23,7 @@ import { SHIP_STATUS, formatDay } from "../lib/projects.js";
 import { useApi } from "../lib/useApi.js";
 import { useAuth } from "../lib/useAuth.js";
 import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
-import fallbackAvatar from "../assets/img.png";
+import { Avatar } from "../components/EmptyImage.jsx";
 
 // /projects/:id — one project, for anyone. Its owner also gets their private
 // numbers (Volts, streak freezes, Hackatime links), their ships,
@@ -457,12 +457,7 @@ function Byline({ project, owner }) {
                     to={`/profile/${project.ownerUserId}`}
                     className={`group inline-flex min-h-11 items-center gap-2.5 rounded-xl pr-2 font-medium text-(--text) transition-all duration-300 ease hover:bg-white/10 ${FOCUS}`}
                 >
-                    <img
-                        src={owner.profilePictureUrl || fallbackAvatar}
-                        onError={(e) => { e.currentTarget.src = fallbackAvatar; }}
-                        alt=""
-                        className="size-9 shrink-0 rounded-[0.625rem] border-2 border-(--accent) bg-(--bg) object-cover"
-                    />
+                    <Avatar src={owner.profilePictureUrl} className="size-9 rounded-[0.625rem] border-(--accent)" />
                     <span className="underline decoration-(--accent)/55 decoration-2 underline-offset-4 transition-colors duration-300 ease group-hover:decoration-(--accent)">
                         {owner.username}
                     </span>

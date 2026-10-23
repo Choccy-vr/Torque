@@ -120,8 +120,8 @@ html, body {
 }
 
 /* Drawing plate: the image well on project cards. A recessed slate sheet
-   ruled with the blueprint's minor grid, so a placeholder part (the drone)
-   reads as drawn on paper rather than floating on the card. */
+   ruled with the blueprint's minor grid, so an empty well (no cover photo)
+   reads as a blank sheet waiting for a drawing rather than a hole. */
 .t-plate {
   background-color: var(--bg);
   background-image:

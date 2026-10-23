@@ -7,7 +7,7 @@ import { getLeaderboard } from "../lib/endpoints.js";
 import { useParam } from "../lib/admin.js";
 import { formatHours } from "../lib/projects.js";
 import { useLatest } from "../lib/useApi.js";
-import Drone from "../assets/drone.png";
+import { CoverImage } from "./EmptyImage.jsx";
 
 // The Explore leaderboard, kept off the page until it's ready to launch. To
 // bring it back, render <Leaderboard /> under <StaffPicks /> in pages/Explore.jsx.
@@ -113,21 +113,16 @@ function LeaderboardRow({ project, rank, board, thumbs }) {
     );
 }
 
-// A small cover tile; the drone sits on a drawing plate when there's no cover.
-// Phones skip it so titles get the width.
+// A small cover tile; an empty dashed frame on a drawing plate when there's no
+// cover. Phones skip it so titles get the width.
 function Thumb({ src }) {
-    const [broken, setBroken] = useState(false);
-    const cover = src && !broken;
     return (
-        <span className="t-plate hidden size-11 shrink-0 overflow-hidden sm:block rounded-[0.625rem] border-2 border-white/10 sm:size-12">
-            <img
-                src={cover ? src : Drone}
-                alt=""
-                loading="lazy"
-                onError={() => setBroken(true)}
-                className={`size-full transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.06] ${cover ? "object-cover" : "object-contain p-1"}`}
-            />
-        </span>
+        <CoverImage
+            src={src}
+            className="hidden size-12 shrink-0 rounded-[0.625rem] border-2 border-white/10 sm:block"
+            imgClassName="transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.06]"
+            frame={null}
+        />
     );
 }
 
