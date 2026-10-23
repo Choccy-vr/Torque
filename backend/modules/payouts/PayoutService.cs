@@ -22,6 +22,10 @@ public class PayoutService
 
     public record PayoutResult(int Volts, Grant? Grant);
 
+    // The most a design ship over `hours` can be granted, in whole dollars.
+    public static int MaxGrantFor(float hours) =>
+        (int)Math.Floor((decimal)Math.Max(0, hours) * GrantDollarsPerHour);
+
     // Journaled hours not yet credited by a final-approved ship. Snapshotted as a ship's hours.
     public async Task<float> UnpaidJournalHoursAsync(Guid projectId, CancellationToken ct = default)
     {
@@ -50,14 +54,16 @@ public class PayoutService
 
         if (!shipment.IsBuildComplete)
         {
-            if (shipment.RequestedFunding <= 0) return new PayoutResult(0, null);
+            // Capped again here, since the approved hours can come in under what was shipped.
+            var amount = Math.Min(shipment.RequestedFunding, MaxGrantFor(approvedHours));
+            if (amount <= 0) return new PayoutResult(0, null);
 
             var grant = new Grant
             {
                 ShipmentId = shipment.Id,
                 ProjectId = project.Id,
                 UserId = shipment.UserId,
-                Amount = shipment.RequestedFunding
+                Amount = amount
             };
             _db.Grants.Add(grant);
             project.GrantStatus = ProjectGrantStatus.Pending;

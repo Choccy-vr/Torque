@@ -59,6 +59,7 @@ if (!app.Environment.IsDevelopment() && app.Configuration["MIGRATE_ON_STARTUP"] 
 }
 
 app.UseForwardedProto();
+app.UseSecurityHeaders();
 app.UseCors(CorsExtensions.FrontendPolicy);
 app.UseCsrfHeaderCheck();
 app.UseAuthentication();

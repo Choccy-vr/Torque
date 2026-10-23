@@ -45,6 +45,10 @@ public class User
 
 
     public string[]? Role { get; set; }
+    // Why the "banned" role was added, for the Banned page: "hackatime" (the linked
+    // Hackatime account is red, so it's the Fraud Squad's call) or "admin". Null when
+    // not banned, or for bans from before this was recorded.
+    public string? BanReason { get; set; }
 
     public string SlackUserID { get; set; } = null!;
     public string HcUserID { get; set; } = null!;

@@ -22,10 +22,11 @@ export default function RequireOnboarding({ user, loading }) {
         getMyProfile()
             .then((profile) => !cancelled && setChecked({ userId, onboarded: Boolean(profile.completedFirstTimeSetup) }))
             .catch(async (err) => {
-                // A 403 here is almost always a ban; ask to be sure.
-                const banned = err?.status === 403 && (await getBanStatus().catch(() => null))?.banned === true;
+                // A 403 here is almost always a ban; ask to be sure (and why, for the page).
+                const ban = err?.status === 403 ? await getBanStatus().catch(() => null) : null;
+                const banned = ban?.banned === true;
                 // Backend unreachable: don't lock anyone out of the site over it.
-                if (!cancelled) setChecked({ userId, onboarded: true, banned });
+                if (!cancelled) setChecked({ userId, onboarded: true, banned, banReason: ban?.reason ?? null });
             });
         return () => { cancelled = true; };
     }, [userId]);
@@ -35,7 +36,7 @@ export default function RequireOnboarding({ user, loading }) {
     if (loading) return null;
     if (!user) return <Outlet />; // signed out: RequireAuth handles protected routes
     if (checked?.userId !== userId) return null;
-    if (checked.banned) return pathname.startsWith("/docs") ? <Outlet /> : <Banned />;
+    if (checked.banned) return pathname.startsWith("/docs") ? <Outlet /> : <Banned reason={checked.banReason} />;
 
     if (checked.onboarded) {
         return pathname === "/onboarding"

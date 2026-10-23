@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Torque.Auth;
 using Torque.Data;
 using Torque.Extensions;
+using Torque.Hackatime;
 using Torque.Payouts;
 using Torque.Projects;
 using Torque.Settings;
@@ -27,14 +29,18 @@ public class ShipmentController : ControllerBase
     private readonly SlackNotifier _slack;
     private readonly SlackOptions _slackOptions;
     private readonly SettingsService _settings;
+    private readonly YswsEligibility _eligibility;
+    private readonly HackatimeService _hackatime;
 
-    public ShipmentController(AppDbContext db, PayoutService payouts, SlackNotifier slack, SlackOptions slackOptions, SettingsService settings)
+    public ShipmentController(AppDbContext db, PayoutService payouts, SlackNotifier slack, SlackOptions slackOptions, SettingsService settings, YswsEligibility eligibility, HackatimeService hackatime)
     {
         _db = db;
         _payouts = payouts;
         _slack = slack;
         _slackOptions = slackOptions;
         _settings = settings;
+        _eligibility = eligibility;
+        _hackatime = hackatime;
     }
 
     // Get shipments all per user
@@ -130,6 +136,19 @@ public class ShipmentController : ControllerBase
             return BadRequest($"Each answer must be {MaxAnswerLength} characters or fewer.");
         }
 
+        // Checked before taking the project lock: it may call HCA.
+        var shipper = await _db.Users.FindAsync(userId.Value);
+        if (shipper is null) return Unauthorized();
+        var denied = await _eligibility.DenyAsync(shipper, "ship");
+        if (denied is not null) return denied;
+        // Hackatime trust is checked at connect, and again here in case Hackatime has
+        // flagged the account since. If Hackatime can't be asked, the ship goes through
+        // (fraud review still sees it).
+        if (await _hackatime.BanIfRedAsync(shipper) == true)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "This account has been banned.", code = "banned" });
+        }
+
         // Locks the project row until commit, so two ships sent at once can't both pass
         // the status check and snapshot the same hours: the second waits, then sees Unreviewed.
         await using var tx = await _db.Database.BeginTransactionAsync();
@@ -165,6 +184,13 @@ public class ShipmentController : ControllerBase
         {
             return BadRequest("You need at least 1 hour of journaled time since your last approved ship to ship.");
         }
+        // Grants are $5 per design hour being shipped. Bigger ones are a special case,
+        // arranged with an organizer by hand.
+        var maxFunding = PayoutService.MaxGrantFor(unpaidHours);
+        if (!dto.IsBuildComplete.Value && dto.RequestedFunding.Value > maxFunding)
+        {
+            return BadRequest($"You can ask for up to ${maxFunding} for this ship ($5 per hour you're shipping). For special cases, DM @Ginobeano on Slack about extra funding.");
+        }
 
         Shipment shipment = new Shipment
         {
@@ -186,8 +212,7 @@ public class ShipmentController : ControllerBase
         await _db.SaveChangesAsync();
         await tx.CommitAsync();
 
-        var shipper = await _db.Users.FindAsync(userId.Value);
-        _slack.Send(shipper?.SlackUserID, SlackMessages.Shipped(project.Title, _slackOptions.ProjectUrl(project.Id)));
+        _slack.Send(shipper.SlackUserID, SlackMessages.Shipped(project.Title, _slackOptions.ProjectUrl(project.Id)));
 
         return Ok(new OwnShipmentDto
         {

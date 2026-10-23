@@ -8,7 +8,7 @@ public class Grant
     public Guid ProjectId { get; set; }
     public Guid UserId { get; set; }
 
-    // USD, copied from the design ship's RequestedFunding.
+    // USD: the design ship's RequestedFunding, capped at $5 per approved hour.
     public int Amount { get; set; }
 
     public bool Fulfilled { get; set; } = false;

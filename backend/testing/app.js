@@ -87,7 +87,7 @@ const ENDPOINTS = [
     method: 'GET',
     path: '/api/user/me/banned',
     auth: true,
-    desc: 'Whether the signed-in user is currently banned. Reachable even while banned — every other endpoint 403s for a banned user.',
+    desc: 'Whether the signed-in user is currently banned, and why (reason: hackatime = red Hackatime account, other = anything else). Reachable even while banned — every other endpoint 403s for a banned user.',
   },
   {
     id: 'user-onboarding',
@@ -484,11 +484,11 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/ships/create',
     auth: true,
-    desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped, Changes_Needed or Approved and has 1h+ of journaled time no approved ship has credited (design vs build is always your isBuildComplete choice), or if any of isBuildComplete, requestedFunding (>= 0) or the three feedback answers (max 400 each) are missing. 409 for a build ship while the project\'s grant is Pending. Pauses the project\'s streak until the review ends.',
+    desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped, Changes_Needed or Approved and has 1h+ of journaled time no approved ship has credited (design vs build is always your isBuildComplete choice), or if any of isBuildComplete, requestedFunding (>= 0, and at most $5 per hour being shipped) or the three feedback answers (max 400 each) are missing. 403 { error, code } unless your HCA identity is verified and YSWS-eligible (identity_unverified, identity_pending, ysws_ineligible). Re-checks your Hackatime trust: a red account is banned on the spot (403, code banned). 409 for a build ship while the project\'s grant is Pending. Pauses the project\'s streak until the review ends.',
     body: {
       projectId: '00000000-0000-0000-0000-000000000000',
       isBuildComplete: false,
-      requestedFunding: 50,
+      requestedFunding: 5,
       howDidYouHear: 'Slack',
       whatAreWeDoingWell: 'Clear docs',
       howCanWeImprove: 'More examples',
@@ -637,7 +637,7 @@ const ENDPOINTS = [
       },
       ship: {
         isBuildComplete: false,
-        requestedFunding: 50,
+        requestedFunding: 5,
         howDidYouHear: 'Slack',
         whatAreWeDoingWell: 'ship-flow bundle',
         howCanWeImprove: 'ship-flow bundle',
@@ -680,7 +680,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/hackatime/callback',
     auth: true,
-    desc: 'Completes the Hackatime OAuth flow. 401 on bad/mismatched state or a failed code exchange. 403 (and bans the account) if the linked Hackatime account has trust_level "red".',
+    desc: 'Completes the Hackatime OAuth flow. 401 on bad/mismatched state or a failed code exchange. 403 (and bans the account) if the linked Hackatime account has trust_level "red". 502 (nothing linked) if Hackatime can\'t be asked for the trust check.',
     body: {
       code: '',
       state: '',
@@ -832,7 +832,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/shop/purchase',
     auth: true,
-    desc: 'Buy an item. Price comes from your HCA address region and the variant; never sent by the client. Re-sending the same clientRequestId returns the first order. Errors are { error, code } (no_address, variant_required, random_only, locked_tier, region_unavailable, out_of_stock, limit_reached, insufficient_volts, daily_rotated). 503 while shop_paused is on. 10/min.',
+    desc: 'Buy an item. Price comes from your HCA address region and the variant; never sent by the client. Re-sending the same clientRequestId returns the first order. Errors are { error, code } (no_address, variant_required, identity_unverified, identity_pending, ysws_ineligible, random_only, locked_tier, region_unavailable, out_of_stock, limit_reached, insufficient_volts, daily_rotated). 503 while shop_paused is on. 10/min.',
     body: {
       itemId: '',
       variantId: null,

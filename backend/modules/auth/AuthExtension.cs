@@ -45,6 +45,7 @@ public static class AuthExtension
 
         services.AddSingleton(options);
         services.AddHttpClient<HcaClient>();
+        services.AddScoped<YswsEligibility>();
 
         // Keys that sign the session cookie, kept in Postgres so a restart or a second
         // instance doesn't sign everyone out.

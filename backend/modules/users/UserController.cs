@@ -201,6 +201,8 @@ public class UserController : ControllerBase
         var user = await _db.Users.FindAsync(userId);
         if (user is null) return NotFound();
 
-        return Ok(new { banned = user.Role?.Contains("banned") == true });
+        // reason: "hackatime" (appeal to the Fraud Squad) or "other" (anything else).
+        var banned = user.Role?.Contains("banned") == true;
+        return Ok(new { banned, reason = banned ? (user.BanReason == "hackatime" ? "hackatime" : "other") : null });
     }
 }

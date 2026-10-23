@@ -50,6 +50,10 @@ public class HackatimeController : ControllerBase
         {
             return StatusCode(403, new { error = ex.Message });
         }
+        catch (HackatimeUnavailableException ex)
+        {
+            return StatusCode(502, new { error = ex.Message });
+        }
         catch (Exception)
         {
             return Unauthorized("Hackatime authentication failed.");

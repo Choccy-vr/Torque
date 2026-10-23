@@ -417,3 +417,5 @@ build/
 .output/
 .DS_Store
 Thumbs.db
+# Left over from the Supabase days (root-owned, created by its Docker container)
+supabase/

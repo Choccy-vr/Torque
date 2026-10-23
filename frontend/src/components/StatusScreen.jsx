@@ -7,11 +7,12 @@ import logo from "../assets/logo.png";
 // can't (or shouldn't) offer the app's navigation.
 
 // `art` is { src, alt, width, height, drive }: `drive` slides it in from the
-// left, like Orpheus' car pulling up. `icon` is the alternative for screens
-// that shouldn't be playful; it's drawn neutral, never as an alarm.
+// left, like Orpheus' car pulling up. `icon` is the alternative when there's
+// no illustration; it's drawn neutral, never as an alarm. `iconMotion` is a
+// class for the glyph (the Banned page's wagging hand).
 // The headline is Chalk White with the coral redline under it: coral text on
 // the card would only be 2.74:1.
-export function StatusMessage({ art, icon: Icon, title, children, actions, details }) {
+export function StatusMessage({ art, icon: Icon, iconMotion = "", title, children, actions, details }) {
     return (
         <section
             aria-labelledby="status-title"
@@ -32,7 +33,7 @@ export function StatusMessage({ art, icon: Icon, title, children, actions, detai
             <div className="flex flex-col items-start gap-4 px-6 py-8 sm:px-10 sm:py-10">
                 {Icon && (
                     <span className="inline-flex size-14 items-center justify-center rounded-[1.25rem] border-2 border-white/25 bg-(--bg)">
-                        <Icon aria-hidden="true" className="size-7 text-(--text)/90" />
+                        <Icon aria-hidden="true" className={`size-7 text-(--text)/90 ${iconMotion}`} />
                     </span>
                 )}
                 <h1 id="status-title" className="[font-family:var(--heading-font)] text-4xl leading-[1.1] font-bold text-balance text-(--text) lg:text-5xl">

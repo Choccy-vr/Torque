@@ -60,6 +60,17 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
         builder.Entity<ShipmentReview>()
             .Property(p => p.Id)
             .HasDefaultValueSql("gen_random_uuid()");
+
+        // Lookups that run on every journal post, ship and profile page: a project's
+        // journals (latest first), someone's projects/journals/ships.
+        builder.Entity<Project>()
+            .HasIndex(p => p.OwnerUserId);
+        builder.Entity<Devlog>()
+            .HasIndex(d => new { d.ProjectId, d.CreatedAt });
+        builder.Entity<Devlog>()
+            .HasIndex(d => new { d.OwnerUserId, d.CreatedAt });
+        builder.Entity<Shipment>()
+            .HasIndex(s => new { s.UserId, s.CreatedAt });
         builder.Entity<Announcement>()
             .Property(p => p.Id)
             .HasDefaultValueSql("gen_random_uuid()");

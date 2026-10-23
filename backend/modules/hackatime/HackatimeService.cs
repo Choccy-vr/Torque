@@ -11,8 +11,10 @@ namespace Torque.Hackatime;
 
 public class HackatimeService
 {
-    // Written to User.InternalNote when the connect-time trust check bans an account.
+    // Written to User.InternalNote when a trust check bans an account: at connect, or
+    // when it's re-checked before shipping.
     public const string ConnectBanMarker = "hackatime_banned_at_connect";
+    public const string ShipBanMarker = "hackatime_banned_at_ship";
 
     private readonly HttpClient _http;
     private readonly AppDbContext _db;
@@ -44,11 +46,17 @@ public class HackatimeService
         return CryptographicOperations.FixedTimeEquals(bytesA, bytesB);
     }
 
+    // Added to the end of the internal note, so an admin's own notes on the user are kept.
     private static void Ban(User user, string marker, string detail)
     {
         user.Role = [.. (user.Role ?? []).Where(r => r != "banned"), "banned"];
-        user.InternalNote = $"{marker}: {detail}";
+        user.BanReason = "hackatime";
+        var line = $"{marker} ({DateTime.UtcNow:yyyy-MM-dd}): {detail}";
+        user.InternalNote = string.IsNullOrWhiteSpace(user.InternalNote) ? line : $"{user.InternalNote}\n{line}";
     }
+
+    // Who a Hackatime token belongs to and its trust level ("red" = banned on Hackatime).
+    private record HackatimeMe(string? Id, string? TrustLevel);
 
     // Builds the Hackatime authorize URL. `state` is handed back to the caller so the
     // frontend can hold onto it (e.g. sessionStorage) and echo it back as `storedState`
@@ -116,49 +124,15 @@ public class HackatimeService
         }
         var accessToken = accessTokenEl.GetString()!;
 
-        string? hackatimeUserId = null;
-        var bannedAtConnect = false;
-        string? trustLevel = null;
-        try
-        {
-            using var meRequest = new HttpRequestMessage(HttpMethod.Get, $"{_options.BaseUrl}/api/v1/authenticated/me");
-            meRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            var meResponse = await _http.SendAsync(meRequest);
-            if (meResponse.IsSuccessStatusCode)
-            {
-                var meJson = await meResponse.Content.ReadFromJsonAsync<JsonElement>();
-                var data = meJson.TryGetProperty("data", out var d) ? d : meJson;
-                if (data.TryGetProperty("id", out var idEl))
-                {
-                    hackatimeUserId = idEl.ValueKind == JsonValueKind.Number
-                        ? idEl.GetInt64().ToString()
-                        : idEl.GetString();
-                }
-
-                var trustSource = data.TryGetProperty("trust_factor", out var tf) ? tf
-                    : meJson.TryGetProperty("trust_factor", out var tf2) ? tf2
-                    : default;
-                if (trustSource.ValueKind == JsonValueKind.Object
-                    && trustSource.TryGetProperty("trust_level", out var tl)
-                    && tl.ValueKind == JsonValueKind.String)
-                {
-                    trustLevel = tl.GetString();
-                }
-                bannedAtConnect = trustLevel == "red";
-            }
-            else
-            {
-                _logger.LogWarning("Hackatime /me failed ({Status}) for user {UserId}", meResponse.StatusCode, userId);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Hackatime /me error for user {UserId}", userId);
-        }
+        // No connection without a trust check: if Hackatime can't say whether the account
+        // is banned, the link is refused (try again) rather than let through unchecked.
+        var me = await FetchMeAsync(accessToken, userId)
+            ?? throw new HackatimeUnavailableException("Couldn't check your Hackatime account right now. Try connecting again in a minute.");
+        var hackatimeUserId = me.Id;
 
         var user = await _db.Users.FindAsync(userId) ?? throw new InvalidOperationException("User not found");
 
-        if (bannedAtConnect)
+        if (me.TrustLevel == "red")
         {
             _logger.LogWarning("Hackatime-banned user attempted connection: {UserId} (hackatimeUserId={HackatimeUserId})", userId, hackatimeUserId);
             Ban(user, ConnectBanMarker, $"linked Hackatime account trust_level=red at connect time (hackatimeUserId={hackatimeUserId})");
@@ -171,6 +145,64 @@ public class HackatimeService
         await _db.SaveChangesAsync();
 
         _logger.LogInformation("Hackatime connected for user {UserId}", userId);
+    }
+
+    // Re-checks the user's linked Hackatime account, and bans them here too if Hackatime
+    // has since marked it red. True = banned now, false = fine (or nothing linked),
+    // null = Hackatime couldn't be asked. Saves the ban itself.
+    public async Task<bool?> BanIfRedAsync(User user)
+    {
+        if (string.IsNullOrEmpty(user.HackatimeToken)) return false;
+
+        var me = await FetchMeAsync(user.HackatimeToken, user.Id);
+        if (me is null) return null;
+        if (me.TrustLevel != "red") return false;
+
+        _logger.LogWarning("Hackatime account turned red, banning user {UserId} (hackatimeUserId={HackatimeUserId})", user.Id, me.Id);
+        Ban(user, ShipBanMarker, $"linked Hackatime account trust_level=red when shipping (hackatimeUserId={me.Id})");
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    // GET /me for a token. Null when it couldn't be read (Hackatime down, token rejected).
+    private async Task<HackatimeMe?> FetchMeAsync(string token, Guid userId)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{_options.BaseUrl}/api/v1/authenticated/me");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var response = await _http.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Hackatime /me failed ({Status}) for user {UserId}", response.StatusCode, userId);
+                return null;
+            }
+
+            var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var data = json.TryGetProperty("data", out var d) ? d : json;
+
+            string? id = null;
+            if (data.TryGetProperty("id", out var idEl))
+            {
+                id = idEl.ValueKind == JsonValueKind.Number ? idEl.GetInt64().ToString() : idEl.GetString();
+            }
+
+            var trust = data.TryGetProperty("trust_factor", out var tf) ? tf
+                : json.TryGetProperty("trust_factor", out var tf2) ? tf2
+                : default;
+            var level = trust.ValueKind == JsonValueKind.Object
+                && trust.TryGetProperty("trust_level", out var tl)
+                && tl.ValueKind == JsonValueKind.String
+                    ? tl.GetString()
+                    : null;
+
+            return new HackatimeMe(id, level);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Hackatime /me error for user {UserId}", userId);
+            return null;
+        }
     }
 
     public async Task<bool> IsConnectedAsync(Guid userId)

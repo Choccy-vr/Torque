@@ -26,8 +26,9 @@ public class ShopController : ControllerBase
     private readonly HcaOptions _hcaOptions;
     private readonly SlackNotifier _slack;
     private readonly SlackOptions _slackOptions;
+    private readonly YswsEligibility _eligibility;
 
-    public ShopController(AppDbContext db, ShopService shop, HcaClient hca, HcaOptions hcaOptions, SlackNotifier slack, SlackOptions slackOptions)
+    public ShopController(AppDbContext db, ShopService shop, HcaClient hca, HcaOptions hcaOptions, SlackNotifier slack, SlackOptions slackOptions, YswsEligibility eligibility)
     {
         _db = db;
         _shop = shop;
@@ -35,6 +36,7 @@ public class ShopController : ControllerBase
         _hcaOptions = hcaOptions;
         _slack = slack;
         _slackOptions = slackOptions;
+        _eligibility = eligibility;
     }
 
     // The whole shop for the caller: today's random item, then every level's items, each
@@ -168,6 +170,9 @@ public class ShopController : ControllerBase
 
         var user = await _db.Users.FindAsync([userId.Value], ct);
         if (user is null) return NotFound();
+
+        var denied = await _eligibility.DenyAsync(user, "order from the shop", ct);
+        if (denied is not null) return denied;
 
         var (address, error) = await LookupAddressAsync(user, ct);
         if (error is not null) return error;

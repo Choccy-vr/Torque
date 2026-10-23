@@ -24,7 +24,9 @@ public static class HackatimeExtension
         }
 
         services.AddSingleton(options);
-        services.AddHttpClient<HackatimeService>();
+        // Journaling calls Hackatime while holding the project's row lock, so a slow
+        // Hackatime fails fast (as "couldn't reach Hackatime") instead of the 100s default.
+        services.AddHttpClient<HackatimeService>(client => client.Timeout = TimeSpan.FromSeconds(10));
 
         services.AddRateLimiter(rateLimiterOptions =>
         {

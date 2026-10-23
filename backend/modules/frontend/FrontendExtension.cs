@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Net.Http.Headers;
+using Torque.Auth;
 
 // Serves the built frontend out of wwwroot in the Docker image, so the site and the API
 // share one origin. Does nothing when wwwroot is missing (local `dotnet run`, where the
@@ -27,7 +28,16 @@ public static class FrontendExtension
             return Results.Text($"window.__TORQUE_CONFIG__ = {json};", "text/javascript");
         });
 
-        app.UseDefaultFiles();
+        // index.html with the link-preview tags' {{TORQUE_ORIGIN}} filled in, since
+        // crawlers need absolute URLs and the image is built without knowing its domain.
+        var origin = app.Services.GetRequiredService<HcaOptions>().FrontendUrl;
+        var indexHtml = File.ReadAllText(Path.Combine(root, "index.html")).Replace("{{TORQUE_ORIGIN}}", origin);
+        IResult ServeIndex(HttpContext context)
+        {
+            context.Response.Headers.CacheControl = "no-cache";
+            return Results.Content(indexHtml, "text/html; charset=utf-8");
+        }
+
         app.UseStaticFiles(new StaticFileOptions
         {
             OnPrepareResponse = ctx =>
@@ -43,10 +53,8 @@ public static class FrontendExtension
 
         // Unknown API routes stay 404s instead of getting the SPA's index.html
         app.MapFallback("/api/{**rest}", () => Results.NotFound());
-        app.MapFallbackToFile("index.html", new StaticFileOptions
-        {
-            OnPrepareResponse = ctx => ctx.Context.Response.Headers[HeaderNames.CacheControl] = "no-cache"
-        });
+        app.MapGet("/", ServeIndex);
+        app.MapFallback(ServeIndex);
 
         return app;
     }

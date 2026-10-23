@@ -4,7 +4,9 @@ import { useEffect, useRef } from "react";
 // A form's error text: the server's own sentence when it sent one.
 export function errorText(err, fallback = "Something went wrong. Check your connection and try again.") {
     if (err?.status === 401) return "You've been signed out. Log in again to save this.";
-    if (err?.status === 403) return "You can only change your own projects.";
+    // A 403 with a `code` (identity checks, shop rules) explains itself; a bare one
+    // means it isn't the caller's to change.
+    if (err?.status === 403 && !err?.code) return "You can only change your own projects.";
     const message = err?.message?.trim();
     return message && !message.startsWith("Request failed") && !message.startsWith("<") ? message : fallback;
 }

@@ -142,6 +142,12 @@ namespace torque_backend.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_devlogs");
 
+                    b.HasIndex("OwnerUserId", "CreatedAt")
+                        .HasDatabaseName("ix_devlogs_owner_user_id_created_at");
+
+                    b.HasIndex("ProjectId", "CreatedAt")
+                        .HasDatabaseName("ix_devlogs_project_id_created_at");
+
                     b.ToTable("devlogs", (string)null);
                 });
 
@@ -390,6 +396,9 @@ namespace torque_backend.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_projects");
 
+                    b.HasIndex("OwnerUserId")
+                        .HasDatabaseName("ix_projects_owner_user_id");
+
                     b.ToTable("projects", (string)null);
                 });
 
@@ -604,6 +613,9 @@ namespace torque_backend.Data.Migrations
 
                     b.HasIndex("ProjectId")
                         .HasDatabaseName("ix_shipments_project_id");
+
+                    b.HasIndex("UserId", "CreatedAt")
+                        .HasDatabaseName("ix_shipments_user_id_created_at");
 
                     b.ToTable("shipments", (string)null);
                 });
@@ -936,6 +948,10 @@ namespace torque_backend.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<string>("BanReason")
+                        .HasColumnType("text")
+                        .HasColumnName("ban_reason");
 
                     b.Property<string>("Bio")
                         .IsRequired()

@@ -81,6 +81,23 @@ html, body {
   to { transform: translateY(0.5rem); }
 }
 
+/* Banned page: the raised hand wags "tsk tsk" twice and settles, pivoting at
+   the wrist. Starts and ends upright, so reduced motion just sees the hand. */
+@media (prefers-reduced-motion: no-preference) {
+  .t-wag {
+    transform-origin: 50% 90%;
+    animation: t-wag 1100ms cubic-bezier(0.16, 1, 0.3, 1) 300ms both;
+  }
+}
+
+@keyframes t-wag {
+  0%, 100% { transform: none; }
+  15% { transform: rotate(-16deg); }
+  35% { transform: rotate(13deg); }
+  55% { transform: rotate(-8deg); }
+  75% { transform: rotate(4deg); }
+}
+
 @keyframes t-drive-in {
   from { transform: translateX(-2.5rem) rotate(-1.5deg); }
   to { transform: none; }

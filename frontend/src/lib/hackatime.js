@@ -17,6 +17,7 @@ export function describeHackatimeError(error) {
     if (error?.status === 503) return "Hackatime isn't set up on Torque yet. Try again later."
     if (error?.status === 429) return 'Too many tries in a row. Wait a minute, then try again.'
     if (error?.status === 403 && error.message) return error.message
+    if (error?.status === 502) return error.message || "Couldn't check your Hackatime account right now. Try again in a minute."
     if (error?.status === 401) return "Hackatime didn't accept the connection. Try again."
     return "Couldn't reach the server. Check your connection and try again."
 }

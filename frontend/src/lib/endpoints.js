@@ -363,7 +363,7 @@ export function getLeaderboard(kind) {
     return getJson(`api/project/leaderboard/${kind === 'volts' ? 'volts' : 'hours'}`)
 }
 
-// GET api/user/me/banned — { banned }. Answers even while banned.
+// GET api/user/me/banned — { banned, reason } (reason: "hackatime" | "other" | null). Answers even while banned.
 export function getBanStatus() {
     return getJson('api/user/me/banned')
 }

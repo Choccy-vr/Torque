@@ -135,8 +135,12 @@ public class AdminUserController : ControllerBase
         var user = await _db.Users.FindAsync(id);
         if (user is null) return NotFound();
 
+        var wasBanned = user.Role?.Contains("banned") == true;
         var roles = (user.Role ?? []).Where(r => r != "banned");
         user.Role = dto.Banned.Value ? [.. roles, "banned"] : [.. roles];
+        // A repeat ban keeps the original reason (a Hackatime ban stays one).
+        if (!dto.Banned.Value) user.BanReason = null;
+        else if (!wasBanned) user.BanReason = "admin";
         await _db.SaveChangesAsync();
 
         return Ok(AdminUserDto.From(user));

@@ -25,9 +25,11 @@ export default function ShipForm({ project, designApproved, onEdit, onShipped, o
     const [error, setError] = useState(null);
 
     // The journaled hours no approved ship has credited yet; the server has the
-    // exact figure, this is close enough to size a grant by.
-    const unpaid = Math.max(0, Math.round(((project.totalHours ?? 0) - (project.totalHoursApproved ?? 0)) * 10) / 10);
-    const grantCap = Math.floor(unpaid * 5);
+    // exact figure, this is close enough to size a grant by. The server caps the
+    // grant at $5 per hour, floored, so the cap is worked out before rounding.
+    const unpaidRaw = Math.max(0, (project.totalHours ?? 0) - (project.totalHoursApproved ?? 0));
+    const unpaid = Math.round(unpaidRaw * 10) / 10;
+    const grantCap = Math.floor(unpaidRaw * 5);
     const overCap = !build && Number(funding) > grantCap;
 
     const answer = (key) => (e) => setAnswers((a) => ({ ...a, [key]: e.target.value }));
@@ -37,6 +39,9 @@ export default function ShipForm({ project, designApproved, onEdit, onShipped, o
         const requestedFunding = build ? 0 : Number(funding || 0);
         if (!Number.isInteger(requestedFunding) || requestedFunding < 0) {
             return setError("Requested funding needs to be a whole number of dollars.");
+        }
+        if (overCap) {
+            return setError(`You can ask for up to $${grantCap.toLocaleString()} on this ship.`);
         }
         setSending(true);
         setError(null);
@@ -51,6 +56,8 @@ export default function ShipForm({ project, designApproved, onEdit, onShipped, o
             });
             onShipped();
         } catch (err) {
+            // Banned just now (Hackatime flagged the account): reload into the Banned page.
+            if (err?.code === "banned") return window.location.reload();
             setError(errorText(err));
             setSending(false);
         }
@@ -110,7 +117,7 @@ export default function ShipForm({ project, designApproved, onEdit, onShipped, o
             </fieldset>
 
             {!build && (
-                <Field label="Grant you're asking for" hint={`$5 per design hour, so up to about $${grantCap.toLocaleString()}. Put 0 if you're paying for parts yourself.`}>
+                <Field label="Grant you're asking for" hint={`$5 per design hour, so up to $${grantCap.toLocaleString()}. Put 0 if you're paying for parts yourself.`}>
                     {(p) => (
                         <div className="flex flex-col gap-2">
                             <div className="relative max-w-56">
@@ -120,7 +127,7 @@ export default function ShipForm({ project, designApproved, onEdit, onShipped, o
                             {overCap && (
                                 <p className="flex items-start gap-2 text-sm leading-relaxed text-(--text)">
                                     <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-(--accent)" />
-                                    That's more than $5 for each hour you're shipping (about ${grantCap.toLocaleString()}).
+                                    That's more than $5 for each hour you're shipping (up to ${grantCap.toLocaleString()}). For special cases, DM @Ginobeano on Slack about extra funding.
                                 </p>
                             )}
                         </div>
