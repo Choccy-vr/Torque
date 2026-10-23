@@ -15,6 +15,7 @@ public static class SettingKeys
     public const string JournalingPaused = "journaling_paused";
     public const string StreaksPaused = "streaks_paused";
     public const string PayoutsPaused = "payouts_paused";
+    public const string ShopPaused = "shop_paused";
 
     public static readonly IReadOnlyList<SettingDefinition> All =
     [
@@ -42,6 +43,10 @@ public static class SettingKeys
             "Pause payouts",
             "Approved ships stop going to Airtable for final approval, so no Volts are paid and no grants are created. They queue up and go out when you switch this off. A final approval Airtable sends while this is on is refused; re-run that automation afterwards.",
             "Payouts are paused for a bit. Approved ships are queued and will be paid out once they're back on, so you won't lose anything."),
+        new(ShopPaused,
+            "Pause the shop",
+            "Nobody can place shop orders. The shop stays browsable, and pending orders can still be fulfilled or refunded.",
+            "Oops, looks like the shop is paused right now. Your Volts are safe, so please come back later to order!"),
     ];
 
     // Either of these stops missed streak days from being settled.

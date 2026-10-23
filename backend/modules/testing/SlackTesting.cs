@@ -8,7 +8,8 @@ using Torque.Streaks;
 namespace Torque.Testing;
 
 // `template` is one of welcome | shipped | approved | changes_needed | rejected | streak_at_risk |
-// streak_freeze_used | streak_lost | streak_maxed (sample numbers). The DM always
+// streak_freeze_used | streak_lost | streak_maxed | shop_order_placed | shop_order_fulfilled |
+// shop_order_refunded (sample numbers). The DM always
 // goes to the signed-in user's own Slack ID — even in dev there's no way to message anyone
 // else. Sent synchronously (unlike SlackNotifier) so the harness can show whether it landed.
 public record SlackDmTestRequest(string? Template = null, string? ProjectTitle = null, string? Feedback = null);
@@ -47,11 +48,14 @@ public static class SlackTesting
                 "streak_freeze_used" => SlackMessages.StreakFreezeUsed(title, url, 12, 1, 2),
                 "streak_lost" => SlackMessages.StreakLost(title, url, 12, 0, freezesPaused: false),
                 "streak_maxed" => SlackMessages.StreakMaxed(title, url, 15, 1, StreakService.VoltsPerHour(1, 15)),
+                "shop_order_placed" => SlackMessages.ShopOrderPlaced("USB drive", 2, 160, options.ShopUrl),
+                "shop_order_fulfilled" => SlackMessages.ShopOrderFulfilled("USB drive", 2, "1Z999AA10123456784", options.ShopUrl),
+                "shop_order_refunded" => SlackMessages.ShopOrderRefunded("USB drive", 2, 160, body.Feedback, options.ShopUrl),
                 _ => null
             };
             if (message is null)
             {
-                return Results.BadRequest("template must be welcome, shipped, approved, changes_needed, rejected, streak_at_risk, streak_freeze_used, streak_lost or streak_maxed.");
+                return Results.BadRequest("template must be welcome, shipped, approved, changes_needed, rejected, streak_at_risk, streak_freeze_used, streak_lost, streak_maxed, shop_order_placed, shop_order_fulfilled or shop_order_refunded.");
             }
 
             var sent = await slack.SendDmAsync(user.SlackUserID, message);

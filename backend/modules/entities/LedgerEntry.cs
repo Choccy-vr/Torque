@@ -16,6 +16,10 @@ public class LedgerEntry
     // paid twice.
     public Guid? ShipmentId { get; set; }
 
+    // The shop order this charged or refunded (shop_purchase / shop_refund only).
+    // Unique with Kind, so an order is charged and refunded at most once.
+    public Guid? OrderId { get; set; }
+
     // The reviewer/admin who caused this entry.
     public Guid? CreatedByUserId { get; set; }
 
@@ -25,5 +29,7 @@ public class LedgerEntry
 public enum LedgerEntryKind
 {
     ship_payout,
-    admin_adjustment
+    admin_adjustment,
+    shop_purchase,
+    shop_refund
 }

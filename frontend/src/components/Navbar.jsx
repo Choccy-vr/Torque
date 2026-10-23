@@ -1,6 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
 import { useCallback } from "react";
-import { BookOpen, CircleUserRound, Compass, FolderOpen, Gauge, LogIn, LogOut, ShieldCheck, Zap } from "lucide-react";
+import { BookOpen, CircleUserRound, Compass, FolderOpen, Gauge, LogIn, LogOut, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
 import { useAuth } from "../lib/useAuth.js";
 import { getMyProfile } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
@@ -12,6 +12,7 @@ const links = [
     { name: "Dashboard", path: "/home", icon: Gauge },
     { name: "Projects", path: "/projects", icon: FolderOpen },
     { name: "Explore", path: "/explore", icon: Compass },
+    { name: "Shop", path: "/shop", icon: ShoppingBag },
     { name: "Docs", path: "/docs", icon: BookOpen },
     { name: "Profile", path: "/profile", icon: CircleUserRound },
 ];

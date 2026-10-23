@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Torque.Announcements;
 using Torque.Crypto;
@@ -10,6 +12,7 @@ using Torque.Projects;
 using Torque.Reviews;
 using Torque.Settings;
 using Torque.Shipments;
+using Torque.Shop;
 using Torque.Streaks;
 using Torque.Users;
 
@@ -34,6 +37,10 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
     public DbSet<Grant> Grants => Set<Grant>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<ShopItem> ShopItems => Set<ShopItem>();
+    public DbSet<ShopItemVariant> ShopItemVariants => Set<ShopItemVariant>();
+    public DbSet<DailyShopPick> DailyShopPicks => Set<DailyShopPick>();
+    public DbSet<ShopOrder> ShopOrders => Set<ShopOrder>();
     // Session-cookie signing keys (see Torque.Auth.AuthExtension).
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -73,6 +80,10 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             .HasIndex(e => e.ShipmentId)
             .IsUnique()
             .HasFilter("shipment_id IS NOT NULL");
+        builder.Entity<LedgerEntry>()
+            .HasIndex(e => new { e.OrderId, e.Kind })
+            .IsUnique()
+            .HasFilter("order_id IS NOT NULL");
         builder.Entity<Grant>()
             .Property(p => p.Id)
             .HasDefaultValueSql("gen_random_uuid()");
@@ -83,6 +94,53 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             .HasIndex(g => g.Fulfilled);
         builder.Entity<AppSetting>()
             .HasKey(s => s.Key);
+
+        builder.Entity<ShopItem>()
+            .Property(p => p.Id)
+            .HasDefaultValueSql("gen_random_uuid()");
+        builder.Entity<ShopItem>()
+            .Property(i => i.RegionalPrices)
+            .HasColumnType("jsonb")
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<Dictionary<string, int>>(v, (JsonSerializerOptions?)null) ?? new(),
+                new ValueComparer<Dictionary<string, int>>(
+                    (a, b) => a!.Count == b!.Count && !a.Except(b).Any(),
+                    v => v.Aggregate(0, (h, kv) => HashCode.Combine(h, kv.Key, kv.Value)),
+                    v => new Dictionary<string, int>(v)));
+        builder.Entity<ShopItem>()
+            .HasMany(i => i.Variants)
+            .WithOne()
+            .HasForeignKey(v => v.ShopItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<ShopItemVariant>()
+            .Property(p => p.Id)
+            .HasDefaultValueSql("gen_random_uuid()");
+        builder.Entity<DailyShopPick>()
+            .HasKey(d => d.Date);
+        builder.Entity<DailyShopPick>()
+            .HasOne<ShopItem>()
+            .WithMany()
+            .HasForeignKey(d => d.ShopItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<ShopOrder>()
+            .Property(p => p.Id)
+            .HasDefaultValueSql("gen_random_uuid()");
+        builder.Entity<ShopOrder>()
+            .HasIndex(o => new { o.UserId, o.ClientRequestId })
+            .IsUnique();
+        builder.Entity<ShopOrder>()
+            .HasIndex(o => new { o.Status, o.CreatedAt });
+        builder.Entity<ShopOrder>()
+            .HasOne<ShopItem>()
+            .WithMany()
+            .HasForeignKey(o => o.ShopItemId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.Entity<ShopOrder>()
+            .HasOne<ShopItemVariant>()
+            .WithMany()
+            .HasForeignKey(o => o.VariantId)
+            .OnDelete(DeleteBehavior.SetNull);
         // Sign-in finds users by their HCA `sub`. Rows that never got one are left out.
         builder.Entity<User>()
             .HasIndex(u => u.HcUserID)

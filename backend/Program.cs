@@ -9,6 +9,7 @@ using Torque.Hackatime;
 using Torque.Lapse;
 using Torque.Payouts;
 using Torque.Settings;
+using Torque.Shop;
 using Torque.Slack;
 using Torque.Streaks;
 using Torque.Testing;
@@ -45,6 +46,7 @@ builder.Services.AddSlack(builder.Configuration);
 builder.Services.AddStreaks();
 builder.Services.AddPayouts();
 builder.Services.AddSettings();
+builder.Services.AddShop();
 
 var app = builder.Build();
 

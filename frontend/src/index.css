@@ -86,6 +86,27 @@ html, body {
   to { transform: none; }
 }
 
+/* Landing shop tape: each band's track holds its items twice and slides one
+   copy's width, so the loop never shows a seam. --t-tape-speed sets the pace;
+   [data-paused] (the pause button, or hovering the tape) holds it. Reduced
+   motion leaves the tape still. */
+@media (prefers-reduced-motion: no-preference) {
+  .t-tape-track {
+    animation: t-tape var(--t-tape-speed, 60s) linear infinite;
+  }
+  .t-tape-track[data-reverse] {
+    animation-direction: reverse;
+  }
+  [data-paused] .t-tape-track,
+  .t-tape:hover .t-tape-track {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes t-tape {
+  to { transform: translateX(-50%); }
+}
+
 /* Page background: blueprint grid (major + minor lines) */
 .t-bg {
   background-color: var(--bg);

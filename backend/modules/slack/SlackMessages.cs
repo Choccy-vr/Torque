@@ -110,6 +110,29 @@ public static class SlackMessages
             + $"*{voltsPerHour:0.#} Volts/hr*. Keep journaling every day to hold it.",
         projectUrl);
 
+    public static SlackMessage ShopOrderPlaced(string itemName, int quantity, int totalVolts, string shopUrl) => Build(
+        $"Order placed: {Escape(itemName)}",
+        "Order placed! :package:",
+        $"You ordered *{Item(itemName, quantity)}* for *{totalVolts} Volts*. It's in the queue now, and we'll DM you when it ships.",
+        shopUrl, "View orders");
+
+    public static SlackMessage ShopOrderFulfilled(string itemName, int quantity, string? trackingReference, string shopUrl) => Build(
+        $"Your {Escape(itemName)} has shipped!",
+        "Order shipped! :truck:",
+        $"*{Item(itemName, quantity)}* is on its way."
+            + (string.IsNullOrWhiteSpace(trackingReference) ? "" : $"\n\n*Tracking:* {Escape(trackingReference.Trim())}"),
+        shopUrl, "View orders");
+
+    public static SlackMessage ShopOrderRefunded(string itemName, int quantity, int totalVolts, string? reason, string shopUrl) => Build(
+        $"Your {Escape(itemName)} order was refunded",
+        "Order refunded",
+        $"Your order for *{Item(itemName, quantity)}* was cancelled and *{totalVolts} Volts* went back to your balance."
+            + (string.IsNullOrWhiteSpace(reason) ? "" : $"\n\n*Reason:*\n>{Escape(reason.Trim()).Replace("\n", "\n>")}"),
+        shopUrl, "View orders");
+
+    private static string Item(string itemName, int quantity) =>
+        quantity > 1 ? $"{quantity}× {Escape(itemName)}" : Escape(itemName);
+
     private static string Days(int n) => $"{n}-day";
     private static string Freezes(int n) => n == 1 ? "1 freeze" : $"{n} freezes";
 
@@ -125,7 +148,7 @@ public static class SlackMessages
     // Section text is capped at 3000 characters by Slack.
     private const int MaxSectionLength = 3000;
 
-    private static SlackMessage Build(string text, string header, string body, string? projectUrl = null)
+    private static SlackMessage Build(string text, string header, string body, string? projectUrl = null, string buttonLabel = "View project")
     {
         if (body.Length > MaxSectionLength) body = body[..(MaxSectionLength - 1)] + "…";
 
@@ -141,7 +164,7 @@ public static class SlackMessages
                 type = "actions",
                 elements = new object[]
                 {
-                    new { type = "button", text = new { type = "plain_text", text = "View project" }, url = projectUrl }
+                    new { type = "button", text = new { type = "plain_text", text = buttonLabel }, url = projectUrl }
                 }
             });
         }

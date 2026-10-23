@@ -7,6 +7,7 @@ import Project from './pages/Project.jsx'
 import NewProject from './pages/NewProject.jsx'
 import Explore from './pages/Explore.jsx'
 import Profile from './pages/Profile.jsx'
+import Shop from './pages/Shop.jsx'
 import AdminUsers from './pages/admin/Users.jsx'
 import AdminUser from './pages/admin/User.jsx'
 import AdminProjects from './pages/admin/Projects.jsx'
@@ -15,6 +16,9 @@ import AdminShips from './pages/admin/Ships.jsx'
 import AdminShip from './pages/admin/Ship.jsx'
 import AdminAnnouncements from './pages/admin/Announcements.jsx'
 import AdminSettings from './pages/admin/Settings.jsx'
+import AdminShop from './pages/admin/Shop.jsx'
+import AdminShopOrders from './pages/admin/ShopOrders.jsx'
+import AdminShopOrder from './pages/admin/ShopOrder.jsx'
 import HackatimeCallback from './pages/HackatimeCallback.jsx'
 import NotFound from './pages/NotFound.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
@@ -78,6 +82,7 @@ function AppRoutes() {
                     <Route path="/projects/new" element={<RequireAuth><NewProject /></RequireAuth>} />
                     <Route path="/projects/:id" element={<Project />} />
                     <Route path="/explore" element={<Explore />} />
+                    <Route path="/shop" element={<RequireAuth><Shop /></RequireAuth>} />
                     <Route path="/docs/*" element={<Suspense fallback={<div className="min-h-screen" />}><Docs /></Suspense>} />
                     <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
                     <Route path="/profile/:id" element={<Profile />} />
@@ -90,6 +95,9 @@ function AppRoutes() {
                     <Route path="/admin/ships/:id" element={<RequireAuth><AdminShip /></RequireAuth>} />
                     <Route path="/admin/announcements" element={<RequireAuth><AdminAnnouncements /></RequireAuth>} />
                     <Route path="/admin/settings" element={<RequireAuth><AdminSettings /></RequireAuth>} />
+                    <Route path="/admin/shop" element={<RequireAuth><AdminShop /></RequireAuth>} />
+                    <Route path="/admin/shop/orders" element={<RequireAuth><AdminShopOrders /></RequireAuth>} />
+                    <Route path="/admin/shop/orders/:id" element={<RequireAuth><AdminShopOrder /></RequireAuth>} />
                     {/* Not behind RequireAuth: the popup copy of this page is signed out on purpose. */}
                     <Route path={CALLBACK_PATH} element={<HackatimeCallback />} />
                     <Route path="*" element={<NotFound />} />

@@ -7,7 +7,7 @@ using Torque.Devlogs;
 using Torque.Projects;
 using Torque.Streaks;
 // Serves the local API test harness, Development only
-// endpoint: /testing, /testing/airtable/push/{shipmentId}, /testing/devlogs/fake-time/{projectId}, /testing/streaks/settle, /testing/streaks/simulate, /testing/slack/dm
+// endpoint: /testing, /testing/airtable/push/{shipmentId}, /testing/devlogs/fake-time/{projectId}, /testing/streaks/settle, /testing/streaks/simulate, /testing/slack/dm, /testing/shop/purchase, /testing/shop/daily
 
 namespace Torque.Testing;
 
@@ -89,6 +89,7 @@ public static class TestingExtension
 
         app.MapStreakSimulation();
         app.MapSlackTesting();
+        app.MapShopTesting();
 
         // Logs a journal entry carrying `hours` of tracked time without going through
         // Hackatime, so a fresh test project clears the 1-hour minimum to ship. Used by

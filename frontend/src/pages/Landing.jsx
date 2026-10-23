@@ -9,6 +9,7 @@ import { ReactLenis } from 'lenis/react'
 import { useEffect, useState } from 'react'
 import '../App.css'
 import Footer from '../components/Footer'
+import ShopTape from '../components/landing/ShopTape.jsx'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Notice } from '../components/PageParts.jsx'
 import { useAuth } from '../lib/useAuth.js'
@@ -169,6 +170,8 @@ export default function Home() {
           ))}
         </ol>
       </section>
+
+      <ShopTape />
 
       <section id="faq" aria-labelledby="faq-title" className="relative z-20 w-full py-20 md:py-28">
         <h2 id="faq-title" className="t-heading text-center text-4xl md:text-6xl font-bold">FAQ</h2>

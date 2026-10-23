@@ -34,6 +34,14 @@ public static class HcaUserSync
             () => user.VerificationStatus, v => user.VerificationStatus = v);
         SetBool(Bool(claims, "ysws_eligible"), () => user.YswsEligible, v => user.YswsEligible = v);
 
+        // Cached for the shop's region pricing; the address itself is never stored here.
+        if (claims.ValueKind == JsonValueKind.Object
+            && claims.TryGetProperty("address", out var address)
+            && address.ValueKind == JsonValueKind.Object)
+        {
+            Set(Str(address, "country"), () => user.Country ?? "", v => user.Country = v);
+        }
+
         return changed;
     }
 

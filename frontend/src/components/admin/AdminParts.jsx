@@ -80,7 +80,8 @@ export function Toolbar({ children }) {
 // A search's results: skeleton rows, error, empty, or a ruled list of rows
 // (see ResultRow). Says so when the backend's cap may be hiding older ones.
 // `flat` draws it as a recessed well, for lists that sit inside a Panel.
-export function ResultList({ api, label, empty, flat = false, children }) {
+// `cap` is the endpoint's result limit; `capNote` what to say when it's hit.
+export function ResultList({ api, label, empty, flat = false, cap = MAX_RESULTS, capNote, children }) {
     const frame = flat
         ? "rounded-2xl border-2 border-white/10 bg-(--bg)/30 divide-y-2 divide-white/10 overflow-hidden"
         : "t-card divide-y-2 divide-white/10 overflow-hidden";
@@ -108,8 +109,8 @@ export function ResultList({ api, label, empty, flat = false, children }) {
                 {api.data.map(children)}
             </ul>
             <p className="text-sm text-(--text)/75 tabular-nums">
-                {api.data.length >= MAX_RESULTS
-                    ? `Showing the newest ${MAX_RESULTS}. Narrow the search to find older ones.`
+                {api.data.length >= cap
+                    ? capNote ?? `Showing the newest ${cap}. Narrow the search to find older ones.`
                     : `${api.data.length} ${api.data.length === 1 ? "result" : "results"}`}
             </p>
         </div>

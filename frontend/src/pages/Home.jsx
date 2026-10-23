@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, ChevronLeft, ChevronRight, Plus, RotateCw, X } from "lucide-react";
 import AppShell, { PageTitle } from "../components/AppShell.jsx";
@@ -7,7 +7,8 @@ import Markdown from "../components/Markdown.jsx";
 import ProjectCard, { ProjectCardSkeleton } from "../components/ProjectCard.jsx";
 import { getAnnouncements, getHackatimeStatus, getMyProjects, getStaffPicks } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
-import { PauseNotices } from "../components/PageParts.jsx";
+import { PageButton, PauseNotices } from "../components/PageParts.jsx";
+import { useScrollEdges } from "../lib/useScrollEdges.js";
 import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
 
 // Scrolls sideways when the cards don't fit. Bleeds to the panel's inner edges
@@ -177,8 +178,8 @@ function Announcements() {
             className="mt-6"
             action={(edges.start || edges.end) && (
                 <div className="-mr-1 flex gap-2">
-                    <PageButton icon={ChevronLeft} label="Newer announcements" disabled={!edges.start} onClick={() => page(-1)} />
-                    <PageButton icon={ChevronRight} label="Older announcements" disabled={!edges.end} onClick={() => page(1)} />
+                    <PageButton icon={ChevronLeft} label="Newer announcements" controls="announcement-row" disabled={!edges.start} onClick={() => page(-1)} />
+                    <PageButton icon={ChevronRight} label="Older announcements" controls="announcement-row" disabled={!edges.end} onClick={() => page(1)} />
                 </div>
             )}
         >
@@ -214,47 +215,6 @@ function Announcements() {
             )}
             {reading && <AnnouncementDialog post={reading} onClose={() => setReading(null)} />}
         </Panel>
-    );
-}
-
-// Whether a horizontal scroller has more content before ({ start }) and after
-// ({ end }) what's in view. Re-checked on scroll, resize and new `content`.
-function useScrollEdges(ref, content) {
-    const [edges, setEdges] = useState({ start: false, end: false });
-
-    useLayoutEffect(() => {
-        const el = ref.current;
-        if (!el) return;
-        const update = () => {
-            const start = el.scrollLeft > 1;
-            const end = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
-            setEdges((e) => (e.start === start && e.end === end ? e : { start, end }));
-        };
-        update();
-        el.addEventListener("scroll", update, { passive: true });
-        const observer = new ResizeObserver(update);
-        observer.observe(el);
-        return () => {
-            el.removeEventListener("scroll", update);
-            observer.disconnect();
-        };
-    }, [ref, content]);
-
-    return edges;
-}
-
-function PageButton({ icon: Icon, label, disabled, onClick }) {
-    return (
-        <button
-            type="button"
-            aria-label={label}
-            aria-controls="announcement-row"
-            disabled={disabled}
-            onClick={onClick}
-            className="inline-flex size-11 items-center justify-center rounded-(--radius) border-2 border-(--accent)/55 text-(--text) transition-all duration-300 ease hover:border-(--accent) hover:bg-(--accent)/15 disabled:pointer-events-none disabled:border-white/15 disabled:text-(--text)/40"
-        >
-            <Icon aria-hidden="true" className="size-5" />
-        </button>
     );
 }
 

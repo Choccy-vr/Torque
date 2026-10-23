@@ -38,7 +38,11 @@ async function apiError(res) {
     }
     if (body?.paused) notePaused(body.paused, body.error)
     const first = body?.errors && Object.values(body.errors).flat()[0]
-    return new ApiError(res.status, first || body?.error || body?.title || text, body?.paused ?? null)
+    const err = new ApiError(res.status, first || body?.error || body?.title || text, body?.paused ?? null)
+    // Shop failures name their reason (`code`); a bulk item add lists its bad `rows`.
+    if (body?.code) err.code = body.code
+    if (Array.isArray(body?.rows)) err.rows = body.rows
+    return err
 }
 
 // The Navbar remounts on every page, so the profile is fetched once per page
@@ -290,6 +294,62 @@ export function deleteAnnouncement(id) {
     return sendJson('DELETE', `api/admin/announcement/${encodeURIComponent(id)}`)
 }
 
+// GET api/admin/shop/items — AdminShopItemDto[], every item by level then sortOrder
+export function getAdminShopItems() {
+    return getJson('api/admin/shop/items')
+}
+
+// POST api/admin/shop/items — AdminShopItemDto. Body: see ShopItemInputDto
+export function createShopItem(item) {
+    return sendJson('POST', 'api/admin/shop/items', item)
+}
+
+// POST api/admin/shop/items/bulk — AdminShopItemDto[]. All or nothing: a 400
+// carries err.rows = [{ index, name, error }]
+export function bulkCreateShopItems(items) {
+    return sendJson('POST', 'api/admin/shop/items/bulk', items)
+}
+
+// PUT api/admin/shop/items/{id} — AdminShopItemDto. Replaces the whole item.
+export function updateShopItem(id, item) {
+    return sendJson('PUT', `api/admin/shop/items/${encodeURIComponent(id)}`, item)
+}
+
+// DELETE api/admin/shop/items/{id} — { deleted, deactivated }
+export function deleteShopItem(id) {
+    return sendJson('DELETE', `api/admin/shop/items/${encodeURIComponent(id)}`)
+}
+
+// GET api/admin/shop/daily — { today, endsAt, current, picks[] }
+export function getAdminShopDaily() {
+    return getJson('api/admin/shop/daily')
+}
+
+// PUT api/admin/shop/daily/today — same as getAdminShopDaily. No itemId = reroll.
+export function setShopDaily(itemId = null) {
+    return sendJson('PUT', 'api/admin/shop/daily/today', { itemId })
+}
+
+// GET api/admin/shop/orders — AdminShopOrderDto[] (max 200). { status?, itemId?, userId?, sort? }
+export function getAdminShopOrders(params = {}) {
+    return getJson(`api/admin/shop/orders${query(params)}`)
+}
+
+// GET api/admin/shop/orders/{id} — AdminShopOrderDto with the shipping address
+export function getAdminShopOrder(id) {
+    return getJson(`api/admin/shop/orders/${encodeURIComponent(id)}`)
+}
+
+// POST api/admin/shop/orders/{id}/fulfill — AdminShopOrderDto. { trackingReference?, note? }
+export function fulfillShopOrder(id, body) {
+    return sendJson('POST', `api/admin/shop/orders/${encodeURIComponent(id)}/fulfill`, body)
+}
+
+// POST api/admin/shop/orders/{id}/refund — AdminShopOrderDto. { reason }
+export function refundShopOrder(id, reason) {
+    return sendJson('POST', `api/admin/shop/orders/${encodeURIComponent(id)}/refund`, { reason })
+}
+
 // GET api/project/search — SearchProjectDto[] (with ownerUsername), title matches
 // first, capped at SEARCH_LIMIT
 export const SEARCH_LIMIT = 25
@@ -313,4 +373,36 @@ export async function setMyTimeZone(timeZone) {
     const result = await sendJson('PUT', 'api/user/me/timezone', { timeZone })
     clearMyProfile()
     return result
+}
+
+// GET api/shop — ShopDto: { unlockedTier, region, volts, daily, tiers[] }, priced
+// for the caller's region
+export function getShop() {
+    return getJson('api/shop')
+}
+
+// GET api/shop/marquee — public { name, imageUrl, tier }[] for the landing tape
+export function getShopMarquee() {
+    return getJson('api/shop/marquee')
+}
+
+// GET api/shop/address — { address | null, region, editUrl }, live from Hack Club Auth
+export function getShopAddress() {
+    return getJson('api/shop/address')
+}
+
+// POST api/shop/purchase — { order, volts }. Failures carry err.code.
+// { itemId, variantId?, quantity, addressConfirmed, note?, clientRequestId }
+export function purchaseShopItem(body) {
+    return sendJson('POST', 'api/shop/purchase', body)
+}
+
+// GET api/shop/orders — ShopOrderDto[], newest first
+export function getMyShopOrders() {
+    return getJson('api/shop/orders')
+}
+
+// POST api/shop/orders/{id}/cancel — { order, volts }
+export function cancelShopOrder(id) {
+    return sendJson('POST', `api/shop/orders/${encodeURIComponent(id)}/cancel`)
 }

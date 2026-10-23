@@ -8,6 +8,7 @@ public record LedgerEntryDto
     public LedgerEntryKind Kind { get; init; }
     public string Reason { get; init; } = null!;
     public Guid? ShipmentId { get; init; }
+    public Guid? OrderId { get; init; }
     public Guid? CreatedByUserId { get; init; }
     public DateTime CreatedAt { get; init; }
 }

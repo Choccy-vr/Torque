@@ -1,5 +1,6 @@
 import { CirclePause, RotateCw } from "lucide-react";
 import { pausedMessage, useSettings } from "../lib/settings.js";
+import { FOCUS } from "./Form.jsx";
 
 // Building blocks shared by the in-app pages (profile, project): redlined
 // section headings, the dashed empty / inline-error placeholders, and the
@@ -83,5 +84,23 @@ export function PauseNotices({ keys, className = "" }) {
                 <Notice key={key} icon={CirclePause}>{message}</Notice>
             ))}
         </div>
+    );
+}
+
+// A ‹ / › button that pages a sideways row (see useScrollEdges). `controls` is the row's id.
+export function PageButton({ icon: Icon, label, controls, disabled, onClick }) {
+    return (
+        <button
+            type="button"
+            aria-label={label}
+            aria-controls={controls}
+            // aria-disabled rather than disabled: paging to the end must not
+            // throw keyboard focus off the button that got it there.
+            aria-disabled={disabled || undefined}
+            onClick={disabled ? undefined : onClick}
+            className={`inline-flex size-11 items-center justify-center rounded-(--radius) border-2 border-(--accent)/55 text-(--text) transition-all duration-300 ease hover:border-(--accent) hover:bg-(--accent)/15 aria-disabled:cursor-default aria-disabled:border-white/15 aria-disabled:bg-transparent aria-disabled:text-(--text)/40 ${FOCUS}`}
+        >
+            <Icon aria-hidden="true" className="size-5" />
+        </button>
     );
 }

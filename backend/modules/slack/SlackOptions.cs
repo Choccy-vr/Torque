@@ -17,4 +17,6 @@ public class SlackOptions
     public bool Configured => !string.IsNullOrEmpty(BotToken);
 
     public string ProjectUrl(Guid projectId) => $"{FrontendUrl}/projects/{projectId}";
+
+    public string ShopUrl => $"{FrontendUrl}/shop";
 }

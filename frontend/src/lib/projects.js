@@ -51,3 +51,11 @@ export const formatWhen = (iso) =>
 
 // The backend sends 0001-01-01 for timestamps that were never set.
 export const isSet = (iso) => Boolean(iso) && new Date(iso).getFullYear() > 2000;
+
+// Project levels 1–4, each with a one-line scope (the level picker, the shop).
+export const LEVELS = [
+    { level: 1, name: "Starter", about: "Your first motor project. Basic motion with off-the-shelf parts." },
+    { level: 2, name: "Stepping stone", about: "One motor done well, or motors plus sensors, screens or buttons." },
+    { level: 3, name: "Polished", about: "Advanced motor control or custom electronics, in an enclosure or rigid frame." },
+    { level: 4, name: "Flagship", about: "Complex control like FOC, custom PCBs and product-grade mechanics." },
+];

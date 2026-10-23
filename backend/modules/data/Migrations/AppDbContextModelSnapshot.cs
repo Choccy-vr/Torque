@@ -226,6 +226,10 @@ namespace torque_backend.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("kind");
 
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
                     b.Property<string>("Reason")
                         .IsRequired()
                         .HasColumnType("text")
@@ -246,6 +250,11 @@ namespace torque_backend.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_ledger_entries_shipment_id")
                         .HasFilter("shipment_id IS NOT NULL");
+
+                    b.HasIndex("OrderId", "Kind")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ledger_entries_order_id_kind")
+                        .HasFilter("order_id IS NOT NULL");
 
                     b.HasIndex("UserId", "CreatedAt")
                         .HasDatabaseName("ix_ledger_entries_user_id_created_at");
@@ -599,6 +608,290 @@ namespace torque_backend.Data.Migrations
                     b.ToTable("shipments", (string)null);
                 });
 
+            modelBuilder.Entity("Torque.Shop.DailyShopPick", b =>
+                {
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("SetByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("set_by_user_id");
+
+                    b.Property<Guid>("ShopItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_item_id");
+
+                    b.HasKey("Date")
+                        .HasName("pk_daily_shop_picks");
+
+                    b.HasIndex("ShopItemId")
+                        .HasDatabaseName("ix_daily_shop_picks_shop_item_id");
+
+                    b.ToTable("daily_shop_picks", (string)null);
+                });
+
+            modelBuilder.Entity("Torque.Shop.ShopItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("FulfillerNotes")
+                        .HasColumnType("text")
+                        .HasColumnName("fulfiller_notes");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("image_url");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<int?>("MaxPerUser")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_per_user");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<int>("Price")
+                        .HasColumnType("integer")
+                        .HasColumnName("price");
+
+                    b.Property<int>("RandomMode")
+                        .HasColumnType("integer")
+                        .HasColumnName("random_mode");
+
+                    b.Property<string>("RegionalPrices")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("regional_prices");
+
+                    b.PrimitiveCollection<string[]>("Regions")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("regions");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<int?>("Stock")
+                        .HasColumnType("integer")
+                        .HasColumnName("stock");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("integer")
+                        .HasColumnName("tier");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_shop_items");
+
+                    b.ToTable("shop_items", (string)null);
+                });
+
+            modelBuilder.Entity("Torque.Shop.ShopItemVariant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<int>("PriceDelta")
+                        .HasColumnType("integer")
+                        .HasColumnName("price_delta");
+
+                    b.Property<Guid>("ShopItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_item_id");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<int?>("Stock")
+                        .HasColumnType("integer")
+                        .HasColumnName("stock");
+
+                    b.HasKey("Id")
+                        .HasName("pk_shop_item_variants");
+
+                    b.HasIndex("ShopItemId")
+                        .HasDatabaseName("ix_shop_item_variants_shop_item_id");
+
+                    b.ToTable("shop_item_variants", (string)null);
+                });
+
+            modelBuilder.Entity("Torque.Shop.ShopOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("AdminNote")
+                        .HasColumnType("text")
+                        .HasColumnName("admin_note");
+
+                    b.Property<Guid>("ClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_request_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("FulfilledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fulfilled_at");
+
+                    b.Property<Guid?>("FulfilledByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fulfilled_by_user_id");
+
+                    b.Property<string>("ItemName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("item_name");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<DateTime?>("RefundedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("refunded_at");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("region");
+
+                    b.Property<string>("ShipCity")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("ship_city");
+
+                    b.Property<string>("ShipCountry")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("ship_country");
+
+                    b.Property<string>("ShipLine1")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("ship_line1");
+
+                    b.Property<string>("ShipLine2")
+                        .HasColumnType("text")
+                        .HasColumnName("ship_line2");
+
+                    b.Property<string>("ShipName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("ship_name");
+
+                    b.Property<string>("ShipPostalCode")
+                        .HasColumnType("text")
+                        .HasColumnName("ship_postal_code");
+
+                    b.Property<string>("ShipState")
+                        .HasColumnType("text")
+                        .HasColumnName("ship_state");
+
+                    b.Property<Guid?>("ShopItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_item_id");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<int>("TotalPrice")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_price");
+
+                    b.Property<string>("TrackingReference")
+                        .HasColumnType("text")
+                        .HasColumnName("tracking_reference");
+
+                    b.Property<int>("UnitPrice")
+                        .HasColumnType("integer")
+                        .HasColumnName("unit_price");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("UserNote")
+                        .HasColumnType("text")
+                        .HasColumnName("user_note");
+
+                    b.Property<Guid?>("VariantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variant_id");
+
+                    b.Property<string>("VariantName")
+                        .HasColumnType("text")
+                        .HasColumnName("variant_name");
+
+                    b.Property<bool>("ViaDaily")
+                        .HasColumnType("boolean")
+                        .HasColumnName("via_daily");
+
+                    b.HasKey("Id")
+                        .HasName("pk_shop_orders");
+
+                    b.HasIndex("ShopItemId")
+                        .HasDatabaseName("ix_shop_orders_shop_item_id");
+
+                    b.HasIndex("VariantId")
+                        .HasDatabaseName("ix_shop_orders_variant_id");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_shop_orders_status_created_at");
+
+                    b.HasIndex("UserId", "ClientRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_shop_orders_user_id_client_request_id");
+
+                    b.ToTable("shop_orders", (string)null);
+                });
+
             modelBuilder.Entity("Torque.Streaks.ProjectStreakDay", b =>
                 {
                     b.Property<Guid>("Id")
@@ -768,6 +1061,46 @@ namespace torque_backend.Data.Migrations
                         .HasConstraintName("fk_shipments_projects_project_id");
 
                     b.Navigation("ProjectSnapshot");
+                });
+
+            modelBuilder.Entity("Torque.Shop.DailyShopPick", b =>
+                {
+                    b.HasOne("Torque.Shop.ShopItem", null)
+                        .WithMany()
+                        .HasForeignKey("ShopItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_daily_shop_picks_shop_items_shop_item_id");
+                });
+
+            modelBuilder.Entity("Torque.Shop.ShopItemVariant", b =>
+                {
+                    b.HasOne("Torque.Shop.ShopItem", null)
+                        .WithMany("Variants")
+                        .HasForeignKey("ShopItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_shop_item_variants_shop_items_shop_item_id");
+                });
+
+            modelBuilder.Entity("Torque.Shop.ShopOrder", b =>
+                {
+                    b.HasOne("Torque.Shop.ShopItem", null)
+                        .WithMany()
+                        .HasForeignKey("ShopItemId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_shop_orders_shop_items_shop_item_id");
+
+                    b.HasOne("Torque.Shop.ShopItemVariant", null)
+                        .WithMany()
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_shop_orders_shop_item_variants_variant_id");
+                });
+
+            modelBuilder.Entity("Torque.Shop.ShopItem", b =>
+                {
+                    b.Navigation("Variants");
                 });
 #pragma warning restore 612, 618
         }

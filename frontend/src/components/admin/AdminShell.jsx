@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { FolderOpen, Megaphone, Settings2, Ship, Users } from "lucide-react";
+import { FolderOpen, Megaphone, PackageOpen, Settings2, Ship, ShoppingBag, Users } from "lucide-react";
 import AppShell, { PageHeader } from "../AppShell.jsx";
 import { Empty, InlineError } from "../PageParts.jsx";
 import { BTN_PRIMARY, FOCUS } from "../Form.jsx";
@@ -12,6 +12,8 @@ const SECTIONS = [
     { name: "Users", path: "/admin/users", icon: Users },
     { name: "Projects", path: "/admin/projects", icon: FolderOpen },
     { name: "Ships", path: "/admin/ships", icon: Ship },
+    { name: "Shop items", path: "/admin/shop", icon: ShoppingBag, end: true },
+    { name: "Orders", path: "/admin/shop/orders", icon: PackageOpen },
     { name: "Announcements", path: "/admin/announcements", icon: Megaphone },
     { name: "Settings", path: "/admin/settings", icon: Settings2 },
 ];
@@ -39,9 +41,9 @@ export default function AdminShell({ title, children }) {
                 {/* Scrolls sideways on phones; bleeds to the screen edge so tabs aren't clipped mid-word. */}
                 <nav ref={navRef} aria-label="Admin sections" className="t-scroll -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
                     <ul className="flex gap-1.5 pb-1">
-                        {SECTIONS.map(({ name, path, icon: Icon }) => (
+                        {SECTIONS.map(({ name, path, icon: Icon, end }) => (
                             <li key={path}>
-                                <NavLink to={path} className={tabClass}>
+                                <NavLink to={path} end={end} className={tabClass}>
                                     <Icon aria-hidden="true" className="size-4.5 shrink-0" />
                                     {name}
                                 </NavLink>

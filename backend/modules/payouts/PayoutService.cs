@@ -147,6 +147,7 @@ public class PayoutService
                 Kind = e.Kind,
                 Reason = e.Reason,
                 ShipmentId = e.ShipmentId,
+                OrderId = e.OrderId,
                 CreatedByUserId = e.CreatedByUserId,
                 CreatedAt = e.CreatedAt
             })

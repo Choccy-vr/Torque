@@ -90,3 +90,9 @@ The "Custom request" panel handles anything not worth adding permanently.
   (`welcome`, `shipped`, `approved`, `changes_needed`, `rejected`, and the streak ones with
   sample numbers: `streak_at_risk`, `streak_freeze_used`, `streak_lost`, `streak_maxed`) to **your own** Slack ID
   and reports whether Slack accepted it. Needs `SLACK_BOT_TOKEN` in `backend/.env`.
+- The Shop section's **test purchase** row (`POST /testing/shop/purchase`,
+  `modules/testing/ShopTesting.cs`) runs the real purchase code with a fake address in
+  `country` instead of reading your Hack Club Auth address, as you or any `userId`, so you
+  can try level locks, regions, variants and limits without an HCA address. Fire it several
+  times at once to check stock and Volts can't oversell. **test daily** pins (or rerolls)
+  a day's random item.

@@ -12,6 +12,7 @@ export const PAUSE = {
     projectCreation: 'project_creation_paused',
     journaling: 'journaling_paused',
     streaks: 'streaks_paused',
+    shop: 'shop_paused',
 }
 
 // { [key]: { paused, message } }, or null until the first load lands.

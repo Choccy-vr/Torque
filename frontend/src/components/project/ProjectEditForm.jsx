@@ -4,6 +4,7 @@ import { updateProject } from "../../lib/endpoints.js";
 import HackatimePicker from "./HackatimePicker.jsx";
 import { BTN_GHOST, BTN_PRIMARY, Field, FieldError, FormError, INPUT } from "../Form.jsx";
 import { errorText, isHttpUrl, useRevealOnMount } from "../../lib/forms.js";
+import { LEVELS } from "../../lib/projects.js";
 
 const TEXT_FIELDS = ["title", "description", "aiUse", "repoUrl", "demoUrl", "readmeUrl"];
 const URL_FIELDS = [
@@ -109,12 +110,6 @@ export default function ProjectEditForm({ project, onSaved, onCancel }) {
 }
 
 // Short versions of docs/projects/levels.
-const LEVELS = [
-    { level: 1, name: "Starter", about: "Your first motor project. Basic motion with off-the-shelf parts." },
-    { level: 2, name: "Stepping stone", about: "One motor done well, or motors plus sensors, screens or buttons." },
-    { level: 3, name: "Polished", about: "Advanced motor control or custom electronics, in an enclosure or rigid frame." },
-    { level: 4, name: "Flagship", about: "Complex control like FOC, custom PCBs and product-grade mechanics." },
-];
 
 // Level 1–4 as radio cards, each with a one-line scope so builders can place
 // themselves. `value` is null until one is picked.
