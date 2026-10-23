@@ -381,7 +381,7 @@ export function getShop() {
     return getJson('api/shop')
 }
 
-// GET api/shop/marquee — public { name, imageUrl, tier }[] for the landing tape
+// GET api/shop/marquee — public { name, imageUrl, tier, description, price, hasOptions }[] for the landing tape
 export function getShopMarquee() {
     return getJson('api/shop/marquee')
 }

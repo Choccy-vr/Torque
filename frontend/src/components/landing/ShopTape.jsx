@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Pause, Play, Zap } from "lucide-react";
-import { ItemImage } from "../shop/ShopParts.jsx";
+import { Pause, Play } from "lucide-react";
+import { ItemImage, Volts } from "../shop/ShopParts.jsx";
 import { getShopMarquee } from "../../lib/endpoints.js";
 import { useApi } from "../../lib/useApi.js";
 
 // Enough items per loop that one copy of a band outruns a wide screen.
-const MIN_PER_LOOP = 14;
-// Seconds each item takes to cross, so a short list doesn't race.
-const SECONDS_PER_ITEM = 4;
+const MIN_PER_LOOP = 16;
+// Seconds each item takes to cross, so a short list doesn't race and there's
+// time to read a card.
+const SECONDS_PER_ITEM = 5;
 
-// Landing: what's in the shop, on two bands crossed into an X that slide in
-// opposite directions. Real items only; with none (pre-launch, or the request
+// Landing: what's in the shop, as shop cards riding two bands crossed into an
+// X that slide in opposite directions. Real items only; with none (pre-launch, or the request
 // fails) the section isn't drawn at all.
 export default function ShopTape() {
     const { data: items } = useApi(getShopMarquee);
@@ -34,26 +34,22 @@ export default function ShopTape() {
             </div>
 
             <ul className="sr-only">
-                {items.map((item, i) => <li key={i}>{item.name}, Level {item.tier}</li>)}
+                {items.map((item, i) => (
+                    <li key={i}>{item.name}, Level {item.tier}, {item.hasOptions ? "from " : ""}{item.price.toLocaleString()} Volts</li>
+                ))}
             </ul>
 
             <div
                 aria-hidden="true"
                 data-paused={paused || undefined}
-                className="t-tape relative mt-8 h-72 md:mt-10 md:h-80"
+                className="t-tape relative mt-8 h-[46rem] sm:h-[48rem] md:mt-10 xl:h-[38rem]"
                 style={{ "--t-tape-speed": speed }}
             >
-                <Band items={shifted} className="top-[36%] sm:top-1/2 -rotate-[14deg] sm:-rotate-[7deg] lg:-rotate-[5deg] border-(--accent)/55 bg-(--card) text-(--text)" reverse />
-                <Band items={loop} className="top-[64%] sm:top-1/2 rotate-[14deg] sm:rotate-[7deg] lg:rotate-[5deg] border-(--btn-text) bg-(--accent) text-(--btn-text)" coral />
+                <Band items={shifted} className="top-1/4 -rotate-[6deg] sm:-rotate-[4deg] xl:top-1/2 xl:-rotate-[11deg] border-(--accent)/55 bg-(--bg)" reverse />
+                <Band items={loop} className="top-3/4 rotate-[6deg] sm:rotate-[4deg] xl:top-1/2 xl:rotate-[11deg] border-(--btn-text) bg-(--accent)" coral />
             </div>
 
-            <div className="mx-auto mt-6 flex max-w-(--breakpoint-2xl) flex-col-reverse items-center gap-4 px-6 sm:flex-row sm:justify-between sm:px-10 lg:px-20">
-                <Link
-                    to="/docs/rewards"
-                    className="inline-flex min-h-11 items-center rounded-(--radius) border-2 border-(--accent)/55 px-8 font-bold text-(--text) transition-all duration-300 ease hover:border-(--accent) hover:bg-(--accent)/15"
-                >
-                    How rewards work
-                </Link>
+            <div className="mt-6 flex justify-center px-6">
                 <button
                     type="button"
                     onClick={() => setPaused((p) => !p)}
@@ -69,8 +65,9 @@ export default function ShopTape() {
 }
 
 // One full-bleed band, rotated about its own centre (`className` sets where
-// that sits: the middle, or pulled apart on phones so the bands cross nearer
-// the edges and both stay readable). Its track
+// that sits: the middle on wide screens, crossed steeply enough that the
+// back band shows past the front one; pulled apart below that, where the
+// cards are too tall for both to stay readable on a crossing). Its track
 // holds the loop twice so sliding one copy's width wraps seamlessly.
 function Band({ items, className, reverse = false, coral = false }) {
     return (
@@ -86,18 +83,28 @@ function Band({ items, className, reverse = false, coral = false }) {
     );
 }
 
+// A compact shop card (the /shop product card without its Get button, since
+// visitors aren't signed in): photo tagged with its level, name, two lines
+// of description, then the base price. Cards look the same on both bands.
 function Piece({ item, coral }) {
     return (
-        <div className="flex h-16 shrink-0 items-center gap-3 pr-6 pl-2 md:h-20">
-            <ItemImage
-                src={item.imageUrl}
-                className={`size-10 rounded-[0.75rem] border-2 md:size-14 ${coral ? "border-(--btn-text)/70" : "border-white/20"}`}
-            />
-            <span className="max-w-[28ch] truncate text-lg font-bold md:text-xl">{item.name}</span>
-            <span className={`rounded-full border-2 px-2.5 py-0.5 text-sm font-semibold whitespace-nowrap ${coral ? "border-(--btn-text)/60" : "border-white/25 text-(--text)/85"}`}>
-                Level {item.tier}
-            </span>
-            <Zap aria-hidden="true" className={`ml-4 size-5 shrink-0 ${coral ? "text-(--btn-text)" : "text-(--accent)"}`} strokeWidth={2.5} />
+        <div className="py-3 pr-3">
+            <article className={`t-card flex h-full w-44 flex-col overflow-hidden text-(--text)! md:w-48 ${coral ? "border-(--btn-text)/70!" : ""}`}>
+                <div className="relative">
+                    <ItemImage src={item.imageUrl} className="aspect-[4/3] w-full border-b-2 border-(--accent)/35 p-3" />
+                    <span className="absolute top-2.5 left-2.5 rounded-full border border-white/20 bg-(--card) px-2.5 py-0.5 text-[0.8125rem] font-medium whitespace-nowrap">
+                        Level {item.tier}
+                    </span>
+                </div>
+                <div className="flex flex-1 flex-col gap-1 px-4 pt-3 pb-4">
+                    <h3 className="line-clamp-2 leading-snug font-semibold text-balance break-words">{item.name}</h3>
+                    {item.description && <p className="line-clamp-2 text-sm leading-relaxed text-(--text)/80">{item.description}</p>}
+                    <p className="mt-auto flex items-baseline gap-1.5 pt-2">
+                        {item.hasOptions && <span className="text-sm text-(--text)/80">From</span>}
+                        <Volts amount={item.price} size="text-lg" />
+                    </p>
+                </div>
+            </article>
         </div>
     );
 }

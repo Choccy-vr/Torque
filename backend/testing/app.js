@@ -816,7 +816,7 @@ const ENDPOINTS = [
     method: 'GET',
     path: '/api/shop/marquee',
     auth: false,
-    desc: 'Public. Up to 40 active items as { name, imageUrl, tier } for the landing page tape.',
+    desc: 'Public. Up to 40 active items as { name, imageUrl, tier, description, price, hasOptions } for the landing page tape. price is the base-region price (lowest option when hasOptions).',
   },
   {
     id: 'shop-address',

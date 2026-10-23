@@ -102,10 +102,26 @@ public class ShopController : ControllerBase
             .Where(i => i.IsActive)
             .OrderBy(i => i.Tier).ThenBy(i => i.SortOrder).ThenBy(i => i.Name)
             .Take(MaxMarqueeItems)
-            .Select(i => new MarqueeItemDto { Name = i.Name, ImageUrl = i.ImageUrl, Tier = i.Tier })
+            .Select(i => new
+            {
+                i.Name,
+                i.ImageUrl,
+                i.Tier,
+                i.Description,
+                i.Price,
+                MinDelta = i.Variants.Where(v => v.IsActive).Min(v => (int?)v.PriceDelta)
+            })
             .ToListAsync(ct);
 
-        return Ok(items);
+        return Ok(items.Select(i => new MarqueeItemDto
+        {
+            Name = i.Name,
+            ImageUrl = i.ImageUrl,
+            Tier = i.Tier,
+            Description = i.Description,
+            Price = Math.Max(0, i.Price + (i.MinDelta ?? 0)),
+            HasOptions = i.MinDelta != null
+        }));
     }
 
     // The caller's shipping address, read live from Hack Club Auth, for the checkout's
