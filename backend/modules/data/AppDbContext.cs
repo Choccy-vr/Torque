@@ -14,6 +14,7 @@ using Torque.Settings;
 using Torque.Shipments;
 using Torque.Shop;
 using Torque.Streaks;
+using Torque.Uploads;
 using Torque.Users;
 
 namespace Torque.Data;
@@ -41,6 +42,7 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<ShopItemVariant> ShopItemVariants => Set<ShopItemVariant>();
     public DbSet<DailyShopPick> DailyShopPicks => Set<DailyShopPick>();
     public DbSet<ShopOrder> ShopOrders => Set<ShopOrder>();
+    public DbSet<Upload> Uploads => Set<Upload>();
     // Session-cookie signing keys (see Torque.Auth.AuthExtension).
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -152,6 +154,11 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             .WithMany()
             .HasForeignKey(o => o.VariantId)
             .OnDelete(DeleteBehavior.SetNull);
+        builder.Entity<Upload>()
+            .Property(p => p.Id)
+            .HasDefaultValueSql("gen_random_uuid()");
+        builder.Entity<Upload>()
+            .HasIndex(u => new { u.UserId, u.CreatedAt });
         // Sign-in finds users by their HCA `sub`. Rows that never got one are left out.
         builder.Entity<User>()
             .HasIndex(u => u.HcUserID)

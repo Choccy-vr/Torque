@@ -16,6 +16,8 @@ export function splitList(text, separator = /[\n,]/) {
     return [...new Set(text.split(separator).map((s) => s.trim()).filter(Boolean))];
 }
 
+export const NOT_A_LINK = "Needs to be a full link, starting with https://";
+
 export const isHttpUrl = (value) => {
     try {
         const url = new URL(value);

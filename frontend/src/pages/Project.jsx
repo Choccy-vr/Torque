@@ -236,7 +236,7 @@ function ProjectCard({ project, owner, isOwner, blocked, panel, onPanel, onArchi
     return (
         <article aria-labelledby="project-title" className="t-card overflow-hidden text-(--text)">
             {isOwner && !blocked.edit
-                ? <CoverPicker value={project.coverImageUrl ?? ""} onChange={onCoverChange} title={project.title} emptyText="No cover image" />
+                ? <CoverPicker value={project.coverImageUrl ?? ""} onChange={onCoverChange} title={project.title} />
                 : <Cover project={project} />}
 
             <div className="flex flex-col gap-6 px-5 py-6 sm:px-8 sm:py-8">

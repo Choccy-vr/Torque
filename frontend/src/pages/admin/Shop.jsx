@@ -1,10 +1,12 @@
-import { useId, useMemo, useState } from "react";
-import { Dices, FileUp, Pencil, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
+import { Dices, FileUp, ImageUp, LoaderCircle, Pencil, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import AdminShell from "../../components/admin/AdminShell.jsx";
 import { ConfirmBox, Panel, Tag } from "../../components/admin/AdminParts.jsx";
 import { Empty, InlineError } from "../../components/PageParts.jsx";
 import { BTN_GHOST, BTN_OUTLINE, BTN_PRIMARY, FOCUS, FieldError, FormError, INPUT } from "../../components/Form.jsx";
 import { ItemImage, Volts } from "../../components/shop/ShopParts.jsx";
+import ImageDrop, { PhotoInput } from "../../components/ImageDrop.jsx";
+import { useFileDrop, useImageUpload } from "../../lib/images.js";
 import { useAction } from "../../lib/admin.js";
 import {
     bulkCreateShopItems,
@@ -267,6 +269,67 @@ function ItemRow({ item, onChanged }) {
     );
 }
 
+// The item's photo: an empty drop slot, or the photo with Replace / Remove.
+// Uploads go straight to the bucket; the URL is saved with the item.
+// `onBusyChange` lets the editor hold its save while a photo uploads.
+function ItemImageField({ value, onChange, onBusyChange }) {
+    const id = useId();
+    const fileRef = useRef(null);
+    const replaceRef = useRef(null);
+    const [status, setStatus] = useState("");
+    // The drop sheet is gone once a photo lands, so focus moves to Replace.
+    const set = useCallback((url) => {
+        onChange(url);
+        setStatus("Item photo uploaded.");
+        requestAnimationFrame(() => replaceRef.current?.focus());
+    }, [onChange]);
+    const upload = useImageUpload("shop", set, onBusyChange);
+    const drop = useFileDrop(upload.take, upload.busy);
+
+    return (
+        <div role="group" aria-labelledby={`${id}-label`} className="flex w-full max-w-xs flex-col gap-2 lg:max-w-none">
+            <span id={`${id}-label`} className="font-semibold">Image <span className="font-normal text-(--text)/75">(optional)</span></span>
+            <p aria-live="polite" className="sr-only">{status}</p>
+            {value ? (
+                <>
+                    <div {...drop.handlers} aria-busy={upload.busy} className="relative">
+                        <ItemImage src={value} className="aspect-[4/3] w-full rounded-2xl border-2 border-white/15 p-2" />
+                        {(drop.over || upload.busy) && (
+                            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-(--accent) bg-(--bg)/85 text-center">
+                                {upload.busy
+                                    ? <LoaderCircle aria-hidden="true" className="size-6 text-(--accent) motion-safe:animate-spin" />
+                                    : <ImageUp aria-hidden="true" strokeWidth={1.5} className="size-6 text-(--text)" />}
+                                <p className="text-sm font-medium text-(--text)">{upload.busy ? "Uploading…" : "Let go to replace"}</p>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex gap-2">
+                        <PhotoInput ref={fileRef} onFiles={upload.take} />
+                        <button ref={replaceRef} type="button" disabled={upload.busy} onClick={() => fileRef.current?.click()} aria-label="Replace item image" className={`${BTN_OUTLINE} flex-1 px-4`}>
+                            Replace
+                        </button>
+                        <button
+                            type="button"
+                            disabled={upload.busy}
+                            onClick={() => {
+                                onChange("");
+                                setStatus("Item photo removed.");
+                            }}
+                            aria-label="Remove item image"
+                            className={`${BTN_GHOST} px-4`}
+                        >
+                            Remove
+                        </button>
+                    </div>
+                    {upload.error && <div role="alert"><FieldError>{upload.error}</FieldError></div>}
+                </>
+            ) : (
+                <ImageDrop purpose="shop" onUploaded={set} onBusyChange={onBusyChange} title="Drop the item photo" className="aspect-[4/3] w-full rounded-2xl border-2" />
+            )}
+        </div>
+    );
+}
+
 const numberOrNull = (text) => (text.trim() === "" ? null : Number(text));
 const isWhole = (text) => text.trim() === "" || /^-?\d+$/.test(text.trim());
 
@@ -277,6 +340,7 @@ function ItemEditor({ heading, initial, submitLabel, onSubmit, onDone, onCancel,
     const [name, setName] = useState(initial?.name ?? "");
     const [description, setDescription] = useState(initial?.description ?? "");
     const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? "");
+    const [imageUploading, setImageUploading] = useState(false);
     const [tier, setTier] = useState(initial?.tier ?? 1);
     const [price, setPrice] = useState(initial ? String(initial.price) : "");
     const [stock, setStock] = useState(initial?.stock != null ? String(initial.stock) : "");
@@ -315,6 +379,7 @@ function ItemEditor({ heading, initial, submitLabel, onSubmit, onDone, onCancel,
 
     async function submit(event) {
         event.preventDefault();
+        if (imageUploading) return;
         const found = validate();
         setErrors(found);
         if (Object.keys(found).length) {
@@ -376,15 +441,8 @@ function ItemEditor({ heading, initial, submitLabel, onSubmit, onDone, onCancel,
                         <label htmlFor={`${id}-desc`} className={label}>Description <span className="font-normal text-(--text)/75">(optional)</span></label>
                         <textarea id={`${id}-desc`} rows={3} maxLength={2000} value={description} onChange={(e) => setDescription(e.target.value)} className={`${INPUT} resize-y`} />
                     </div>
-                    <div className="flex flex-col gap-2">
-                        <label htmlFor={`${id}-img`} className={label}>Image link <span className="font-normal text-(--text)/75">(optional)</span></label>
-                        <input id={`${id}-img`} type="url" inputMode="url" placeholder="https://…" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className={INPUT} />
-                    </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                    <span className={label} aria-hidden="true">Preview</span>
-                    <ItemImage src={imageUrl.trim() || null} className="aspect-[4/3] w-full rounded-2xl border-2 border-white/15 p-2" />
-                </div>
+                <ItemImageField value={imageUrl} onChange={setImageUrl} onBusyChange={setImageUploading} />
             </div>
 
             <fieldset className="flex flex-col gap-2.5">
@@ -521,7 +579,9 @@ function ItemEditor({ heading, initial, submitLabel, onSubmit, onDone, onCancel,
 
             <FormError>{save.error}</FormError>
             <div className="flex flex-wrap gap-3">
-                <button type="submit" disabled={save.busy} className={BTN_PRIMARY}>{save.busy ? "Saving…" : submitLabel}</button>
+                <button type="submit" disabled={save.busy || imageUploading} className={BTN_PRIMARY}>
+                    {save.busy ? "Saving…" : imageUploading ? "Waiting for photo…" : submitLabel}
+                </button>
                 <button type="button" disabled={save.busy} onClick={onCancel} className={BTN_GHOST}>Cancel</button>
             </div>
         </form>

@@ -54,6 +54,10 @@ An endpoint that needs a request header (like `airtable-approve`'s webhook secre
 list it as `headers: [{ name: 'X-Webhook-Secret', placeholder: '...' }]`, which renders a
 masked input whose value is sent as that header when filled in.
 
+A multipart upload (like `upload-image`) uses `file: 'file'` (the form field the file goes
+in) instead of `body`, plus `form: { purpose: 'cover' }` for any other form fields. That
+renders a file picker and a prefilled text input per field, and sends them as `FormData`.
+
 The "Custom request" panel handles anything not worth adding permanently.
 
 ## Notes

@@ -1,11 +1,13 @@
-import { useId, useState } from "react";
-import { Megaphone, Pencil, Plus, Trash2 } from "lucide-react";
+import { useId, useRef, useState } from "react";
+import { ImagePlus, LoaderCircle, Megaphone, Pencil, Plus, Trash2 } from "lucide-react";
 import AdminShell from "../../components/admin/AdminShell.jsx";
 import { ConfirmBox } from "../../components/admin/AdminParts.jsx";
 import { useAction } from "../../lib/admin.js";
 import { Empty, InlineError } from "../../components/PageParts.jsx";
 import Markdown from "../../components/Markdown.jsx";
-import { BTN_GHOST, BTN_OUTLINE, BTN_PRIMARY, FOCUS, FormError, INPUT } from "../../components/Form.jsx";
+import { BTN_GHOST, BTN_OUTLINE, BTN_PRIMARY, FieldError, FOCUS, FormError, INPUT } from "../../components/Form.jsx";
+import { PhotoInput } from "../../components/ImageDrop.jsx";
+import { useMarkdownPhotos } from "../../lib/images.js";
 import { createAnnouncement, deleteAnnouncement, getAnnouncements, updateAnnouncement } from "../../lib/endpoints.js";
 import { formatWhen } from "../../lib/projects.js";
 import { useApi } from "../../lib/useApi.js";
@@ -153,7 +155,10 @@ function PostEditor({ heading, initial, submitLabel, onSubmit, onDone, onCancel 
     const [body, setBody] = useState(initial?.body ?? "");
     const [preview, setPreview] = useState(false);
     const save = useAction();
-    const ready = title.trim() && body.trim();
+    const bodyRef = useRef(null);
+    const fileRef = useRef(null);
+    const photos = useMarkdownPhotos({ purpose: "announcement", textareaRef: bodyRef, setText: setBody });
+    const ready = title.trim() && body.trim() && photos.pending === 0;
     const unchanged = initial && title.trim() === initial.title && body === initial.body;
 
     async function submit(e) {
@@ -172,8 +177,20 @@ function PostEditor({ heading, initial, submitLabel, onSubmit, onDone, onCancel 
                 <input id={`${id}-title`} autoFocus maxLength={MAX_TITLE} value={title} onChange={(e) => setTitle(e.target.value)} className={INPUT} />
             </div>
             <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-3">
-                    <label htmlFor={`${id}-body`} className="font-semibold">Post</label>
+                <div className="flex flex-wrap items-center gap-3">
+                    <label htmlFor={`${id}-body`} className="mr-auto font-semibold">Post</label>
+                    <PhotoInput
+                        ref={fileRef}
+                        multiple
+                        onFiles={(files) => {
+                            setPreview(false);
+                            photos.insertFiles(files);
+                        }}
+                    />
+                    <button type="button" onClick={() => fileRef.current?.click()} className={`${BTN_OUTLINE} px-4 text-sm`}>
+                        <ImagePlus aria-hidden="true" className="size-4" />
+                        Insert photo
+                    </button>
                     <div role="group" aria-label="Editor view" className="flex rounded-full border-2 border-white/15 p-0.5">
                         {[["Write", false], ["Preview", true]].map(([label, value]) => (
                             <button
@@ -190,21 +207,33 @@ function PostEditor({ heading, initial, submitLabel, onSubmit, onDone, onCancel 
                         ))}
                     </div>
                 </div>
-                {preview ? (
+                {/* The textarea stays mounted in Preview so photo uploads and its caret survive. */}
+                {preview && (
                     <div className="min-h-48 rounded-2xl border-2 border-white/15 bg-(--bg)/45 px-4 py-3">
                         {body.trim() ? <Markdown>{body}</Markdown> : <p className="text-(--text)/75">Nothing to preview yet.</p>}
                     </div>
-                ) : (
-                    <textarea
-                        id={`${id}-body`}
-                        rows={8}
-                        maxLength={MAX_BODY}
-                        value={body}
-                        onChange={(e) => setBody(e.target.value)}
-                        placeholder={"## What's new\n\n- **Bold** for the key bit\n- [Links](https://hackclub.com) work too"}
-                        className={`${INPUT} min-h-48 resize-y font-mono text-[0.9375rem] leading-relaxed`}
-                    />
                 )}
+                <textarea
+                    hidden={preview}
+                    ref={bodyRef}
+                    id={`${id}-body`}
+                    rows={8}
+                    maxLength={MAX_BODY}
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    {...photos.textHandlers}
+                    placeholder={"## What's new\n\n- **Bold** for the key bit\n- [Links](https://hackclub.com) work too"}
+                    className={`${INPUT} min-h-48 resize-y font-mono text-[0.9375rem] leading-relaxed ${photos.over ? "border-(--accent)! bg-(--accent)/15" : ""}`}
+                    />
+                <p aria-live="polite" className="flex items-center gap-2 text-sm font-medium text-(--text)/90 empty:hidden">
+                    {photos.pending > 0 && (
+                        <>
+                            <LoaderCircle aria-hidden="true" className="size-4 shrink-0 text-(--accent) motion-safe:animate-spin" />
+                            {`Uploading ${photos.pending} ${photos.pending === 1 ? "photo" : "photos"}…`}
+                        </>
+                    )}
+                </p>
+                {photos.error && <div role="alert"><FieldError>{photos.error}</FieldError></div>}
             </div>
             <FormError>{save.error}</FormError>
             <div className="flex flex-wrap gap-3">

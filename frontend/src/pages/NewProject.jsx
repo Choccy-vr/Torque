@@ -2,19 +2,19 @@ import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, CirclePause } from "lucide-react";
 import AppShell from "../components/AppShell.jsx";
-import CoverPicker, { NOT_A_LINK } from "../components/project/CoverPicker.jsx";
+import CoverPicker from "../components/project/CoverPicker.jsx";
 import HackatimePicker from "../components/project/HackatimePicker.jsx";
 import { LevelPicker } from "../components/project/ProjectEditForm.jsx";
 import { BTN_GHOST, BTN_PRIMARY, Field, FieldError, FOCUS, FormError, INPUT } from "../components/Form.jsx";
 import { createProject } from "../lib/endpoints.js";
-import { errorText, isHttpUrl } from "../lib/forms.js";
+import { errorText, isHttpUrl, NOT_A_LINK } from "../lib/forms.js";
 import { PauseNotices } from "../components/PageParts.jsx";
 import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
 
 // Mirrors CreateProjectDto (backend/modules/projects): title and tier are
 // required, everything else is optional and editable later.
 const TEXT_FIELDS = ["title", "description", "aiUse", "repoUrl", "demoUrl", "readmeUrl", "coverImageUrl"];
-const URL_FIELDS = ["coverImageUrl", "repoUrl", "demoUrl", "readmeUrl"];
+const URL_FIELDS = ["repoUrl", "demoUrl", "readmeUrl"];
 
 // Every problem the form can spot before sending, keyed by field.
 function validate(values) {
@@ -61,6 +61,7 @@ export default function NewProject() {
         hackatime: [],
     }));
     const [saving, setSaving] = useState(false);
+    const [coverUploading, setCoverUploading] = useState(false);
     const [errors, setErrors] = useState({});
     const formRef = useRef(null);
     // Filling the form in still works while creating is paused (nothing is
@@ -97,7 +98,7 @@ export default function NewProject() {
 
     async function submit(e) {
         e.preventDefault();
-        if (paused) return;
+        if (paused || coverUploading) return;
         const found = validate(values);
         if (Object.keys(found).length > 0) return showErrors(found);
 
@@ -148,6 +149,7 @@ export default function NewProject() {
                     <CoverPicker
                         value={values.coverImageUrl}
                         onChange={(url) => update("coverImageUrl", url)}
+                        onBusyChange={setCoverUploading}
                         title={values.title.trim()}
                     />
 
@@ -202,12 +204,12 @@ export default function NewProject() {
                             <div className="flex flex-wrap gap-3">
                                 <button
                                     type="submit"
-                                    disabled={saving}
+                                    disabled={saving || coverUploading}
                                     aria-disabled={paused ? true : undefined}
                                     aria-describedby={paused ? "create-paused" : undefined}
                                     className={`${BTN_PRIMARY} px-8 text-lg aria-disabled:cursor-not-allowed aria-disabled:border-white/15 aria-disabled:bg-white/10 aria-disabled:text-(--text)/75 aria-disabled:hover:border-white/15 aria-disabled:hover:bg-white/10`}
                                 >
-                                    {saving ? "Creating…" : "Create project"}
+                                    {saving ? "Creating…" : coverUploading ? "Waiting for cover…" : "Create project"}
                                 </button>
                                 <Link to="/projects" className={`${BTN_GHOST} ${saving ? "pointer-events-none opacity-60" : ""}`}>
                                     Cancel

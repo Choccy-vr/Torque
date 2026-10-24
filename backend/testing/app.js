@@ -997,6 +997,16 @@ const ENDPOINTS = [
     params: [{ name: 'id', placeholder: 'order uuid' }],
     body: { reason: 'Out of stock at our supplier, sorry!' },
   },
+  {
+    id: 'upload-image',
+    group: 'uploads',
+    method: 'POST',
+    path: '/api/upload/image',
+    auth: true,
+    desc: 'Upload one PNG/JPEG/GIF/WebP (max 10 MB) to the S3/R2 bucket; returns { url }. purpose: cover | journal, or admin-only shop | announcement. 503 when the S3_* vars are unset.',
+    file: 'file',
+    form: { purpose: 'cover' },
+  },
 ];
 
 // Display order and labels for the groups above.
@@ -1017,6 +1027,7 @@ const GROUP_LABELS = {
   announcements: 'Announcements',
   settings: 'Settings',
   shop: 'Shop',
+  uploads: 'Uploads',
 };
 
 // ---------------------------------------------------------------- boot
@@ -1189,6 +1200,24 @@ function buildEndpointRow(ep) {
     actions.append(input);
   }
 
+  // Multipart rows: a text input per form field (prefilled) plus a file picker.
+  for (const [name, value] of Object.entries(ep.form ?? {})) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = `ff-${ep.id}-${name}`;
+    input.placeholder = name;
+    input.value = value;
+    input.size = 14;
+    input.spellcheck = false;
+    actions.append(input);
+  }
+  if (ep.file) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.id = `f-${ep.id}`;
+    actions.append(input);
+  }
+
   const send = document.createElement('button');
   send.className = 'primary';
 
@@ -1244,7 +1273,15 @@ function sendEndpoint(ep) {
   if (!path.includes('?')) path = path.replace('&', '?');
 
   let body;
-  if (ep.body) {
+  if (ep.file) {
+    const file = $(`f-${ep.id}`).files[0];
+    if (!file) return renderError(`${ep.method} ${path}`, 'Pick a file first.');
+    body = new FormData();
+    for (const name of Object.keys(ep.form ?? {})) {
+      body.append(name, $(`ff-${ep.id}-${name}`).value.trim());
+    }
+    body.append(ep.file, file);
+  } else if (ep.body) {
     const raw = $(`b-${ep.id}`).value.trim();
     if (raw) {
       try {
@@ -1425,7 +1462,9 @@ async function send({ method, path, body, auth, endpointId, headers: extraHeader
   const label = `${method} ${path}`;
 
   if (auth && !session) return renderError(label, 'Not signed in — sign in first or untick "auth".');
-  const init = requestInit(method, auth, { ...extraHeaders, ...(body ? { 'Content-Type': 'application/json' } : {}) });
+  // FormData bodies set their own multipart Content-Type (with the boundary).
+  const json = typeof body === 'string';
+  const init = requestInit(method, auth, { ...extraHeaders, ...(json ? { 'Content-Type': 'application/json' } : {}) });
 
   const started = performance.now();
   let res, text;

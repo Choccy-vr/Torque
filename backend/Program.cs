@@ -13,6 +13,7 @@ using Torque.Shop;
 using Torque.Slack;
 using Torque.Streaks;
 using Torque.Testing;
+using Torque.Uploads;
 using Torque.Users;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +48,7 @@ builder.Services.AddStreaks();
 builder.Services.AddPayouts();
 builder.Services.AddSettings();
 builder.Services.AddShop();
+builder.Services.AddUploads(builder.Configuration);
 
 var app = builder.Build();
 

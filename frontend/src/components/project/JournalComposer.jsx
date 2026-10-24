@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, Clock, ImageOff, ImagePlus, RotateCw } from "lucide-react";
+import { Check, Clock, ImageOff, ImagePlus, LoaderCircle, RotateCw } from "lucide-react";
 import { createDevlog, getJournalPreview } from "../../lib/endpoints.js";
 import { formatHours } from "../../lib/projects.js";
 import { useApi } from "../../lib/useApi.js";
 import Markdown from "../Markdown.jsx";
-import { BTN_GHOST, BTN_OUTLINE, BTN_PRIMARY, Field, FOCUS, FormError, INPUT } from "../Form.jsx";
+import { BTN_GHOST, BTN_OUTLINE, BTN_PRIMARY, Field, FieldError, FOCUS, FormError, INPUT } from "../Form.jsx";
+import { PhotoInput } from "../ImageDrop.jsx";
+import { UPLOADING_MARK, useMarkdownPhotos, withoutUploadMarks } from "../../lib/images.js";
 import { JOURNAL_MIN_WRITING, errorText, imagesIn, isHttpUrl, writingLength } from "../../lib/forms.js";
 
 const TEXT_LINK = `rounded-sm font-medium text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 hover:bg-white/10 ${FOCUS}`;
 const TEXT_ACTION = `-my-2 inline-flex min-h-11 items-center rounded-(--radius) px-2 font-medium text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 transition-all duration-300 ease hover:bg-white/10 ${FOCUS}`;
 
-// Drafts survive a reload or a trip to another tab to find a photo link.
+// Drafts survive a reload or a trip to another tab.
 // Storage can be unavailable (private windows), so every access is guarded.
 const draftKey = (projectId) => `journal-draft:${projectId}`;
 function readDraft(projectId) {
@@ -35,7 +37,7 @@ const hoursText = (h) => (h > 0 && h < 0.1 ? "under 0.1 hours" : formatHours(Mat
 // A new journal entry, written at the top of the project's timeline. The body
 // is markdown with photos embedded inline; it needs 150+ characters of
 // writing and at least one photo that actually loads (the server checks the
-// length and that there's a photo link).
+// length and that there's a photo). Photos upload to our bucket as they're added.
 export default function JournalComposer({ project, onPosted, onCancel, onEdit }) {
     const [restored] = useState(() => readDraft(project.id));
     const [title, setTitle] = useState(restored?.title ?? "");
@@ -53,7 +55,9 @@ export default function JournalComposer({ project, onPosted, onCancel, onEdit })
     }, []);
 
     useEffect(() => {
-        const timer = setTimeout(() => writeDraft(project.id, title || text ? { title, text } : null), 400);
+        // Uploads don't survive a reload, so their placeholders aren't saved.
+        const saved = withoutUploadMarks(text);
+        const timer = setTimeout(() => writeDraft(project.id, title || saved ? { title, text: saved } : null), 400);
         return () => clearTimeout(timer);
     }, [project.id, title, text]);
 
@@ -77,9 +81,10 @@ export default function JournalComposer({ project, onPosted, onCancel, onEdit })
         if (writing < JOURNAL_MIN_WRITING) {
             return setError(`Write at least ${JOURNAL_MIN_WRITING} characters about what you did (${JOURNAL_MIN_WRITING - writing} to go).`);
         }
+        if (text.includes(UPLOADING_MARK)) return setError("A photo is still uploading. Give it a moment, or delete its “[Uploading photo…]” line if it's stuck.");
         const notLink = photos.find((u) => !isHttpUrl(u));
         if (notLink) return setError(`“${notLink}” isn't a full link. Photo links start with https://`);
-        if (broken.length > 0) return setError("A photo didn't load. Swap it for a direct image link, or remove it.");
+        if (broken.length > 0) return setError("A photo didn't load. Remove it from the text and add it again.");
         if (loaded === 0) return setError(checking > 0 ? "Still checking your photo. Try again in a moment." : "Add at least one photo of your work.");
 
         setPosting(true);
@@ -246,30 +251,20 @@ function Requirement({ met, children }) {
     );
 }
 
-// Markdown body with a Write / Preview switch, an "Add photo" that drops
-// ![description](url) in at the cursor, and a strip of the photos it holds.
+// Markdown body with a Write / Preview switch and photo uploads: "Add photo"
+// (or pasting / dropping images on the text) uploads them and puts
+// ![Photo](url) in at the cursor. A strip below shows the photos it holds.
 function BodyEditor({ text, onChange, photos, photoStatus, onPhotoStatus }) {
     const [view, setView] = useState("write");
-    const [adding, setAdding] = useState(false);
     const textareaRef = useRef(null);
-    const addRef = useRef(null);
+    const fileRef = useRef(null);
     const id = useId();
+    const markPhotoOk = useCallback((url) => onPhotoStatus(url, "ok"), [onPhotoStatus]);
+    const upload = useMarkdownPhotos({ purpose: "journal", textareaRef, setText: onChange, onInserted: markPhotoOk });
 
-    function insertPhoto(url, alt) {
-        const area = textareaRef.current;
-        const at = area ? area.selectionStart : text.length;
-        const before = text.slice(0, at).replace(/\s*$/, "");
-        const after = text.slice(at).replace(/^\s*/, "");
-        const next = `${before}${before ? "\n\n" : ""}![${alt}](${url})\n\n${after}`;
-        onChange(next);
-        onPhotoStatus(url, "ok");
-        setAdding(false);
+    function addFiles(files) {
         setView("write");
-        const caret = next.length - after.length;
-        requestAnimationFrame(() => {
-            textareaRef.current?.focus();
-            textareaRef.current?.setSelectionRange(caret, caret);
-        });
+        upload.insertFiles(files);
     }
 
     const viewClass = (on) =>
@@ -285,33 +280,25 @@ function BodyEditor({ text, onChange, photos, photoStatus, onPhotoStatus }) {
                     <button type="button" aria-pressed={view === "write"} onClick={() => setView("write")} className={viewClass(view === "write")}>Write</button>
                     <button type="button" aria-pressed={view === "preview"} onClick={() => setView("preview")} className={viewClass(view === "preview")}>Preview</button>
                 </div>
-                <button ref={addRef} type="button" aria-expanded={adding} onClick={() => setAdding((a) => !a)} className={`${BTN_OUTLINE} px-4`}>
+                <PhotoInput ref={fileRef} multiple onFiles={addFiles} />
+                <button type="button" onClick={() => fileRef.current?.click()} className={`${BTN_OUTLINE} px-4`}>
                     <ImagePlus aria-hidden="true" className="size-4.5" />
                     Add photo
                 </button>
             </div>
-
-            {adding && (
-                <PhotoLink
-                    onInsert={insertPhoto}
-                    onCancel={() => {
-                        setAdding(false);
-                        addRef.current?.focus();
-                    }}
-                />
-            )}
 
             {/* The textarea stays mounted in Preview so its label, undo history and caret survive. */}
             <textarea
                 ref={textareaRef}
                 id={`${id}-body`}
                 hidden={view !== "write"}
-                aria-describedby={`${id}-hint`}
+                aria-describedby={`${id}-hint${upload.error ? ` ${id}-upload-error` : ""}`}
                 rows={9}
                 value={text}
                 onChange={(e) => onChange(e.target.value)}
+                {...upload.textHandlers}
                 placeholder={"What you tried, what broke, what you'd do differently. Add a photo next to the part it shows."}
-                className={`${INPUT} resize-y leading-relaxed`}
+                className={`${INPUT} resize-y leading-relaxed ${upload.over ? "border-(--accent)! bg-(--accent)/15" : ""}`}
             />
             {view === "preview" && (
                 <div className="min-h-56 rounded-2xl border-2 border-white/15 bg-(--bg)/45 px-4 py-3">
@@ -319,10 +306,21 @@ function BodyEditor({ text, onChange, photos, photoStatus, onPhotoStatus }) {
                 </div>
             )}
 
+            <p aria-live="polite" className="empty:hidden flex items-center gap-2 text-sm font-medium text-(--text)/90">
+                {upload.over && upload.pending === 0 && "Let go to add the photo where your cursor is."}
+                {upload.pending > 0 && (
+                    <>
+                        <LoaderCircle aria-hidden="true" className="size-4 shrink-0 text-(--accent) motion-safe:animate-spin" />
+                        {`Uploading ${upload.pending} ${upload.pending === 1 ? "photo" : "photos"}…`}
+                    </>
+                )}
+            </p>
+            {upload.error && <div role="alert"><FieldError id={`${id}-upload-error`}>{upload.error}</FieldError></div>}
+
             {photos.length > 0 && <PhotoStrip urls={photos} status={photoStatus} onStatus={onPhotoStatus} />}
 
             <p id={`${id}-hint`} className="text-sm leading-relaxed text-(--text)/80">
-                Markdown works: <Syntax>**bold**</Syntax>, <Syntax>- lists</Syntax>, <Syntax>`code`</Syntax>, links. Photos go right in the text, so put each one next to the part it shows.{" "}
+                Markdown works: <Syntax>**bold**</Syntax>, <Syntax>- lists</Syntax>, <Syntax>`code`</Syntax>, links. Photos go right in the text, so put each one next to the part it shows. You can also paste or drag photos straight into the text, and change “Photo” to what it shows.{" "}
                 <Link to="/docs/journaling/how-to-journal" className={TEXT_LINK}>How to journal</Link>
             </p>
         </div>
@@ -357,82 +355,5 @@ function PhotoStrip({ urls, status, onStatus }) {
                 </li>
             ))}
         </ul>
-    );
-}
-
-// The link field "Add photo" opens. The link is test-loaded before it goes
-// in, so a share-page link (Drive, Photos) gets caught here.
-function PhotoLink({ onInsert, onCancel }) {
-    const [url, setUrl] = useState("");
-    const [alt, setAlt] = useState("");
-    const [error, setError] = useState(null);
-    const [checking, setChecking] = useState(false);
-    const inputRef = useRef(null);
-    const id = useId();
-
-    useEffect(() => { inputRef.current?.focus(); }, []);
-
-    function insert() {
-        const value = url.trim();
-        if (!isHttpUrl(value)) return setError("Paste a full link to the photo, starting with https://");
-        setChecking(true);
-        const img = new Image();
-        const timer = setTimeout(() => fail(), 10000);
-        function fail() {
-            clearTimeout(timer);
-            setChecking(false);
-            setError("That link didn't load as a picture. Use a direct image link, not a share page.");
-        }
-        img.onload = () => {
-            clearTimeout(timer);
-            setChecking(false);
-            onInsert(value, alt.replace(/[[\]\n]/g, " ").trim() || "Photo");
-        };
-        img.onerror = fail;
-        img.src = value;
-    }
-
-    const keys = (e) => {
-        if (e.key === "Enter") { e.preventDefault(); insert(); }
-        if (e.key === "Escape") { e.preventDefault(); onCancel(); }
-    };
-
-    return (
-        <div className="flex flex-col gap-3 rounded-2xl border-2 border-(--accent)/55 bg-(--bg)/45 p-3 sm:p-4">
-            <div className="flex flex-col gap-2 sm:flex-row">
-                <input
-                    ref={inputRef}
-                    type="url"
-                    inputMode="url"
-                    aria-label="Photo link"
-                    aria-invalid={Boolean(error)}
-                    aria-describedby={`${id}-help${error ? ` ${id}-error` : ""}`}
-                    placeholder="https://…/photo.jpg"
-                    value={url}
-                    onChange={(e) => { setUrl(e.target.value); setError(null); }}
-                    onKeyDown={keys}
-                    className={INPUT}
-                />
-                <input
-                    aria-label="What does it show? (optional)"
-                    placeholder="What does it show?"
-                    maxLength={120}
-                    value={alt}
-                    onChange={(e) => setAlt(e.target.value)}
-                    onKeyDown={keys}
-                    className={`${INPUT} sm:max-w-56`}
-                />
-            </div>
-            <p id={`${id}-help`} className="text-sm leading-relaxed text-(--text)/80">
-                Upload the photo somewhere that gives a direct image link, then right-click it and copy the image address. Google Drive and Photos share links won't work.
-            </p>
-            {error && <p id={`${id}-error`} role="alert" className="text-sm text-(--text)">{error}</p>}
-            <div className="flex gap-2">
-                <button type="button" disabled={checking} onClick={insert} className={`${BTN_PRIMARY} px-5`}>
-                    {checking ? "Checking…" : "Insert photo"}
-                </button>
-                <button type="button" onClick={onCancel} className={`${BTN_GHOST} px-4`}>Cancel</button>
-            </div>
-        </div>
     );
 }

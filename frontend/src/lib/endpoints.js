@@ -45,6 +45,17 @@ async function apiError(res) {
     return err
 }
 
+// POST api/upload/image (multipart) — stores one image in the bucket and
+// resolves to its public URL. purpose: cover | journal | shop | announcement.
+export async function uploadImage(file, purpose) {
+    const body = new FormData()
+    body.append('purpose', purpose)
+    body.append('file', file)
+    const res = await apiFetch('api/upload/image', { method: 'POST', body })
+    if (!res.ok) throw await apiError(res)
+    return (await res.json()).url
+}
+
 // The Navbar remounts on every page, so the profile is fetched once per page
 // load and shared. A failed request isn't cached, so the next mount retries.
 let profilePromise = null
