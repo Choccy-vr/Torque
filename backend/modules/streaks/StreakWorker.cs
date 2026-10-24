@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Torque.Data;
+using Torque.Deadlines;
 using Torque.Projects;
 using Torque.Settings;
 using Torque.Slack;
@@ -72,6 +73,8 @@ public class StreakWorker : BackgroundService
         var slack = scope.ServiceProvider.GetRequiredService<SlackNotifier>();
         var slackOptions = scope.ServiceProvider.GetRequiredService<SlackOptions>();
         if (await settings.StreaksPausedAsync(ct)) return;
+        // No more settling or reminder DMs once the last builds are due.
+        if (ProgramDates.ProgramOver()) return;
 
         var active = await db.Projects
             .Where(p => p.StreakCount > 0

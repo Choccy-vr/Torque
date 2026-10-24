@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Torque.Auth;
 using Torque.Data;
+using Torque.Deadlines;
 using Torque.Extensions;
 using Torque.Hackatime;
 using Torque.Payouts;
@@ -31,8 +32,9 @@ public class ShipmentController : ControllerBase
     private readonly SettingsService _settings;
     private readonly YswsEligibility _eligibility;
     private readonly HackatimeService _hackatime;
+    private readonly ShipWindowService _shipWindows;
 
-    public ShipmentController(AppDbContext db, PayoutService payouts, SlackNotifier slack, SlackOptions slackOptions, SettingsService settings, YswsEligibility eligibility, HackatimeService hackatime)
+    public ShipmentController(AppDbContext db, PayoutService payouts, SlackNotifier slack, SlackOptions slackOptions, SettingsService settings, YswsEligibility eligibility, HackatimeService hackatime, ShipWindowService shipWindows)
     {
         _db = db;
         _payouts = payouts;
@@ -41,6 +43,7 @@ public class ShipmentController : ControllerBase
         _settings = settings;
         _eligibility = eligibility;
         _hackatime = hackatime;
+        _shipWindows = shipWindows;
     }
 
     // Get shipments all per user
@@ -78,6 +81,22 @@ public class ShipmentController : ControllerBase
             .ToListAsync();
 
         return Ok(shipments);
+    }
+
+    // Whether the owner can send a design or build ship right now, given the deadlines
+    // (see Torque.Deadlines). Doesn't check status, hours or pauses; Create does.
+    [Authorize]
+    [HttpGet("window/{projectId:guid}")]
+    public async Task<IActionResult> GetWindow(Guid projectId)
+    {
+        var userId = this.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var project = await _db.Projects.FindAsync(projectId);
+        if (project is null) return NotFound();
+        if (project.OwnerUserId != userId.Value) return Forbid();
+
+        return Ok(await _shipWindows.ForProjectAsync(project));
     }
 
     // Get a single shipment by id (public view)
@@ -173,6 +192,12 @@ public class ShipmentController : ControllerBase
         {
             var paused = await _settings.PausedResultAsync(SettingKeys.ResubmissionsPaused);
             if (paused is not null) return paused;
+        }
+        // Past the deadline only a late fix gets through, and the row lock above keeps it to one.
+        var window = await _shipWindows.ForAsync(project, dto.IsBuildComplete.Value);
+        if (!window.Open)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ShipWindowService.ClosedError(dto.IsBuildComplete.Value));
         }
         // The build ship waits until an admin has sent the design ship's grant.
         if (dto.IsBuildComplete.Value && project.GrantStatus == ProjectGrantStatus.Pending)

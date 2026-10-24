@@ -470,6 +470,15 @@ const ENDPOINTS = [
     desc: "The signed-in user's own shipments.",
   },
   {
+    id: 'ships-window',
+    group: 'ships',
+    method: 'GET',
+    path: '/api/ships/window/{projectId}',
+    auth: true,
+    desc: 'Owner-only. Whether the project can send a design / build ship given the deadlines (design through Nov 30, builds through Dec 30, US Eastern): { design, build }, each { open, closesAt, lateFixUntil }. lateFixUntil is set when it is only open as the one late fix (3 days after a changes-needed review).',
+    params: [{ name: 'projectId', placeholder: 'project uuid' }],
+  },
+  {
     id: 'ships-by-id',
     group: 'ships',
     method: 'GET',
@@ -484,7 +493,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/ships/create',
     auth: true,
-    desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped, Changes_Needed or Approved and has 1h+ of journaled time no approved ship has credited (design vs build is always your isBuildComplete choice), or if any of isBuildComplete, requestedFunding (>= 0, and at most $5 per hour being shipped) or the three feedback answers (max 400 each) are missing. 403 { error, code } unless your HCA identity is verified and YSWS-eligible (identity_unverified, identity_pending, ysws_ineligible). Re-checks your Hackatime trust: a red account is banned on the spot (403, code banned). 409 for a build ship while the project\'s grant is Pending. Pauses the project\'s streak until the review ends.',
+    desc: 'Ships a project owned by the signed-in user. 400 unless the project is Unshipped, Changes_Needed or Approved and has 1h+ of journaled time no approved ship has credited (design vs build is always your isBuildComplete choice), or if any of isBuildComplete, requestedFunding (>= 0, and at most $5 per hour being shipped) or the three feedback answers (max 400 each) are missing. 403 { error, code } unless your HCA identity is verified and YSWS-eligible (identity_unverified, identity_pending, ysws_ineligible). Re-checks your Hackatime trust: a red account is banned on the spot (403, code banned). 403 ships_closed once that kind of ship has closed (see ships-window). 409 for a build ship while the project\'s grant is Pending. Pauses the project\'s streak until the review ends.',
     body: {
       projectId: '00000000-0000-0000-0000-000000000000',
       isBuildComplete: false,
@@ -808,7 +817,7 @@ const ENDPOINTS = [
     method: 'GET',
     path: '/api/shop',
     auth: true,
-    desc: 'The shop priced for your region: unlockedTier (highest level among your final-approved ships), region, volts, daily (today\'s random item — anyone can buy it, rotates at 12 AM US Eastern) and tiers 1–4 with their items. Each item has unavailableReason (null = buyable).',
+    desc: 'The shop priced for your region: unlockedTier (highest level among your final-approved ships), region, volts, closesAt + closed (the shop closes for good after Jan 6, 2027 US Eastern), daily (today\'s random item — anyone can buy it, rotates at 12 AM US Eastern) and tiers 1–4 with their items. Each item has unavailableReason (null = buyable).',
   },
   {
     id: 'shop-marquee',
@@ -832,7 +841,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/shop/purchase',
     auth: true,
-    desc: 'Buy an item. Price comes from your HCA address region and the variant; never sent by the client. Re-sending the same clientRequestId returns the first order. Errors are { error, code } (no_address, variant_required, identity_unverified, identity_pending, ysws_ineligible, random_only, locked_tier, region_unavailable, out_of_stock, limit_reached, insufficient_volts, daily_rotated). 503 while shop_paused is on. 10/min.',
+    desc: 'Buy an item. Price comes from your HCA address region and the variant; never sent by the client. Re-sending the same clientRequestId returns the first order. Errors are { error, code } (shop_closed after Jan 6, 2027 US Eastern, no_address, variant_required, identity_unverified, identity_pending, ysws_ineligible, random_only, locked_tier, region_unavailable, out_of_stock, limit_reached, insufficient_volts, daily_rotated). 503 while shop_paused is on. 10/min.',
     body: {
       itemId: '',
       variantId: null,

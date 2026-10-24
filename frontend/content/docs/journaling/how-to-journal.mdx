@@ -1,6 +1,6 @@
 ---
 title: Journaling Your Progress
-description: How to log your build sessions, keep your streak alive, and export your journey.
+description: How to log your build sessions and keep your streak alive.
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
@@ -14,10 +14,8 @@ In Torque, you post journal entries directly on the website as you build. Your j
 2. **Maintains your streak:** Keeps your daily streak alive to maximize your Volts multiplier.
 3. **Serves as proof:** Acts as the primary evidence reviewers evaluate when approving grant hours and shipping your build.
 
-<Callout type="info" title="Journaling on the Web + Export to Markdown">
-  You will write and publish your entries directly using the **Torque web dashboard**. 
-  
-  Whenever you want a permanent copy for your GitHub repository or personal portfolio, click **Export JOURNAL.md** from your dashboard to download your entire log as a clean Markdown file with frontmatter ready to drop into your repo root!
+<Callout type="info" title="Journaling on the web">
+  You write and post your entries on **your project's page** on Torque. Entries are Markdown, with your photos dropped in alongside the text.
 </Callout>
 
 ---
@@ -28,10 +26,10 @@ When submitting a journal entry on the platform, each post requires:
 
 | Field | Requirement | Details |
 | :--- | :--- | :--- |
-| **Title** | Required (≤ 75 chars) | A punchy summary of what you tackled (e.g., *"Tuning PID loop on the pitch axis"*). |
-| **Content** | Required (≥ 100 chars) | An honest breakdown of what you did, why you did it, and what roadblocks you hit. |
-| **Media / Photos** | Required | Clear photos or screenshots showing work-in-progress intermediates. |
-| **Hours Logged** | Required (0.1–20 hrs) | The time spent during that specific session. If a build session exceeds 20 hours, break it up. |
+| **Title** | Required (≤ 120 chars) | A punchy summary of what you tackled (e.g., *"Tuning PID loop on the pitch axis"*). |
+| **Content** | Required (≥ 150 chars of writing) | An honest breakdown of what you did, why you did it, and what roadblocks you hit. Photos don't count toward the 150. |
+| **Photos** | At least 1 | Clear photos or screenshots showing work-in-progress intermediates. |
+| **Time** | Automatic | Each entry credits the Hackatime time (Lapse included) logged on your project since your last entry, up to **10 hours**. Anything over 10 hours is lost, so post at least once every 10 hours of work. |
 
 <Callout type="error" title="Strictly No AI-Generated Journals">
   Reviewers read every journal. AI-generated entries are obvious, lack authentic troubleshooting details, and are grounds for **immediate rejection**. Honest, messy, and brief human writing always beats polished robotic fluff.
@@ -50,7 +48,7 @@ A great journal entry reads like a build log, not a sterile checklist. Answer th
 Hardware projects live and die by visual proof:
 * Aim for roughly **one photo or screenshot per 3–5 hours of work**.
 * A single picture of a closed plastic box cannot verify 15 hours of internal wiring. Show the messy wiring harness, the misaligned motor mounts, the burned driver boards, and the scope traces.
-* **Videos & Timelapses:** For testing mechanisms or showing motor motion, upload short clips or link unlisted YouTube timelapses directly in your entry body.
+* **Videos & Timelapses:** For testing mechanisms or showing motor motion, link short clips or unlisted YouTube timelapses in your entry body.
 
 ---
 
@@ -98,7 +96,7 @@ Hardware projects live and die by visual proof:
 
 | Do | Don't |
 | :--- | :--- |
-| **Log frequently:** One entry per day or milestone keeps your streak intact. | **Batch dumps:** Waiting two weeks and dumping a single 30-hour entry without photos. |
+| **Log frequently:** A day counts toward your streak once that day's entries cover 1+ hour. | **Batch dumps:** Waiting two weeks and dumping one entry for 30 hours of work. Only 10 hours of it gets credited. |
 | **Document failures:** Burned out a driver? Stripped a gear? Tell the story! | **Hide mistakes:** Submitting only the final pristine product looks like a kit build. |
 | **Show intermediate progress:** Screenshot CAD sketches, wiring diagrams, and test benches. | **Vague summaries:** Writing *"worked on code"* or *"did some 3D modeling"*. |
 | **Write like yourself:** Grammatical perfection doesn't matter; authentic details do. | **Use LLMs to summarize:** AI-generated text will flag review filters. |
@@ -108,12 +106,7 @@ Hardware projects live and die by visual proof:
 <Cards>
   <Card
     title="Ready to log a session?"
-    href="/dashboard"
-    description="Head over to the Torque dashboard to post your latest update and keep your daily streak going."
-  />
-  <Card
-    title="Need to export your log?"
-    href="/dashboard"
-    description="Download your full JOURNAL.md file anytime to push into your GitHub repo or personal documentation."
+    href="/projects"
+    description="Open your project to post your latest update and keep your daily streak going."
   />
 </Cards>

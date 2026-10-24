@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Torque.Data;
+using Torque.Deadlines;
 using Torque.Devlogs;
 using Torque.Projects;
 using Torque.Settings;
@@ -102,13 +103,20 @@ public class StreakService
     public static DateOnly LocalDate(User user, DateTime utc) =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), TimeZoneFor(user)));
 
-    // [start, end) of a local day, in UTC
+    // [start, end) of a local day, in UTC. Daylight saving makes some days 23 or 25 hours.
     public static (DateTime Start, DateTime End) LocalDayBoundsUtc(User user, DateOnly date)
     {
         var tz = TimeZoneFor(user);
-        var start = TimeZoneInfo.ConvertTimeToUtc(date.ToDateTime(TimeOnly.MinValue), tz);
-        var end = TimeZoneInfo.ConvertTimeToUtc(date.AddDays(1).ToDateTime(TimeOnly.MinValue), tz);
-        return (start, end);
+        return (StartOfDayUtc(date, tz), StartOfDayUtc(date.AddDays(1), tz));
+    }
+
+    // A few zones (e.g. Havana, Santiago, Beirut, Cairo) jump their clocks forward at
+    // midnight, so that day starts at the first local time that exists.
+    private static DateTime StartOfDayUtc(DateOnly date, TimeZoneInfo tz)
+    {
+        var local = date.ToDateTime(TimeOnly.MinValue);
+        while (tz.IsInvalidTime(local)) local = local.AddMinutes(15);
+        return TimeZoneInfo.ConvertTimeToUtc(local, tz);
     }
 
     // Settles every fully-past day since the streak was last extended: each missed day
@@ -122,6 +130,7 @@ public class StreakService
         if (project.StreakCount == 0 || project.LastStreakDate is null) return StreakChange.None;
         if (InReview(project.Status)) return StreakChange.None;
         if (await _settings.StreaksPausedAsync(ct)) return StreakChange.None;
+        if (ProgramDates.ProgramOver()) return StreakChange.None;
 
         var freezesUsed = 0;
         for (var day = project.LastStreakDate.Value.AddDays(1); day < today; day = day.AddDays(1))

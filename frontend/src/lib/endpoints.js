@@ -112,6 +112,12 @@ export function getMyShips() {
     return getJson('api/ships/get/me')
 }
 
+// GET api/ships/window/{projectId} — owner only. Whether each kind of ship is
+// open given the deadlines: { design, build }, each { open, closesAt, lateFixUntil }.
+export function getShipWindow(projectId) {
+    return getJson(`api/ships/window/${encodeURIComponent(projectId)}`)
+}
+
 // GET api/announcement — AnnouncementDto[], newest first, capped at 30.
 // `body` is markdown.
 export function getAnnouncements() {

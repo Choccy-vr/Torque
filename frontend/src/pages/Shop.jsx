@@ -1,19 +1,26 @@
-import { useCallback, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Lock, PackageCheck, Timer, Undo2, Zap } from "lucide-react";
+import { CalendarX, ChevronLeft, ChevronRight, Hourglass, Lock, PackageCheck, Timer, Undo2, Zap } from "lucide-react";
 import AppShell, { PageHeader } from "../components/AppShell.jsx";
-import { Empty, InlineError, PageButton, PauseNotices, Section } from "../components/PageParts.jsx";
+import { Empty, InlineError, Notice, PageButton, PauseNotices, Section } from "../components/PageParts.jsx";
 import { BTN_GHOST, BTN_OUTLINE, BTN_PRIMARY, FOCUS, FormError } from "../components/Form.jsx";
 import { ConfirmBox, Tag } from "../components/admin/AdminParts.jsx";
 import CheckoutDialog from "../components/shop/CheckoutDialog.jsx";
 import { ItemImage, Volts } from "../components/shop/ShopParts.jsx";
 import { cancelShopOrder, clearMyProfile, getMyShopOrders, getShop } from "../lib/endpoints.js";
 import { errorText } from "../lib/forms.js";
-import { formatDay, LEVELS } from "../lib/projects.js";
+import { formatDay, lastDay, LEVELS } from "../lib/projects.js";
 import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
 import { ORDER_STATUS, REASON_LABEL, regionName, stockText, useCountdown } from "../lib/shop.js";
 import { useApi } from "../lib/useApi.js";
 import { useScrollEdges } from "../lib/useScrollEdges.js";
+
+// Why nothing can be bought right now beyond an admin pause: the shop has
+// closed for good (see ShopClosing). Null while it's open.
+const ShopClosed = createContext(null);
+
+// How long before the shop closes its last-week notice shows.
+const CLOSING_SOON_MS = 7 * 24 * 60 * 60 * 1000;
 
 // /shop — spend Volts. Today's random item as the featured card, then one
 // sideways shelf of prize cards per level (1–4), unlocked by the highest level
@@ -29,51 +36,81 @@ export default function Shop() {
         orders.reload();
     }, [shop, orders]);
 
+    const closedMessage = shop.data?.closed ? `The shop closed on ${lastDay(shop.data.closesAt)}.` : null;
+
     return (
         <AppShell title="Shop">
-            <PageHeader
-                title="Shop"
-                lede="Spend your Volts on parts and prizes. Shipping an approved project unlocks its level and every level below it."
-            >
-                {shop.data && (
-                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6">
-                        <Ledger shop={shop.data} />
-                        {shop.data.unlockedTier === 0 && (
-                            <Link
-                                to="/docs/rewards"
-                                className={`-ml-3 inline-flex min-h-11 items-center rounded-(--radius) px-3 font-medium text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 transition-all duration-300 ease hover:bg-white/10 sm:ml-0 ${FOCUS}`}
-                            >
-                                How to earn Volts and unlock levels
-                            </Link>
-                        )}
-                    </div>
+            <ShopClosed.Provider value={closedMessage}>
+                <PageHeader
+                    title="Shop"
+                    lede="Spend your Volts on parts and prizes. Shipping an approved project unlocks its level and every level below it."
+                >
+                    {shop.data && (
+                        <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6">
+                            <Ledger shop={shop.data} />
+                            {shop.data.unlockedTier === 0 && (
+                                <Link
+                                    to="/docs/rewards"
+                                    className={`-ml-3 inline-flex min-h-11 items-center rounded-(--radius) px-3 font-medium text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 transition-all duration-300 ease hover:bg-white/10 sm:ml-0 ${FOCUS}`}
+                                >
+                                    How to earn Volts and unlock levels
+                                </Link>
+                            )}
+                        </div>
+                    )}
+                </PageHeader>
+
+                {shop.data && <ShopClosing shop={shop.data} />}
+                <PauseNotices keys={[PAUSE.shop]} className="mt-6" />
+
+                <div className="mt-10 flex flex-col gap-12">
+                    {shop.loading && !shop.data ? (
+                        <ShopSkeleton />
+                    ) : shop.error ? (
+                        <InlineError what="the shop" onRetry={shop.reload} />
+                    ) : (
+                        <Catalogue shop={shop.data} onBuy={setBuying} onRotated={shop.reload} />
+                    )}
+
+                    <YourOrders orders={orders} onChanged={ordered} />
+                </div>
+
+                {buying && (
+                    <CheckoutDialog
+                        item={buying.item}
+                        isDaily={buying.isDaily}
+                        volts={shop.data.volts}
+                        onOrdered={ordered}
+                        onClose={() => setBuying(null)}
+                    />
                 )}
-            </PageHeader>
-
-            <PauseNotices keys={[PAUSE.shop]} className="mt-6" />
-
-            <div className="mt-10 flex flex-col gap-12">
-                {shop.loading && !shop.data ? (
-                    <ShopSkeleton />
-                ) : shop.error ? (
-                    <InlineError what="the shop" onRetry={shop.reload} />
-                ) : (
-                    <Catalogue shop={shop.data} onBuy={setBuying} onRotated={shop.reload} />
-                )}
-
-                <YourOrders orders={orders} onChanged={ordered} />
-            </div>
-
-            {buying && (
-                <CheckoutDialog
-                    item={buying.item}
-                    isDaily={buying.isDaily}
-                    volts={shop.data.volts}
-                    onOrdered={ordered}
-                    onClose={() => setBuying(null)}
-                />
-            )}
+            </ShopClosed.Provider>
         </AppShell>
+    );
+}
+
+// The shop's end (US Eastern): a notice through its last week, then one saying
+// it has closed. Orders already placed still get fulfilled.
+function ShopClosing({ shop }) {
+    // Read once per visit; the closed state itself comes from the server.
+    const [now] = useState(() => Date.now());
+    const day = lastDay(shop.closesAt);
+    if (shop.closed) {
+        return (
+            <div className="mt-6">
+                <Notice icon={CalendarX}>
+                    <b className="font-bold text-(--text)">The shop has closed.</b> The last day to order was {day}. Orders you've already placed still ship.
+                </Notice>
+            </div>
+        );
+    }
+    if (new Date(shop.closesAt).getTime() - now > CLOSING_SOON_MS) return null;
+    return (
+        <div className="mt-6">
+            <Notice icon={Hourglass}>
+                <b className="font-bold text-(--text)">Last week to order.</b> The shop closes after {day} (US Eastern), so spend your Volts before then.
+            </Notice>
+        </div>
     );
 }
 
@@ -108,9 +145,10 @@ function Catalogue({ shop, onBuy, onRotated }) {
 
     return (
         <>
-            {shop.daily && <DailyItem daily={shop.daily} onBuy={onBuy} onRotated={onRotated} />}
+            {/* A closed shop has no "today" left to count down to. */}
+            {shop.daily && !shop.closed && <DailyItem daily={shop.daily} onBuy={onBuy} onRotated={onRotated} />}
             {shop.tiers.map((tier) => (
-                <LevelSection key={tier.tier} tier={tier} dailyId={shop.daily?.item.id} volts={shop.volts} onBuy={onBuy} />
+                <LevelSection key={tier.tier} tier={tier} dailyId={shop.closed ? null : shop.daily?.item.id} volts={shop.volts} onBuy={onBuy} />
             ))}
         </>
     );
@@ -330,7 +368,8 @@ function ProductCard({ item, volts, locked, isDaily, onBuy }) {
 // description). A locked level reads as Locked rather than a sale button.
 // `stretch` makes the button's hit area cover its whole card.
 function BuyButton({ item, label = "Get", onBuy, large = false, stretch = false }) {
-    const paused = pausedMessage(useSettings(), PAUSE.shop);
+    const closed = useContext(ShopClosed);
+    const paused = pausedMessage(useSettings(), PAUSE.shop) ?? closed;
     const reason = item.unavailableReason;
 
     if (reason) {

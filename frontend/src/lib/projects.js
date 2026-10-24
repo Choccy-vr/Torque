@@ -49,6 +49,16 @@ export const ADMIN_SHIP_STATUS = {
 export const formatWhen = (iso) =>
     new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 
+// Torque's deadlines are US Eastern days that close at the midnight after
+// them; `closesAt` is that midnight. Names the day itself ("November 30")
+// wherever the reader is, so it matches the docs.
+export const lastDay = (closesAt) =>
+    new Date(new Date(closesAt).getTime() - 1).toLocaleDateString(undefined, { month: "long", day: "numeric", timeZone: "America/New_York" });
+
+// A cutoff in the reader's own time, with the weekday: "Thu, Dec 3, 4:00 PM".
+export const formatDeadline = (iso) =>
+    new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
 // The backend sends 0001-01-01 for timestamps that were never set.
 export const isSet = (iso) => Boolean(iso) && new Date(iso).getFullYear() > 2000;
 

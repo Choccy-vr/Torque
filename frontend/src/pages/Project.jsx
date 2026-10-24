@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-    Archive, ArchiveRestore, ArrowUpRight, ChevronDown, CircleAlert, CirclePause, Clock, FileText, Flame, FolderGit2,
+    Archive, ArchiveRestore, ArrowUpRight, CalendarX, ChevronDown, CircleAlert, CirclePause, Clock, FileText, Flame, FolderGit2,
     Globe, NotebookPen, Pencil, Plus, Ship, Sparkles, Star, Zap,
 } from "lucide-react";
 import AppShell from "../components/AppShell.jsx";
@@ -17,9 +17,9 @@ import ShipForm from "../components/project/ShipForm.jsx";
 import JournalComposer from "../components/project/JournalComposer.jsx";
 import Switch from "../components/Switch.jsx";
 import {
-    getDevlogs, getMyProfile, getMyProjects, getMyShips, getProject, getUserProfile, setProjectArchived, setStreakFreezesPaused, updateProject,
+    getDevlogs, getMyProfile, getMyProjects, getMyShips, getProject, getShipWindow, getUserProfile, setProjectArchived, setStreakFreezesPaused, updateProject,
 } from "../lib/endpoints.js";
-import { SHIP_STATUS, formatDay } from "../lib/projects.js";
+import { SHIP_STATUS, formatDay, formatDeadline, lastDay } from "../lib/projects.js";
 import { useApi } from "../lib/useApi.js";
 import { useAuth } from "../lib/useAuth.js";
 import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
@@ -63,6 +63,7 @@ function ProjectPage({ projectApi, isOwner }) {
 
     const fetchMine = useCallback(() => (isOwner ? getMyProjects() : Promise.resolve(null)), [isOwner]);
     const fetchShips = useCallback(() => (isOwner ? getMyShips() : Promise.resolve(null)), [isOwner]);
+    const fetchWindow = useCallback(() => (isOwner ? getShipWindow(pub.id) : Promise.resolve(null)), [isOwner, pub.id]);
     const fetchOwner = useCallback(() => getUserProfile(pub.ownerUserId), [pub.ownerUserId]);
     // devlogIds are oldest first; the newest batch is the end of the list.
     const idsKey = (pub.devlogIds ?? []).slice(-JOURNAL_BATCH).join(",");
@@ -70,6 +71,7 @@ function ProjectPage({ projectApi, isOwner }) {
 
     const mine = useApi(fetchMine);
     const ships = useApi(fetchShips);
+    const shipWindow = useApi(fetchWindow);
     const settings = useSettings();
     const owner = useApi(fetchOwner);
     const devlogs = useApi(fetchDevlogs);
@@ -95,6 +97,7 @@ function ProjectPage({ projectApi, isOwner }) {
         projectApi.reload();
         mine.reload();
         ships.reload();
+        shipWindow.reload();
     };
     const closeAndRefresh = () => {
         setPanel(null);
@@ -119,13 +122,20 @@ function ProjectPage({ projectApi, isOwner }) {
     const shipPauseKey = pausedMessage(settings, PAUSE.ships) || project.status !== "Changes_Needed" ? PAUSE.ships : PAUSE.resubmissions;
     const shipPaused = pausedMessage(settings, shipPauseKey);
     const journalPaused = pausedMessage(settings, PAUSE.journaling);
-    const shippable = !archived && !inReview && project.status !== "Perm_Rejected";
+    // Deadlines (US Eastern): design ships close after Nov 30, every ship after
+    // Dec 30. Past one, a ship sent back gets one late fix (lateFixUntil). If
+    // the window can't be read the button stays live; the server still checks.
+    const win = shipWindow.data;
+    const shipClosed = Boolean(win) && !win.design.open && !win.build.open;
+    const lateFixUntil = win?.design.lateFixUntil ?? win?.build.lateFixUntil ?? null;
+    const shippable = !archived && !inReview && project.status !== "Perm_Rejected" && !shipClosed;
     const blocked = {
         ship: archived ? "Unarchive this project to ship it."
             : inReview ? "In review. You can ship again once a reviewer has looked at it."
             : project.status === "Perm_Rejected" ? "Permanently rejected, so it can't be shipped again."
+            : shipClosed ? `Shipping closed on ${lastDay(win.build.closesAt)}.`
             : shipPaused ? shipPaused
-            : !priv ? "Checking your hours…"
+            : !priv || (shipWindow.loading && !win) ? "Checking your hours…"
             : unpaidHours < 1 ? `Journal ${hoursNeeded}h more to ship.`
             : null,
         edit: archived ? "Unarchive to edit." : inReview ? "Can't edit while it's in review." : null,
@@ -182,6 +192,7 @@ function ProjectPage({ projectApi, isOwner }) {
                         <ShipForm
                             project={project}
                             designApproved={designApproved}
+                            shipWindow={win}
                             onEdit={() => setPanel("edit")}
                             onShipped={closeAndRefresh}
                             onCancel={closePanel}
@@ -197,6 +208,8 @@ function ProjectPage({ projectApi, isOwner }) {
                                 owner={owner.data}
                                 latestShip={projectShips[0]}
                                 canJournal={!blocked.journal}
+                                shipClosed={shipClosed && lastDay(win.build.closesAt)}
+                                lateFixUntil={lateFixUntil}
                                 onCompose={() => setPanel("journal")}
                                 onUnarchive={() => setArchived(false)}
                                 hoursNeeded={priv && unpaidHours < 1 ? hoursNeeded : 0}
@@ -660,7 +673,9 @@ const TEXT_ACTION = `-my-2 inline-flex min-h-11 shrink-0 items-center rounded-(-
 // One slim line about where the project stands, when that's worth saying:
 // archived (for everyone), and for the owner the state of their latest ship.
 // The reviewer's feedback itself lives on the ship card in the timeline.
-function StatusNotice({ project, isOwner, owner, latestShip, canJournal, onCompose, onUnarchive, hoursNeeded }) {
+// `shipClosed` is the day shipping closed (or false); `lateFixUntil` is when the
+// one resubmission after a deadline is due, while it's still open.
+function StatusNotice({ project, isOwner, owner, latestShip, canJournal, shipClosed, lateFixUntil, onCompose, onUnarchive, hoursNeeded }) {
     if (project.isArchived) {
         return (
             <Notice
@@ -677,6 +692,14 @@ function StatusNotice({ project, isOwner, owner, latestShip, canJournal, onCompo
     if (!isOwner) return null;
 
     if (project.status === "Changes_Needed") {
+        if (shipClosed) {
+            return (
+                <Notice icon={CircleAlert}>
+                    <b className="font-bold text-(--text)">Changes needed.</b> The reviewer's feedback is on your ship below.
+                    Shipping closed on {shipClosed}, so this one can't be shipped again.
+                </Notice>
+            );
+        }
         return (
             <Notice
                 icon={CircleAlert}
@@ -684,6 +707,9 @@ function StatusNotice({ project, isOwner, owner, latestShip, canJournal, onCompo
                 action={canJournal && <button type="button" onClick={onCompose} className={TEXT_ACTION}>Journal your fixes</button>}
             >
                 <b className="font-bold text-(--text)">Changes needed.</b> The reviewer's feedback is on your ship below.
+                {lateFixUntil && (
+                    <> The deadline has passed, so you get one more try: resubmit by <b className="font-bold text-(--text) tabular-nums">{formatDeadline(lateFixUntil)}</b>.</>
+                )}
                 {hoursNeeded > 0 && <> Journal <b className="font-bold text-(--text) tabular-nums">{hoursNeeded}h</b> more to ship again.</>}
             </Notice>
         );
@@ -700,6 +726,13 @@ function StatusNotice({ project, isOwner, owner, latestShip, canJournal, onCompo
         return (
             <Notice icon={CircleAlert}>
                 <b className="font-bold text-(--text)">Permanently rejected.</b> The reviewer's feedback is on your ship below.
+            </Notice>
+        );
+    }
+    if (shipClosed) {
+        return (
+            <Notice icon={CalendarX}>
+                <b className="font-bold text-(--text)">Shipping has closed.</b> The last day to ship was {shipClosed}. Thanks for building with Torque!
             </Notice>
         );
     }

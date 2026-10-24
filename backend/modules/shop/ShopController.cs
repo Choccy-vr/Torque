@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Torque.Auth;
 using Torque.Data;
+using Torque.Deadlines;
 using Torque.Extensions;
 using Torque.Settings;
 using Torque.Slack;
@@ -74,6 +75,8 @@ public class ShopController : ControllerBase
             UnlockedTier = unlockedTier,
             Region = region,
             Volts = user.Volts,
+            ClosesAt = ProgramDates.ShopClosesAt,
+            Closed = ProgramDates.ShopClosed(),
             Daily = daily is null
                 ? null
                 : new DailyItemDto
@@ -160,6 +163,11 @@ public class ShopController : ControllerBase
     {
         var userId = this.GetUserId();
         if (userId is null) return Unauthorized();
+
+        if (ProgramDates.ShopClosed())
+        {
+            return Fail(403, "shop_closed", $"The shop closed on {ProgramDates.ShopLastDay:MMMM d}. Thanks for building with Torque!");
+        }
 
         if (dto.ItemId is null) return BadRequest("ItemId is required!");
         if (dto.ClientRequestId is null || dto.ClientRequestId == Guid.Empty) return BadRequest("ClientRequestId is required!");

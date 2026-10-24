@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Torque.Airtable;
 using Torque.Database;
 using Torque.Auth;
+using Torque.Deadlines;
 using Torque.Crypto;
 using Torque.Extensions;
 using Torque.Frontend;
@@ -48,6 +49,7 @@ builder.Services.AddStreaks();
 builder.Services.AddPayouts();
 builder.Services.AddSettings();
 builder.Services.AddShop();
+builder.Services.AddDeadlines();
 builder.Services.AddUploads(builder.Configuration);
 
 var app = builder.Build();

@@ -1,24 +1,28 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { CircleAlert, Ship } from "lucide-react";
+import { CircleAlert, Ship, Timer } from "lucide-react";
 import { createShip } from "../../lib/endpoints.js";
-import { formatHours } from "../../lib/projects.js";
+import { formatDeadline, formatHours, lastDay } from "../../lib/projects.js";
 import { BTN_GHOST, BTN_PRIMARY, Field, FOCUS, FormError, INPUT } from "../Form.jsx";
 import { errorText, useRevealOnMount } from "../../lib/forms.js";
 
 const KINDS = [
-    { build: false, title: "Design ship", body: "Design's done. Ask for a parts grant." },
-    { build: true, title: "Build ship", body: "It's built and it moves. Hours become Volts." },
+    { build: false, key: "design", title: "Design ship", body: "Design's done. Ask for a parts grant.", closed: "Design ships closed" },
+    { build: true, key: "build", title: "Build ship", body: "It's built and it moves. Hours become Volts.", closed: "Build ships closed" },
 ];
 
 const TEXT_LINK = `rounded-sm font-medium text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 hover:bg-white/10 ${FOCUS}`;
 
 // Ship (submit for review), opened from the project card. Design vs build is
 // always the builder's call. The page only opens this once there's an hour of
-// uncredited journal time to ship.
-export default function ShipForm({ project, designApproved, onEdit, onShipped, onCancel }) {
+// uncredited journal time to ship. `shipWindow` (api/ships/window) says which
+// kinds the deadlines still allow; null means unknown, and the server decides.
+export default function ShipForm({ project, designApproved, shipWindow, onEdit, onShipped, onCancel }) {
     const headingRef = useRevealOnMount();
-    const [build, setBuild] = useState(designApproved);
+    const windowFor = (kind) => shipWindow?.[kind.key] ?? { open: true };
+    // Build once the design's approved (or design ships have closed), as long as builds are open.
+    const [build, setBuild] = useState(() => windowFor(KINDS[1]).open && (designApproved || !windowFor(KINDS[0]).open));
+    const lateFixUntil = windowFor(KINDS[build ? 1 : 0]).lateFixUntil;
     const [funding, setFunding] = useState("");
     const [answers, setAnswers] = useState({ howDidYouHear: "", whatAreWeDoingWell: "", howCanWeImprove: "" });
     const [sending, setSending] = useState(false);
@@ -95,25 +99,40 @@ export default function ShipForm({ project, designApproved, onEdit, onShipped, o
             <fieldset className="flex flex-col gap-2">
                 <legend className="sr-only">What are you shipping?</legend>
                 <div className="grid gap-3 sm:grid-cols-2">
-                    {KINDS.map((kind) => (
-                        <label
-                            key={kind.title}
-                            className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-white/15 px-4 py-3 transition-all duration-300 ease hover:border-white/30 hover:bg-white/10 has-checked:border-(--accent) has-checked:bg-(--accent)/15 has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-(--text)"
-                        >
-                            <input
-                                type="radio"
-                                name="ship-kind"
-                                checked={build === kind.build}
-                                onChange={() => setBuild(kind.build)}
-                                className="mt-1 size-4.5 shrink-0 accent-(--accent)"
-                            />
-                            <span className="flex flex-col">
-                                <span className="font-bold text-(--text)">{kind.title}</span>
-                                <span className="text-sm leading-relaxed text-(--text)/85">{kind.body}</span>
-                            </span>
-                        </label>
-                    ))}
+                    {KINDS.map((kind) => {
+                        const { open, closesAt } = windowFor(kind);
+                        return (
+                            <label
+                                key={kind.title}
+                                className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-white/15 px-4 py-3 transition-all duration-300 ease hover:border-white/30 hover:bg-white/10 has-checked:border-(--accent) has-checked:bg-(--accent)/15 has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-(--text) has-disabled:cursor-default has-disabled:border-white/10 has-disabled:hover:border-white/10 has-disabled:hover:bg-transparent"
+                            >
+                                <input
+                                    type="radio"
+                                    name="ship-kind"
+                                    checked={build === kind.build}
+                                    disabled={!open}
+                                    onChange={() => setBuild(kind.build)}
+                                    className="mt-1 size-4.5 shrink-0 accent-(--accent)"
+                                />
+                                <span className="flex flex-col">
+                                    <span className={`font-bold ${open ? "text-(--text)" : "text-(--text)/75"}`}>{kind.title}</span>
+                                    <span className="text-sm leading-relaxed text-(--text)/85">
+                                        {open ? kind.body : `${kind.closed} on ${lastDay(closesAt)}.`}
+                                    </span>
+                                </span>
+                            </label>
+                        );
+                    })}
                 </div>
+                {lateFixUntil && (
+                    <p className="flex items-start gap-2 text-sm leading-relaxed text-(--text)">
+                        <Timer aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-(--accent)" />
+                        <span>
+                            This is your one resubmission after the deadline. Send it by{" "}
+                            <b className="font-bold tabular-nums">{formatDeadline(lateFixUntil)}</b>.
+                        </span>
+                    </p>
+                )}
             </fieldset>
 
             {!build && (

@@ -6,6 +6,9 @@ public record ShopDto
     public int UnlockedTier { get; init; }
     public string Region { get; init; } = null!;
     public int Volts { get; init; }
+    // When the shop closes for good (see Torque.Deadlines), UTC, and whether it has.
+    public DateTime ClosesAt { get; init; }
+    public bool Closed { get; init; }
     public DailyItemDto? Daily { get; init; }
     public List<ShopTierDto> Tiers { get; init; } = [];
 }
