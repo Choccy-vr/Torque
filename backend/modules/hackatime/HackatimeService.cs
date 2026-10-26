@@ -11,6 +11,8 @@ namespace Torque.Hackatime;
 
 public class HackatimeService
 {
+    private const string CountingStartsAt = "2026-10-27T00:00:00Z";
+
     // Written to User.InternalNote when a trust check bans an account: at connect, or
     // when it's re-checked before shipping.
     public const string ConnectBanMarker = "hackatime_banned_at_connect";
@@ -228,8 +230,9 @@ public class HackatimeService
             .Select(n => n!)];
     }
 
-    // All-time hours (in seconds from Hackatime, converted to hours) for the given
-    // linked project names, plus a per-project breakdown. Single API call.
+    // Counted hours from October 27, 2026 onward (in seconds from Hackatime,
+    // converted to hours) for the given linked project names, plus a per-project
+    // breakdown. Single API call.
     public async Task<(double Hours, Dictionary<string, double> PerProject)> GetHoursForProjectsAsync(Guid userId, string[] projectNames)
     {
         var seconds = await GetSecondsPerProjectAsync(userId, projectNames);
@@ -239,8 +242,9 @@ public class HackatimeService
         return (Math.Round(seconds.Values.Sum() / 3600 * 10) / 10, perProject);
     }
 
-    // Raw all-time seconds summed across the given linked project names. Null when
-    // Hackatime isn't connected or the fetch fails (as opposed to 0 tracked).
+    // Raw counted seconds from October 27, 2026 onward summed across the given
+    // linked project names. Null when Hackatime isn't connected or the fetch fails
+    // (as opposed to 0 tracked).
     public async Task<double?> GetTotalSecondsForProjectsAsync(Guid userId, string[] projectNames)
     {
         var seconds = await GetSecondsPerProjectAsync(userId, projectNames);
@@ -254,7 +258,7 @@ public class HackatimeService
         var user = await _db.Users.FindAsync(userId);
         if (string.IsNullOrEmpty(user?.HackatimeToken)) return null;
 
-        var projects = await FetchProjectsAsync(user.HackatimeToken, userId);
+        var projects = await FetchProjectsAsync(user.HackatimeToken, userId, CountingStartsAt);
         if (projects.ValueKind != JsonValueKind.Array) return null;
 
         var nameSet = new HashSet<string>(projectNames);
@@ -276,9 +280,16 @@ public class HackatimeService
 
     // include_archived=true: Hackatime excludes archived projects by default, so a
     // linked project the user later archives would otherwise silently vanish/zero out.
-    private async Task<JsonElement> FetchProjectsAsync(string token, Guid userId)
+    private async Task<JsonElement> FetchProjectsAsync(string token, Guid userId, string? start = null)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"{_options.BaseUrl}/api/v1/authenticated/projects?include_archived=true");
+        var query = new Dictionary<string, string?>
+        {
+            ["include_archived"] = "true"
+        };
+        if (start is not null) query["start"] = start;
+
+        var url = QueryHelpers.AddQueryString($"{_options.BaseUrl}/api/v1/authenticated/projects", query);
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         try

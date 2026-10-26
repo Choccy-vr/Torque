@@ -9,24 +9,24 @@ let config = null;
 
 // Sample body for the shop item create/update/bulk rows.
 const ITEM_BODY = {
-      name: 'Harness USB drive',
-      description: 'A test item with storage options.',
-      imageUrl: '',
-      tier: 1,
-      price: 100,
-      regions: ['US', 'CA', 'EU', 'UK', 'IN', 'AU', 'XX'],
-      regionalPrices: { EU: 90 },
-      stock: null,
-      maxPerUser: 2,
-      randomMode: 'eligible',
-      isActive: true,
-      sortOrder: 0,
-      fulfillerNotes: '',
-      variants: [
-        { name: '32 GB', priceDelta: 0, stock: 10 },
-        { name: '64 GB', priceDelta: 40, stock: 5 },
-      ],
-    };
+  name: 'Harness USB drive',
+  description: 'A test item with storage options.',
+  imageUrl: '',
+  tier: 1,
+  price: 100,
+  regions: ['US', 'CA', 'EU', 'UK', 'IN', 'AU', 'XX'],
+  regionalPrices: { EU: 90 },
+  stock: null,
+  maxPerUser: 2,
+  randomMode: 'eligible',
+  isActive: true,
+  sortOrder: 0,
+  fulfillerNotes: '',
+  variants: [
+    { name: '32 GB', priceDelta: 0, stock: 10 },
+    { name: '64 GB', priceDelta: 40, stock: 5 },
+  ],
+};
 
 // Mirrors the endpoint table in backend/README.md.
 // `auth: true` means the action carries [Authorize].
@@ -718,7 +718,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/hackatime/hours',
     auth: true,
-    desc: 'All-time hours + per-project breakdown for the given linked Hackatime project names.',
+    desc: 'Counted Hackatime hours from October 27, 2026 onward + per-project breakdown for the given linked project names.',
     body: {
       projectNames: ['my-project'],
     },
