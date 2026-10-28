@@ -221,6 +221,11 @@ function query(params) {
     return entries.length ? `?${new URLSearchParams(entries)}` : ''
 }
 
+// GET api/admin/stats — { users, projects, ships } totals
+export function getAdminStats() {
+    return getJson('api/admin/stats')
+}
+
 // GET api/admin/user/search — AdminUserSummaryDto[], newest first, max 50
 export function searchAdminUsers(q) {
     return getJson(`api/admin/user/search${query({ q })}`)

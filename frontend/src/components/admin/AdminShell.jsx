@@ -4,7 +4,7 @@ import { FolderOpen, Megaphone, PackageOpen, Settings2, Ship, ShoppingBag, Users
 import AppShell, { PageHeader } from "../AppShell.jsx";
 import { Empty, InlineError } from "../PageParts.jsx";
 import { BTN_PRIMARY, FOCUS } from "../Form.jsx";
-import { getMyProfile } from "../../lib/endpoints.js";
+import { getAdminStats, getMyProfile } from "../../lib/endpoints.js";
 import { isAdmin } from "../../lib/settings.js";
 import { useApi } from "../../lib/useApi.js";
 
@@ -63,9 +63,64 @@ export default function AdminShell({ title, children }) {
                         This part of Torque shows everyone's private details, so only admins can open it.
                     </Empty>
                 ) : (
-                    children
+                    <div className="flex flex-col gap-8">
+                        <Totals />
+                        {children}
+                    </div>
                 )}
             </div>
         </AppShell>
+    );
+}
+
+const TOTALS = [
+    { key: "users", one: "User", many: "Users", icon: Users },
+    { key: "projects", one: "Project", many: "Projects", icon: FolderOpen },
+    { key: "ships", one: "Ship", many: "Ships", icon: Ship },
+];
+
+// Every user, project and ship ever made (banned, archived and rejected too),
+// as the shop's strip of ruled cells. Refetched on each tab, so it stays fresh.
+function Totals() {
+    const stats = useApi(getAdminStats);
+
+    if (stats.error) {
+        return (
+            <p className="flex flex-wrap items-center gap-x-3 text-sm text-(--text)/80">
+                Couldn't load the totals.
+                <button
+                    type="button"
+                    onClick={stats.reload}
+                    className={`-mx-3 inline-flex min-h-11 items-center rounded-lg px-3 font-medium text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 transition-colors duration-300 ease hover:bg-white/10 ${FOCUS}`}
+                >
+                    Try again
+                </button>
+            </p>
+        );
+    }
+
+    return (
+        <dl
+            aria-label="Totals"
+            aria-busy={stats.loading}
+            className="grid grid-cols-3 overflow-hidden rounded-2xl border-2 border-white/15 bg-(--card) sm:inline-grid sm:self-start"
+        >
+            {TOTALS.map(({ key, one, many, icon: Icon }) => {
+                const value = stats.data?.[key];
+                return (
+                    <div key={key} className="-mt-0.5 -ml-0.5 flex min-w-0 flex-col-reverse gap-0.5 border-t-2 border-l-2 border-white/15 px-3.5 py-3 sm:min-w-40 sm:px-4">
+                        <dt className="flex items-center gap-1.5 text-sm text-(--text)/75">
+                            <Icon aria-hidden="true" className="size-3.5 shrink-0" />
+                            {value === 1 ? one : many}
+                        </dt>
+                        <dd className="text-2xl font-bold text-(--text) tabular-nums">
+                            {value == null
+                                ? <span aria-hidden="true" className="block h-8 w-14 rounded-lg bg-white/10 motion-safe:animate-pulse" />
+                                : value.toLocaleString()}
+                        </dd>
+                    </div>
+                );
+            })}
+        </dl>
     );
 }

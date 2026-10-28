@@ -114,6 +114,14 @@ const ENDPOINTS = [
     },
   },
   {
+    id: 'admin-stats',
+    group: 'users',
+    method: 'GET',
+    path: '/api/admin/stats',
+    auth: true,
+    desc: 'Admin-only. Totals: users (banned too), projects (archived too), ships (any status).',
+  },
+  {
     id: 'admin-user-search',
     group: 'users',
     method: 'GET',
