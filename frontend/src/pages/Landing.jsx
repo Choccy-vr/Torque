@@ -91,7 +91,11 @@ export default function Home() {
             <p className="text-xl md:text-2xl leading-snug my-6 max-w-[22ch] sm:max-w-none text-(--text) [text-wrap:balance]">
               Build hardware projects with motors. Get funding and prizes.
             </p>
-            <form className="flex w-full max-w-md items-stretch pt-2">
+            {/* Hack Club Auth asks for the email itself, so this just starts the same sign-in as "Log in". */}
+            <form
+              onSubmit={(e) => { e.preventDefault(); handleLogIn(); }}
+              className="flex w-full max-w-md items-stretch pt-2"
+            >
               <label htmlFor="hero-email" className="sr-only">Email address</label>
               <input
                 id="hero-email"
