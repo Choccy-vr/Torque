@@ -1,0 +1,52 @@
+---
+title: Project Guides
+description: Hand-picked build guides from around the web for motor projects.
+icon: Compass
+---
+
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Need a starting point? Here are a few motor build guides from around the web. They aren't the only way, or even always the best way, to build these projects. They're just a good place to see how the mechanisms work. Each card says which motors the guide uses.
+
+Treat them as a first draft to improve on. Some choices in these guides are dated or overkill. For example, the door lock runs on a Raspberry Pi, where an ESP32 would be smaller, cheaper, and still have Wi-Fi built in.
+
+If your idea isn't here, search for it. Google is your friend: almost every mechanism, part, or problem you can think of has a guide, forum thread, or video out there. Try searches like *"ESP32 stepper motor tutorial"*, *"how to mount a NEMA 17"*, or *"servo jitter fix"*.
+
+<Callout type="warn" title="Make it your own">
+  Torque doesn't accept direct clones, so build your own version instead of following a guide step by step. A few ways to do that:
+
+  - **Customize the CAD.** Redesign the parts to fit your space, your motors, or a mechanism you came up with.
+  - **Design a PCB.** Most of these guides stop at a wiring diagram and loose wires. A custom PCB makes your build cleaner and more reliable.
+  - **Swap the parts.** Use a better microcontroller, a stronger motor, or a newer driver.
+  - **Write your own firmware.** Add features the original doesn't have.
+
+  Credit any guide you lean on in your README. See [Project Guidelines](/docs/projects/project-guidelines) for what counts as your own work.
+</Callout>
+
+<Cards>
+  <Card
+    title="RC Robot Car"
+    href="https://howtomechatronics.com/tutorials/arduino/arduino-robot-car-wireless-control-using-hc-05-bluetooth-nrf24l01-and-hc-12-transceiver-modules/"
+    description="How To Mechatronics · Drive a DC motor car over Bluetooth, NRF24L01, or HC-12 radio."
+  />
+  <Card
+    title="Smart Door Lock"
+    href="https://hackaday.io/project/19478-smartphone-connected-home-door-lock"
+    description="Hackaday.io · A 3D-printed servo that turns your existing deadbolt from your phone, with no changes to the door."
+  />
+  <Card
+    title="Robot Arm"
+    href="https://howtomechatronics.com/projects/diy-arduino-robot-arm-with-smartphone-control/"
+    description="How To Mechatronics · A 3D-printed servo arm that can record and play back motions."
+  />
+  <Card
+    title="Motorized Camera Slider"
+    href="https://howtomechatronics.com/tutorials/arduino/diy-motorized-camera-slider-pan-tilt-head-project/"
+    description="How To Mechatronics · A belt-driven slider with a pan and tilt head, run by 3 NEMA 17 steppers."
+  />
+</Cards>
+
+<Callout type="info" title="Know a great guide?">
+  If you find a guide that helped you and should be on this list, share it in [#torque](https://hackclub.enterprise.slack.com/archives/C0BHGT33JHH) on Slack!
+</Callout>

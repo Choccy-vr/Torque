@@ -4,6 +4,7 @@ import { loader } from 'fumadocs-core/source'
 import {
   BookOpen,
   Cog,
+  Compass,
   Flag,
   Gift,
   CircleHelp,
@@ -30,6 +31,7 @@ const docs = defineDocs({
 const icons = {
   BookOpen,
   Cog,
+  Compass,
   Flag,
   Gift,
   CircleHelp,
