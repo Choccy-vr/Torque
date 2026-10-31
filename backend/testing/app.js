@@ -287,7 +287,7 @@ const ENDPOINTS = [
     method: 'PATCH',
     path: '/api/project/{id}',
     auth: true,
-    desc: 'Edit your own project. Omitted fields are unchanged, "" clears optional text. 409 while archived / in review, or changing tier after a final-approved ship. 503 if Hackatime is unreachable when changing linked names on a project with credited time.',
+    desc: 'Edit your own project. Omitted fields are unchanged, "" clears optional text. 409 while deleted / in review, or changing tier after a final-approved ship. 503 if Hackatime is unreachable when changing linked names on a project with credited time.',
     params: [{ name: 'id', placeholder: 'project uuid' }],
     body: {
       title: 'Renamed project',
@@ -300,16 +300,13 @@ const ENDPOINTS = [
     },
   },
   {
-    id: 'project-archive',
+    id: 'project-delete',
     group: 'projects',
-    method: 'POST',
-    path: '/api/project/{id}/archive',
+    method: 'DELETE',
+    path: '/api/project/{id}',
     auth: true,
-    desc: 'Archive/unarchive your own project. Archiving hides it from search, locks edits/journals/ships and resets its streak. 409 while in review.',
+    desc: 'Delete your own project (soft delete, 204; only an admin can restore it). Drops it from search, project/me and project/user, locks edits/journals/ships and resets its streak. 409 while in review.',
     params: [{ name: 'id', placeholder: 'project uuid' }],
-    body: {
-      isArchived: true,
-    },
   },
   {
     id: 'admin-project-search',
@@ -317,7 +314,7 @@ const ENDPOINTS = [
     method: 'GET',
     path: '/api/admin/project/search?q={q}&status={status}',
     auth: true,
-    desc: 'Admin-only. Every project (any status, archived too) by title, id or owner username, newest first, max 50. Optional: status (Unshipped, Unreviewed, Claimed, Fraud_Pending, Changes_Needed, Approved, Perm_Rejected); ownerId and archived can be added to the path.',
+    desc: 'Admin-only. Every project (any status, deleted too) by title, id or owner username, newest first, max 50. Optional: status (Unshipped, Unreviewed, Claimed, Fraud_Pending, Changes_Needed, Approved, Perm_Rejected); ownerId and archived can be added to the path.',
     params: [{ name: 'q', placeholder: 'search text (optional)', optional: true }, { name: 'status', placeholder: 'status (optional)', optional: true }],
   },
   {
@@ -335,7 +332,7 @@ const ENDPOINTS = [
     method: 'PATCH',
     path: '/api/admin/project/{id}',
     auth: true,
-    desc: 'Admin-only. Override tier (1–4, even after a final approval), isArchived (409 while in review) and/or exceptional.',
+    desc: 'Admin-only. Override tier (1–4, even after a final approval), isArchived (delete/restore; 409 while in review) and/or exceptional.',
     params: [{ name: 'id', placeholder: 'project uuid' }],
     body: { tier: 2, exceptional: false },
   },
@@ -812,7 +809,7 @@ const ENDPOINTS = [
     method: 'PATCH',
     path: '/api/admin/settings/{key}',
     auth: true,
-    desc: 'Admin-only. Switch a setting and/or set its message (max 500, "" = default). Keys: ships_paused, resubmissions_paused, project_creation_paused, journaling_paused, streaks_paused, payouts_paused. Ending a streak pause forgives the paused days.',
+    desc: 'Admin-only. Switch a setting and/or set its message (max 500, "" = default). Keys: ships_paused, resubmissions_paused, project_creation_paused, journaling_paused, streaks_paused, payouts_paused, shop_paused, random_item_paused. Ending a streak pause forgives the paused days.',
     params: [{ name: 'key', placeholder: 'ships_paused' }],
     body: {
       paused: true,
@@ -825,7 +822,7 @@ const ENDPOINTS = [
     method: 'GET',
     path: '/api/shop',
     auth: true,
-    desc: 'The shop priced for your region: unlockedTier (highest level among your final-approved ships), region, volts, closesAt + closed (the shop closes for good after Jan 6, 2027 US Eastern), daily (today\'s random item — anyone can buy it, rotates at 12 AM US Eastern) and tiers 1–4 with their items. Each item has unavailableReason (null = buyable).',
+    desc: 'The shop priced for your region: unlockedTier (highest level among your final-approved ships), region, volts, closesAt + closed (the shop closes for good after Jan 6, 2027 US Eastern), daily (today\'s random item — anyone can buy it, rotates at 12 AM US Eastern; null while random_item_paused is on) and tiers 1–4 with their items. Each item has unavailableReason (null = buyable).',
   },
   {
     id: 'shop-marquee',
@@ -964,7 +961,7 @@ const ENDPOINTS = [
     method: 'GET',
     path: '/api/admin/shop/daily?days={days}',
     auth: true,
-    desc: 'Admin-only. Today\'s daily item (rolled now if needed) and recent picks.',
+    desc: 'Admin-only. Today\'s daily item (rolled now if needed) and recent picks. paused = random_item_paused is on (nothing is rolled then).',
     params: [{ name: 'days', placeholder: '14' }],
   },
   {
@@ -973,7 +970,7 @@ const ENDPOINTS = [
     method: 'PUT',
     path: '/api/admin/shop/daily/today',
     auth: true,
-    desc: 'Admin-only. Set today\'s daily item, or reroll at random when itemId is null.',
+    desc: 'Admin-only. Set today\'s daily item, or reroll at random when itemId is null. 409 while random_item_paused is on.',
     body: { itemId: null },
   },
   {

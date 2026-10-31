@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Archive, ArrowUpRight, Clapperboard, FileText, FolderGit2, Globe, Sparkles, Star } from "lucide-react";
+import { ArrowUpRight, Clapperboard, FileText, FolderGit2, Globe, Sparkles, Star, Trash2 } from "lucide-react";
 import AdminShell from "../../components/admin/AdminShell.jsx";
 import {
     BackLink, ConfirmBox, CopyId, EntityTitle, Facts, NotFoundNote, Panel, ResultList, Rows, SwitchRow, Tag,
@@ -79,7 +79,7 @@ function Sheet({ project: p }) {
                         <Tag>Level {p.tier}</Tag>
                         {p.isStaffPick && <Tag><Star aria-hidden="true" className="size-3.5" />Staff pick</Tag>}
                         {p.exceptional && <Tag><Sparkles aria-hidden="true" className="size-3.5" />Exceptional</Tag>}
-                        {p.isArchived && <Tag><Archive aria-hidden="true" className="size-3.5" />Archived{p.archivedAt && ` ${formatDay(p.archivedAt)}`}</Tag>}
+                        {p.isArchived && <Tag><Trash2 aria-hidden="true" className="size-3.5" />Deleted{p.archivedAt && ` ${formatDay(p.archivedAt)}`}</Tag>}
                     </div>
                     <EntityTitle id="project-title">{p.title}</EntityTitle>
                     <p className="text-(--text)/85">
@@ -143,8 +143,8 @@ function Overrides({ project: p, onSaved }) {
     const level = useAction();
     const pick = useAction();
     const exceptional = useAction();
-    const archive = useAction();
-    const [confirmingArchive, setConfirmingArchive] = useState(false);
+    const remove = useAction();
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
     const inReview = ["Unreviewed", "Claimed", "Fraud_Pending"].includes(p.status);
 
     return (
@@ -200,30 +200,32 @@ function Overrides({ project: p, onSaved }) {
                 />
                 <div className="flex flex-col gap-3">
                     <SwitchRow
-                        id="archived"
-                        label="Archived"
+                        id="deleted"
+                        label="Deleted"
                         hint={inReview && !p.isArchived
-                            ? "Can't archive while it's in review."
-                            : "Hidden from search and locked: no edits, journal entries or ships."}
+                            ? "Can't delete while it's in review."
+                            : p.isArchived
+                                ? "Off the owner's dashboard and profile, and locked. Switch off to restore it."
+                                : "Takes it off the owner's dashboard, projects and profile, and locks it: no edits, journal entries or ships."}
                         on={p.isArchived}
-                        busy={archive.busy || (inReview && !p.isArchived)}
+                        busy={remove.busy || (inReview && !p.isArchived)}
                         onToggle={() => (p.isArchived
-                            ? archive.run(async () => onSaved(await updateAdminProject(p.id, { isArchived: false })))
-                            : setConfirmingArchive((c) => !c))}
-                        error={archive.error}
+                            ? remove.run(async () => onSaved(await updateAdminProject(p.id, { isArchived: false })))
+                            : setConfirmingDelete((c) => !c))}
+                        error={remove.error}
                     />
-                    {confirmingArchive && !p.isArchived && (
+                    {confirmingDelete && !p.isArchived && (
                         <ConfirmBox
-                            id="archive-confirm"
-                            title={`Archive ${p.title}?`}
-                            confirmLabel="Archive it"
-                            busyLabel="Archiving…"
-                            icon={Archive}
-                            busy={archive.busy}
-                            onConfirm={async () => { if (await archive.run(async () => onSaved(await updateAdminProject(p.id, { isArchived: true })))) setConfirmingArchive(false); }}
-                            onCancel={() => setConfirmingArchive(false)}
+                            id="delete-confirm"
+                            title={`Delete ${p.title}?`}
+                            confirmLabel="Delete it"
+                            busyLabel="Deleting…"
+                            icon={Trash2}
+                            busy={remove.busy}
+                            onConfirm={async () => { if (await remove.run(async () => onSaved(await updateAdminProject(p.id, { isArchived: true })))) setConfirmingDelete(false); }}
+                            onCancel={() => setConfirmingDelete(false)}
                         >
-                            {p.streak > 0 ? `Its ${p.streak}-day streak resets to 0, and that can't be undone.` : "The owner can unarchive it themselves."}
+                            {p.streak > 0 ? `Its ${p.streak}-day streak resets to 0, and that can't be undone. ` : ""}Only an admin can restore it; the owner can't.
                         </ConfirmBox>
                     )}
                 </div>

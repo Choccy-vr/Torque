@@ -106,11 +106,11 @@ public class AdminProjectController : ControllerBase
 
         if (dto.IsArchived == true && !project.IsArchived)
         {
-            if (StreakService.InReview(project.Status)) return Conflict("This project can't be archived while it's in review.");
+            if (StreakService.InReview(project.Status)) return Conflict("This project can't be deleted while it's in review.");
 
             project.IsArchived = true;
             project.ArchivedAt = DateTime.UtcNow;
-            // Same as the owner archiving it: drop the streak so no freezes are spent on it
+            // Same as the owner deleting it: drop the streak so no freezes are spent on it
             project.StreakCount = 0;
             project.LastStreakDate = null;
         }

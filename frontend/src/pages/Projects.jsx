@@ -1,10 +1,11 @@
-import { Link } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Plus, Trash2 } from "lucide-react";
 import AppShell, { PageHeader } from "../components/AppShell.jsx";
 import { getMyProjects } from "../lib/endpoints.js";
 import { useApi } from "../lib/useApi.js";
 import ProjectCard, { ProjectCardSkeleton } from "../components/ProjectCard.jsx";
-import { Empty, InlineError, PauseNotices } from "../components/PageParts.jsx";
+import { Empty, InlineError, Notice, PauseNotices } from "../components/PageParts.jsx";
 import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
 
 const GRID = "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8";
@@ -12,6 +13,15 @@ const GRID = "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8";
 export default function Projects() {
     const { data: projects, error, loading, reload } = useApi(getMyProjects);
     const creationPaused = Boolean(pausedMessage(useSettings(), PAUSE.projectCreation));
+
+    // Arriving from a project's delete: say it worked once, then drop it from
+    // history so a reload or Back doesn't say it again.
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [deletedTitle] = useState(location.state?.deleted ?? null);
+    useEffect(() => {
+        if (location.state?.deleted) navigate(location.pathname, { replace: true, state: null });
+    }, [location.state, location.pathname, navigate]);
 
     return (
         <AppShell title="Projects">
@@ -38,6 +48,13 @@ export default function Projects() {
                 )}
             />
 
+            <div role="status" className="mt-6 empty:hidden">
+                {deletedTitle && (
+                    <Notice icon={Trash2}>
+                        <b className="font-bold text-(--text)">Deleted {deletedTitle}.</b>
+                    </Notice>
+                )}
+            </div>
             <PauseNotices keys={[PAUSE.projectCreation]} className="mt-6" />
 
             <div className="mt-8">

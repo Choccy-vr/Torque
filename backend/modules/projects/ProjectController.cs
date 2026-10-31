@@ -133,7 +133,7 @@ public class ProjectController : ControllerBase
         return Ok(projects);
     }
 
-    // keyword search over unarchived titles/descriptions, title matches ranked first, newest first within a tier
+    // keyword search over undeleted titles/descriptions, title matches ranked first, newest first within a tier
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] string? q)
     {
@@ -216,12 +216,12 @@ public class ProjectController : ControllerBase
         return Ok(projects);
     }
 
-    // a user's projects (public view), newest first
+    // a user's projects (public view), newest first. Deleted ones are left out.
     [HttpGet("user/{id:guid}")]
     public async Task<IActionResult> GetByUser(Guid id)
     {
         var projects = await _db.Projects
-            .Where(p => p.OwnerUserId == id)
+            .Where(p => p.OwnerUserId == id && !p.IsArchived)
             .OrderByDescending(p => p.CreatedAt)
             .Select(p => new PublicProjectDto
             {
@@ -253,7 +253,7 @@ public class ProjectController : ControllerBase
         return Ok(projects);
     }
 
-    // projects for the authenticated user
+    // projects for the authenticated user. Deleted ones are left out.
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> GetMine()
@@ -262,7 +262,7 @@ public class ProjectController : ControllerBase
         if (userId is null) return Unauthorized();
 
         var projects = await _db.Projects
-            .Where(p => p.OwnerUserId == userId.Value)
+            .Where(p => p.OwnerUserId == userId.Value && !p.IsArchived)
             .Select(p => new PrivateProjectDto
             {
                 Id = p.Id,
@@ -370,7 +370,7 @@ public class ProjectController : ControllerBase
         if (project is null) return NotFound();
         if (project.OwnerUserId != userId.Value) return Forbid();
 
-        if (project.IsArchived) return Conflict("This project is archived. Unarchive it to edit it.");
+        if (project.IsArchived) return Conflict("This project has been deleted.");
         // The reviewer is looking at the project as shipped
         if (StreakService.InReview(project.Status)) return Conflict("This project can't be edited while it's in review.");
 
@@ -422,10 +422,12 @@ public class ProjectController : ControllerBase
         return Ok(ToPrivateDto(project));
     }
 
-    // Archive/unarchive one of the authenticated user's own projects
+    // Delete one of the authenticated user's own projects. A soft delete: the row stays
+    // (IsArchived) so its ships, journals and payouts still add up, and an admin can
+    // restore it, but it's gone from the owner's lists and locked for good.
     [Authorize]
-    [HttpPost("{id:guid}/archive")]
-    public async Task<IActionResult> SetArchived(Guid id, [FromBody] SetArchivedDto dto)
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
     {
         var userId = this.GetUserId();
         if (userId is null) return Unauthorized();
@@ -434,24 +436,19 @@ public class ProjectController : ControllerBase
         if (project is null) return NotFound();
         if (project.OwnerUserId != userId.Value) return Forbid();
 
-        if (dto.IsArchived && !project.IsArchived)
+        if (!project.IsArchived)
         {
-            if (StreakService.InReview(project.Status)) return Conflict("This project can't be archived while it's in review.");
+            if (StreakService.InReview(project.Status)) return Conflict("This project can't be deleted while it's in review.");
 
             project.IsArchived = true;
             project.ArchivedAt = DateTime.UtcNow;
             // Drop the streak so the streak worker doesn't spend the owner's freezes on it
             project.StreakCount = 0;
             project.LastStreakDate = null;
+            await _db.SaveChangesAsync();
         }
-        else if (!dto.IsArchived && project.IsArchived)
-        {
-            project.IsArchived = false;
-            project.ArchivedAt = null;
-        }
-        await _db.SaveChangesAsync();
 
-        return Ok(ToPrivateDto(project));
+        return NoContent();
     }
 
     // Pause/resume spending the owner's streak freezes on one of their own projects

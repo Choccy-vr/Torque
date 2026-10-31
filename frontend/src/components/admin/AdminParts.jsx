@@ -246,7 +246,7 @@ export function Rows({ children }) {
 }
 
 // An inline "are you sure?" for actions that are hard to undo or reach
-// someone else (ban, delete, archive). Focuses its confirm button on open.
+// someone else (ban, delete). Focuses its confirm button on open.
 export function ConfirmBox({ id, title, children, confirmLabel, busyLabel, icon: Icon, busy, onConfirm, onCancel }) {
     const confirmRef = useRef(null);
     useEffect(() => { confirmRef.current?.focus(); }, []);

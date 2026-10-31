@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Torque.Data;
 using Torque.Payouts;
+using Torque.Settings;
 
 namespace Torque.Shop;
 
@@ -43,7 +44,13 @@ public class ShopService
     }
 
     private readonly AppDbContext _db;
-    public ShopService(AppDbContext db) => _db = db;
+    private readonly SettingsService _settings;
+
+    public ShopService(AppDbContext db, SettingsService settings)
+    {
+        _db = db;
+        _settings = settings;
+    }
 
     public static DateOnly TodayEastern(DateTime? utcNow = null) =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(utcNow ?? DateTime.UtcNow, Eastern));
@@ -74,9 +81,12 @@ public class ShopService
 
     // The daily item for `date`, rolling one if nobody has asked yet that day. Two
     // concurrent first requests both insert; ON CONFLICT keeps the first, and both read it
-    // back. Null when there's nothing eligible to roll.
+    // back. Null when there's nothing eligible to roll, or while the random item is paused
+    // (nothing is rolled then, so the day gets a fresh roll if it's switched back on).
     public async Task<Guid?> GetOrCreateDailyAsync(DateOnly date, CancellationToken ct = default)
     {
+        if (await _settings.IsPausedAsync(SettingKeys.RandomItemPaused, ct)) return null;
+
         var existing = await _db.DailyShopPicks.AsNoTracking()
             .Where(d => d.Date == date)
             .Select(d => (Guid?)d.ShopItemId)

@@ -144,9 +144,9 @@ export function updateProject(id, changes) {
     return sendJson('PATCH', `api/project/${encodeURIComponent(id)}`, changes)
 }
 
-// POST api/project/{id}/archive — PrivateProjectDto
-export function setProjectArchived(id, isArchived) {
-    return sendJson('POST', `api/project/${encodeURIComponent(id)}/archive`, { isArchived })
+// DELETE api/project/{id} — 204. A soft delete only an admin can undo.
+export function deleteProject(id) {
+    return sendJson('DELETE', `api/project/${encodeURIComponent(id)}`)
 }
 
 // POST api/project/{id}/streak/freezes — PrivateProjectDto
@@ -342,7 +342,7 @@ export function deleteShopItem(id) {
     return sendJson('DELETE', `api/admin/shop/items/${encodeURIComponent(id)}`)
 }
 
-// GET api/admin/shop/daily — { today, endsAt, current, picks[] }
+// GET api/admin/shop/daily — { today, endsAt, paused, current, picks[] }
 export function getAdminShopDaily() {
     return getJson('api/admin/shop/daily')
 }

@@ -1,5 +1,6 @@
 import { useCallback, useId, useMemo, useRef, useState } from "react";
-import { Dices, FileUp, ImageUp, LoaderCircle, Pencil, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { CirclePause, Dices, FileUp, ImageUp, LoaderCircle, Pencil, Plus, Settings2, ShoppingBag, Trash2, X } from "lucide-react";
 import AdminShell from "../../components/admin/AdminShell.jsx";
 import { ConfirmBox, Panel, Tag } from "../../components/admin/AdminParts.jsx";
 import { Empty, InlineError } from "../../components/PageParts.jsx";
@@ -103,7 +104,9 @@ function ShopAdmin() {
     );
 }
 
-// Today's random item, with a reroll and a way to pick one by hand.
+// Today's random item, with a reroll and a way to pick one by hand. While it's
+// paused (random_item_paused) builders don't see one and it can't be changed,
+// so the panel shows what comes back instead.
 function DailyPanel({ items }) {
     const daily = useApi(getAdminShopDaily);
     const action = useAction();
@@ -122,12 +125,41 @@ function DailyPanel({ items }) {
     }
 
     const current = daily.data?.current;
+    const paused = Boolean(daily.data?.paused);
     return (
-        <Panel id="daily-heading" title="Random item of the day">
+        <Panel
+            id="daily-heading"
+            title="Random item of the day"
+            action={paused && (
+                <Tag accent>
+                    <CirclePause aria-hidden="true" className="size-3.5" />
+                    Paused
+                </Tag>
+            )}
+        >
             {daily.loading && !daily.data ? (
                 <div aria-busy="true" className="h-16 rounded-2xl bg-white/10 motion-safe:animate-pulse" />
             ) : daily.error ? (
                 <InlineError what="today's random item" onRetry={daily.reload} />
+            ) : paused ? (
+                <div className="flex flex-col gap-5">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                            <p className="text-xl font-semibold break-words">{current ? current.itemName ?? "Deleted item" : "Nothing picked today"}</p>
+                            <p className="text-sm text-(--text)/80">
+                                {current ? "Comes back when you unpause it" : "One is rolled at random when you unpause it"}
+                            </p>
+                        </div>
+                        <Link to="/admin/settings" className={BTN_OUTLINE}>
+                            <Settings2 aria-hidden="true" className="size-4.5" />
+                            Unpause in Settings
+                        </Link>
+                    </div>
+                    <p className="max-w-[62ch] leading-relaxed text-(--text)/85">
+                        Builders don't see a random item while it's paused. Random-only items can't be bought, and level locks apply to every item.
+                    </p>
+                    <RecentPicks picks={daily.data.picks} />
+                </div>
             ) : (
                 <div className="flex flex-col gap-5">
                     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -170,24 +202,30 @@ function DailyPanel({ items }) {
                         </ConfirmBox>
                     )}
                     <FormError>{action.error}</FormError>
-                    {daily.data.picks.length > 1 && (
-                        <details className="group">
-                            <summary className={`-ml-3 inline-flex min-h-11 cursor-pointer items-center rounded-(--radius) px-3 font-medium underline decoration-(--accent) decoration-2 underline-offset-4 transition-all duration-300 ease hover:bg-white/10 ${FOCUS}`}>
-                                Recent random items
-                            </summary>
-                            <ul className="mt-2 flex flex-col divide-y-2 divide-white/10 rounded-2xl border-2 border-white/10 bg-(--bg)/30">
-                                {daily.data.picks.map((p) => (
-                                    <li key={p.date} className="flex justify-between gap-4 px-4 py-2.5 text-sm">
-                                        <span className="break-words">{p.itemName ?? "Deleted item"}</span>
-                                        <span className="shrink-0 text-(--text)/75 tabular-nums">{formatDay(`${p.date}T12:00:00`)}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </details>
-                    )}
+                    <RecentPicks picks={daily.data.picks} />
                 </div>
             )}
         </Panel>
+    );
+}
+
+// The last few days' random items, folded away. Hidden until there's more than today's.
+function RecentPicks({ picks }) {
+    if (picks.length <= 1) return null;
+    return (
+        <details className="group">
+            <summary className={`-ml-3 inline-flex min-h-11 cursor-pointer items-center rounded-(--radius) px-3 font-medium underline decoration-(--accent) decoration-2 underline-offset-4 transition-all duration-300 ease hover:bg-white/10 ${FOCUS}`}>
+                Recent random items
+            </summary>
+            <ul className="mt-2 flex flex-col divide-y-2 divide-white/10 rounded-2xl border-2 border-white/10 bg-(--bg)/30">
+                {picks.map((p) => (
+                    <li key={p.date} className="flex justify-between gap-4 px-4 py-2.5 text-sm">
+                        <span className="break-words">{p.itemName ?? "Deleted item"}</span>
+                        <span className="shrink-0 text-(--text)/75 tabular-nums">{formatDay(`${p.date}T12:00:00`)}</span>
+                    </li>
+                ))}
+            </ul>
+        </details>
     );
 }
 

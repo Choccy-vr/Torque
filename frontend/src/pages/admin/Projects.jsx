@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Archive, Clock, Star, Zap } from "lucide-react";
+import { Clock, Star, Trash2, Zap } from "lucide-react";
 import AdminShell from "../../components/admin/AdminShell.jsx";
 import { FilterSelect, ResultList, ResultRow, SearchField, Tag, Toolbar } from "../../components/admin/AdminParts.jsx";
 import { useParam } from "../../lib/admin.js";
@@ -9,9 +9,9 @@ import { ADMIN_PROJECT_STATUS, formatDay } from "../../lib/projects.js";
 import { useApi } from "../../lib/useApi.js";
 
 const STATUS_OPTIONS = [["", "Any"], ...Object.entries(ADMIN_PROJECT_STATUS).map(([value, { label }]) => [value, label])];
-const ARCHIVED_OPTIONS = [["", "Any"], ["false", "Active"], ["true", "Archived"]];
+const ARCHIVED_OPTIONS = [["", "Any"], ["false", "Active"], ["true", "Deleted"]];
 
-// /admin/projects — every project, any status, archived ones too.
+// /admin/projects — every project, any status, deleted ones too.
 export default function AdminProjects() {
     return (
         <AdminShell title="Projects">
@@ -57,7 +57,7 @@ export function ProjectRow({ project: p, showOwner = true }) {
             meta={[showOwner && (p.ownerUsername || "Unknown owner"), `Level ${p.tier}`, `Started ${formatDay(p.createdAt)}`].filter(Boolean).join(" · ")}
             trail={
                 <>
-                    {p.isArchived && <Tag><Archive aria-hidden="true" className="size-3.5" />Archived</Tag>}
+                    {p.isArchived && <Tag><Trash2 aria-hidden="true" className="size-3.5" />Deleted</Tag>}
                     {p.isStaffPick && <Tag><Star aria-hidden="true" className="size-3.5" />Staff pick</Tag>}
                     <ProjectStatusBadge status={p.status} statuses={ADMIN_PROJECT_STATUS} />
                     <span className="inline-flex items-center gap-1">

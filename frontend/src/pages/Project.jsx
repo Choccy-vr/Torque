@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
-    Archive, ArchiveRestore, ArrowUpRight, CalendarX, ChevronDown, CircleAlert, CirclePause, Clock, FileText, Flame, FolderGit2,
-    Globe, NotebookPen, Pencil, Plus, Ship, Sparkles, Star, Zap,
+    ArrowUpRight, CalendarX, ChevronDown, CircleAlert, CirclePause, Clock, FileText, Flame, FolderGit2,
+    Globe, NotebookPen, Pencil, Plus, Ship, Sparkles, Star, Trash2, Zap,
 } from "lucide-react";
 import AppShell from "../components/AppShell.jsx";
 import ProjectStatusBadge from "../components/ProjectStatusBadge.jsx";
@@ -17,7 +17,7 @@ import ShipForm from "../components/project/ShipForm.jsx";
 import JournalComposer from "../components/project/JournalComposer.jsx";
 import Switch from "../components/Switch.jsx";
 import {
-    getDevlogs, getMyProfile, getMyProjects, getMyShips, getProject, getShipWindow, getUserProfile, setProjectArchived, setStreakFreezesPaused, updateProject,
+    deleteProject, getDevlogs, getMyProfile, getMyProjects, getMyShips, getProject, getShipWindow, getUserProfile, setStreakFreezesPaused, updateProject,
 } from "../lib/endpoints.js";
 import { SHIP_STATUS, formatDay, formatDeadline, lastDay } from "../lib/projects.js";
 import { useApi } from "../lib/useApi.js";
@@ -27,7 +27,7 @@ import { Avatar } from "../components/EmptyImage.jsx";
 
 // /projects/:id — one project, for anyone. Its owner also gets their private
 // numbers (Volts, streak freezes, Hackatime links), their ships,
-// and the tools to edit, ship, journal and archive it in place.
+// and the tools to edit, ship, journal and delete it in place.
 export default function Project() {
     const { id } = useParams();
     return <ProjectView key={id} projectId={id} />;
@@ -110,7 +110,7 @@ function ProjectPage({ projectApi, isOwner }) {
         requestAnimationFrame(() => document.querySelector(`[data-opens="${opened}"]`)?.focus());
     };
 
-    const archived = project.isArchived;
+    const deleted = project.isArchived; // the API still calls a deleted project "archived"
     const inReview = IN_REVIEW.includes(project.status);
     const designApproved = projectShips.some((s) => !s.isBuildComplete && s.status === "approved");
     // A ship needs an hour of journaled time no approved ship has credited yet
@@ -128,9 +128,9 @@ function ProjectPage({ projectApi, isOwner }) {
     const win = shipWindow.data;
     const shipClosed = Boolean(win) && !win.design.open && !win.build.open;
     const lateFixUntil = win?.design.lateFixUntil ?? win?.build.lateFixUntil ?? null;
-    const shippable = !archived && !inReview && project.status !== "Perm_Rejected" && !shipClosed;
+    const shippable = !deleted && !inReview && project.status !== "Perm_Rejected" && !shipClosed;
     const blocked = {
-        ship: archived ? "Unarchive this project to ship it."
+        ship: deleted ? "Deleted, so it can't be shipped."
             : inReview ? "In review. You can ship again once a reviewer has looked at it."
             : project.status === "Perm_Rejected" ? "Permanently rejected, so it can't be shipped again."
             : shipClosed ? `Shipping closed on ${lastDay(win.build.closesAt)}.`
@@ -138,26 +138,28 @@ function ProjectPage({ projectApi, isOwner }) {
             : !priv || (shipWindow.loading && !win) ? "Checking your hours…"
             : unpaidHours < 1 ? `Journal ${hoursNeeded}h more to ship.`
             : null,
-        edit: archived ? "Unarchive to edit." : inReview ? "Can't edit while it's in review." : null,
-        archive: inReview ? "Can't archive while it's in review." : null,
-        journal: archived ? "Unarchive this project to journal on it." : journalPaused,
+        edit: deleted ? "Deleted, so it can't be edited." : inReview ? "Can't edit while it's in review." : null,
+        delete: inReview ? "Can't delete while it's in review." : null,
+        journal: deleted ? "Deleted, so it can't be journaled on." : journalPaused,
     };
     // Paused switches the owner would otherwise run into on this project.
-    const pauseKeys = isOwner && !archived ? [...(shippable ? [shipPauseKey] : []), PAUSE.journaling] : [];
+    const pauseKeys = isOwner && !deleted ? [...(shippable ? [shipPauseKey] : []), PAUSE.journaling] : [];
     // The grant a design ship asked for lands on that ship: the newest
     // final-approved design ship that requested funding.
     const grantShipId = project.grantStatus !== "None"
         ? projectShips.find((s) => !s.isBuildComplete && s.requestedFunding > 0 && s.finalApprovedAt)?.id
         : null;
 
-    const [archiveError, setArchiveError] = useState(null);
-    async function setArchived(next) {
-        setArchiveError(null);
+    // A deleted project is gone from the owner's lists, so they land back on theirs.
+    const navigate = useNavigate();
+    const [deleteError, setDeleteError] = useState(null);
+    async function removeProject() {
+        setDeleteError(null);
         try {
-            await setProjectArchived(project.id, next);
-            closeAndRefresh();
+            await deleteProject(project.id);
+            navigate("/projects", { replace: true, state: { deleted: project.title } });
         } catch (err) {
-            setArchiveError(errorText(err));
+            setDeleteError(errorText(err));
         }
     }
 
@@ -181,8 +183,8 @@ function ProjectPage({ projectApi, isOwner }) {
                             blocked={blocked}
                             panel={panel}
                             onPanel={setPanel}
-                            onArchive={setArchived}
-                            archiveError={archiveError}
+                            onDelete={removeProject}
+                            deleteError={deleteError}
                             onStreakChanged={reloadData}
                             onCoverChange={setCover}
                         />
@@ -211,7 +213,6 @@ function ProjectPage({ projectApi, isOwner }) {
                                 shipClosed={shipClosed && lastDay(win.build.closesAt)}
                                 lateFixUntil={lateFixUntil}
                                 onCompose={() => setPanel("journal")}
-                                onUnarchive={() => setArchived(false)}
                                 hoursNeeded={priv && unpaidHours < 1 ? hoursNeeded : 0}
                             />
                             <PauseNotices keys={pauseKeys} />
@@ -243,8 +244,8 @@ function ProjectPage({ projectApi, isOwner }) {
 
 // ---------------------------------------------------------------- the card
 
-function ProjectCard({ project, owner, isOwner, blocked, panel, onPanel, onArchive, archiveError, onStreakChanged, onCoverChange }) {
-    const [confirmingArchive, setConfirmingArchive] = useState(false);
+function ProjectCard({ project, owner, isOwner, blocked, panel, onPanel, onDelete, deleteError, onStreakChanged, onCoverChange }) {
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
 
     return (
         <article aria-labelledby="project-title" className="t-card overflow-hidden text-(--text)">
@@ -262,19 +263,18 @@ function ProjectCard({ project, owner, isOwner, blocked, panel, onPanel, onArchi
                                 blocked={blocked}
                                 panel={panel}
                                 onPanel={onPanel}
-                                confirmingArchive={confirmingArchive}
-                                onArchive={() => setConfirmingArchive((c) => !c)}
-                                onUnarchive={() => onArchive(false)}
+                                confirmingDelete={confirmingDelete}
+                                onDelete={() => setConfirmingDelete((c) => !c)}
                             />
                         )}
                     </div>
-                    {confirmingArchive && !project.isArchived && (
-                        <ArchiveConfirm
+                    {confirmingDelete && !project.isArchived && (
+                        <DeleteConfirm
                             project={project}
-                            onConfirm={() => onArchive(true)}
+                            onConfirm={onDelete}
                             onCancel={() => {
-                                setConfirmingArchive(false);
-                                requestAnimationFrame(() => document.querySelector('[data-opens="archive"]')?.focus());
+                                setConfirmingDelete(false);
+                                requestAnimationFrame(() => document.querySelector('[data-opens="delete"]')?.focus());
                             }}
                         />
                     )}
@@ -310,15 +310,15 @@ function ProjectCard({ project, owner, isOwner, blocked, panel, onPanel, onArchi
                     </div>
                 )}
 
-                <FormError>{archiveError}</FormError>
+                <FormError>{deleteError}</FormError>
             </div>
         </article>
     );
 }
 
-// Ship, then edit and archive as icon buttons, at the top right of the card.
+// Ship, then edit and delete as icon buttons, at the top right of the card.
 // A blocked control stays focusable and says why in its tooltip.
-function OwnerTools({ project, blocked, panel, confirmingArchive, onPanel, onArchive, onUnarchive }) {
+function OwnerTools({ project, blocked, panel, confirmingDelete, onPanel, onDelete }) {
     const shipOpen = panel === "ship";
 
     return (
@@ -341,17 +341,15 @@ function OwnerTools({ project, blocked, panel, confirmingArchive, onPanel, onArc
                 )}
             </Tip>
             <IconButton icon={Pencil} label="Edit project" reason={blocked.edit} data-opens="edit" onClick={() => onPanel("edit")} />
-            {project.isArchived ? (
-                <IconButton icon={ArchiveRestore} label="Unarchive project" onClick={onUnarchive} />
-            ) : (
+            {!project.isArchived && (
                 <IconButton
-                    icon={Archive}
-                    label="Archive project"
-                    reason={blocked.archive}
-                    data-opens="archive"
-                    aria-expanded={confirmingArchive}
-                    aria-controls={confirmingArchive ? "archive-confirm-panel" : undefined}
-                    onClick={onArchive}
+                    icon={Trash2}
+                    label="Delete project"
+                    reason={blocked.delete}
+                    data-opens="delete"
+                    aria-expanded={confirmingDelete}
+                    aria-controls={confirmingDelete ? "delete-confirm-panel" : undefined}
+                    onClick={onDelete}
                 />
             )}
         </div>
@@ -401,24 +399,24 @@ function IconButton({ icon: Icon, label, reason, onClick, ...rest }) {
     );
 }
 
-function ArchiveConfirm({ project, onConfirm, onCancel }) {
+// Deleting can't be undone from here (an admin can restore it), so the
+// confirm is fully coral-edged, like the admin ConfirmBox.
+function DeleteConfirm({ project, onConfirm, onCancel }) {
     const [busy, setBusy] = useState(false);
     const confirmRef = useRef(null);
-    const streakDays = project.streak ?? 0;
 
     useEffect(() => { confirmRef.current?.focus(); }, []);
 
     return (
         <div
-            id="archive-confirm-panel"
+            id="delete-confirm-panel"
             role="group"
-            aria-labelledby="archive-confirm"
-            className="flex flex-col gap-4 rounded-2xl border-2 border-(--accent)/55 bg-(--bg)/45 px-4 py-4 sm:px-5"
+            aria-labelledby="delete-confirm"
+            className="flex flex-col gap-4 rounded-2xl border-2 border-(--accent) bg-(--bg)/45 px-4 py-4 sm:px-5"
         >
-            <p id="archive-confirm" className="max-w-[65ch] leading-relaxed text-(--text)">
-                <strong className="font-bold">Archive {project.title}?</strong>{" "}
-                It'll be hidden from search and locked (no edits, journal entries or ships) until you unarchive it.
-                {streakDays > 0 && ` Its ${streakDays}-day streak resets to 0.`}
+            <p id="delete-confirm" className="max-w-[65ch] leading-relaxed text-(--text)">
+                <strong className="font-bold">Are you sure you want to delete {project.title}?</strong>{" "}
+                This is irreversible.
             </p>
             <div className="flex flex-wrap gap-3">
                 <button
@@ -428,14 +426,28 @@ function ArchiveConfirm({ project, onConfirm, onCancel }) {
                     onClick={async () => { setBusy(true); await onConfirm(); setBusy(false); }}
                     className={BTN_OUTLINE}
                 >
-                    <Archive aria-hidden="true" className="size-4.5" />
-                    {busy ? "Archiving…" : "Archive project"}
+                    <Trash2 aria-hidden="true" className="size-4.5" />
+                    {busy ? "Deleting…" : "Delete project"}
                 </button>
                 <button type="button" disabled={busy} onClick={onCancel} className={BTN_GHOST}>
                     Keep it
                 </button>
             </div>
         </div>
+    );
+}
+
+// Where to ask an admin to restore a deleted project.
+function TorqueChannel() {
+    return (
+        <a
+            href="https://hackclub.enterprise.slack.com/archives/C0BHGT33JHH"
+            target="_blank"
+            rel="noreferrer"
+            className={`rounded-sm font-medium text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 transition-colors duration-300 ease hover:bg-white/10 ${FOCUS}`}
+        >
+            #torque on Slack
+        </a>
     );
 }
 
@@ -457,7 +469,7 @@ function Chips({ project }) {
             <Chip>Level {project.tier}</Chip>
             {project.isStaffPick && <Chip icon={Star} accent>Staff pick</Chip>}
             {project.exceptional && <Chip icon={Sparkles} accent>Exceptional</Chip>}
-            {project.isArchived && <Chip icon={Archive}>Archived</Chip>}
+            {project.isArchived && <Chip icon={Trash2}>Deleted</Chip>}
         </div>
     );
 }
@@ -486,7 +498,7 @@ function Byline({ project, owner }) {
                 <>
                     <span aria-hidden="true" className="text-(--text)/50">·</span>
                     <span className="text-sm tabular-nums">
-                        Archived <time dateTime={project.archivedAt}>{formatDay(project.archivedAt)}</time>
+                        Deleted <time dateTime={project.archivedAt}>{formatDay(project.archivedAt)}</time>
                     </span>
                 </>
             )}
@@ -671,21 +683,18 @@ function ProjectLinks({ project, isOwner, onAdd }) {
 const TEXT_ACTION = `-my-2 inline-flex min-h-11 shrink-0 items-center rounded-(--radius) px-3 font-medium text-(--text) underline decoration-(--accent) decoration-2 underline-offset-4 transition-all duration-300 ease hover:bg-white/10 ${FOCUS}`;
 
 // One slim line about where the project stands, when that's worth saying:
-// archived (for everyone), and for the owner the state of their latest ship.
+// deleted (for everyone), and for the owner the state of their latest ship.
 // The reviewer's feedback itself lives on the ship card in the timeline.
 // `shipClosed` is the day shipping closed (or false); `lateFixUntil` is when the
 // one resubmission after a deadline is due, while it's still open.
-function StatusNotice({ project, isOwner, owner, latestShip, canJournal, shipClosed, lateFixUntil, onCompose, onUnarchive, hoursNeeded }) {
+function StatusNotice({ project, isOwner, owner, latestShip, canJournal, shipClosed, lateFixUntil, onCompose, hoursNeeded }) {
     if (project.isArchived) {
         return (
-            <Notice
-                icon={Archive}
-                action={isOwner && <button type="button" onClick={onUnarchive} className={TEXT_ACTION}>Unarchive</button>}
-            >
-                <b className="font-bold text-(--text)">Archived.</b>{" "}
+            <Notice icon={Trash2}>
+                <b className="font-bold text-(--text)">Deleted.</b>{" "}
                 {isOwner
-                    ? "Hidden from search and locked until you unarchive it."
-                    : `${owner?.username ?? "Its builder"} archived it${project.archivedAt ? ` on ${formatDay(project.archivedAt)}` : ""}.`}
+                    ? <>It's off your dashboard and profile, and locked. Ask in <TorqueChannel /> if you want it back.</>
+                    : `${owner?.username ?? "Its builder"} deleted it${project.archivedAt ? ` on ${formatDay(project.archivedAt)}` : ""}.`}
             </Notice>
         );
     }

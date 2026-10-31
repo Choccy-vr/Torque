@@ -20,7 +20,7 @@ export const BTN_PRIMARY = `${BTN} border-(--accent) bg-(--accent) text-(--btn-t
 // Coral-outline pill, the secondary path beside a primary.
 export const BTN_OUTLINE = `${BTN} border-(--accent)/55 text-(--text) hover:border-(--accent) hover:bg-(--accent)/15 disabled:border-white/15 disabled:bg-transparent disabled:text-(--text)/75`;
 
-// Borderless until hovered, for quiet actions (Cancel, Archive).
+// Borderless until hovered, for quiet actions (Cancel, Keep it).
 export const BTN_GHOST = `${BTN} border-transparent text-(--text) hover:border-white/20 hover:bg-white/10 disabled:text-(--text)/75 disabled:hover:border-transparent disabled:hover:bg-transparent`;
 
 export const INPUT = `w-full rounded-2xl border-2 border-white/15 bg-(--bg)/70 px-4 py-2.5 text-(--text) caret-(--accent) placeholder:text-(--text)/75 transition-colors duration-300 ease hover:border-white/30 focus:border-(--accent) focus:outline-none ${FOCUS} aria-[invalid=true]:border-(--accent)`;

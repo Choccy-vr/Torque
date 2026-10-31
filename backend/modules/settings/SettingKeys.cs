@@ -16,6 +16,7 @@ public static class SettingKeys
     public const string StreaksPaused = "streaks_paused";
     public const string PayoutsPaused = "payouts_paused";
     public const string ShopPaused = "shop_paused";
+    public const string RandomItemPaused = "random_item_paused";
 
     public static readonly IReadOnlyList<SettingDefinition> All =
     [
@@ -47,6 +48,10 @@ public static class SettingKeys
             "Pause the shop",
             "Nobody can place shop orders. The shop stays browsable, and pending orders can still be fulfilled or refunded.",
             "Oops, looks like the shop is paused right now. Your Volts are safe, so please come back later to order!"),
+        new(RandomItemPaused,
+            "Pause the random item",
+            "The shop acts as if there's no random item of the day: none is shown or rolled, random-only items can't be bought, and level locks apply to everything. Builders aren't shown a message. Switching it off brings back today's item, or rolls one.",
+            "There's no random item today."),
     ];
 
     // Either of these stops missed streak days from being settled.

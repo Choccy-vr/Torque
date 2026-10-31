@@ -37,8 +37,9 @@ public class Project
 
     public bool IsStaffPick { get; set; } = false;
 
-    // Archived by its owner: hidden from search and locked (no edits, journals or ships)
-    // until unarchived. Archiving drops the streak.
+    // Deleted by its owner (a soft delete; the column keeps its old "archived" name):
+    // left out of search and the owner's/profile lists, and locked (no edits, journals
+    // or ships). Only an admin can restore it. Deleting drops the streak.
     public bool IsArchived { get; set; } = false;
     public DateTime? ArchivedAt { get; set; }
 

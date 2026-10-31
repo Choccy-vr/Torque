@@ -79,7 +79,7 @@ const TOTALS = [
     { key: "ships", one: "Ship", many: "Ships", icon: Ship },
 ];
 
-// Every user, project and ship ever made (banned, archived and rejected too),
+// Every user, project and ship ever made (banned, deleted and rejected too),
 // as the shop's strip of ruled cells. Refetched on each tab, so it stays fresh.
 function Totals() {
     const stats = useApi(getAdminStats);

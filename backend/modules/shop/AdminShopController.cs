@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Torque.Data;
 using Torque.Extensions;
+using Torque.Settings;
 using Torque.Slack;
 // Admin-only shop management: items (one at a time or in bulk), the daily item, and the
 // order fulfilment queue.
@@ -27,13 +28,15 @@ public class AdminShopController : ControllerBase
 
     private readonly AppDbContext _db;
     private readonly ShopService _shop;
+    private readonly SettingsService _settings;
     private readonly SlackNotifier _slack;
     private readonly SlackOptions _slackOptions;
 
-    public AdminShopController(AppDbContext db, ShopService shop, SlackNotifier slack, SlackOptions slackOptions)
+    public AdminShopController(AppDbContext db, ShopService shop, SettingsService settings, SlackNotifier slack, SlackOptions slackOptions)
     {
         _db = db;
         _shop = shop;
+        _settings = settings;
         _slack = slack;
         _slackOptions = slackOptions;
     }
@@ -174,6 +177,8 @@ public class AdminShopController : ControllerBase
     }
 
     // Today's daily item (rolled now if nobody has opened the shop yet) and recent picks.
+    // While the random item is paused nothing is rolled, and current is the pick (if any)
+    // that comes back when it's switched on.
     [Authorize]
     [HttpGet("daily")]
     public async Task<IActionResult> Daily([FromQuery] int? days, CancellationToken ct)
@@ -197,6 +202,11 @@ public class AdminShopController : ControllerBase
         if (dto.ItemId is { } itemId && !await _db.ShopItems.AnyAsync(i => i.Id == itemId && i.IsActive, ct))
         {
             return BadRequest("ItemId must reference an active item.");
+        }
+
+        if (await _settings.IsPausedAsync(SettingKeys.RandomItemPaused, ct))
+        {
+            return Conflict("The random item is paused. Switch it back on in Settings to pick or reroll it.");
         }
 
         var today = ShopService.TodayEastern();
@@ -432,6 +442,7 @@ public class AdminShopController : ControllerBase
         {
             today,
             endsAt = ShopService.NextRotationUtc(),
+            paused = await _settings.IsPausedAsync(SettingKeys.RandomItemPaused, ct),
             current = picks.FirstOrDefault(p => p.date == today),
             picks
         };
