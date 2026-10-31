@@ -486,16 +486,13 @@ function ItemEditor({ heading, initial, submitLabel, onSubmit, onDone, onCancel,
             <fieldset className="flex flex-col gap-2.5">
                 <legend className={`${label} mb-2.5`}>Level that unlocks it</legend>
                 <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                    {LEVELS.map(({ level, name: levelName }) => (
+                    {LEVELS.map(({ level }) => (
                         <label
                             key={level}
                             className="flex min-h-12 cursor-pointer items-center gap-2 rounded-2xl border-2 border-white/15 px-4 py-2 transition-all duration-300 ease hover:border-white/30 hover:bg-white/10 has-checked:border-(--accent) has-checked:bg-(--accent)/15 has-focus-visible:outline-2 has-focus-visible:outline-solid has-focus-visible:outline-offset-3 has-focus-visible:outline-(--text)"
                         >
                             <input type="radio" name={`${id}-tier`} checked={tier === level} onChange={() => setTier(level)} className="sr-only" />
-                            <span className="flex min-w-0 flex-col sm:flex-row sm:items-baseline sm:gap-2">
-                                <span className="font-semibold">Level {level}</span>
-                                <span className="truncate text-sm text-(--text)/75">{levelName}</span>
-                            </span>
+                            <span className="font-semibold">Level {level}</span>
                         </label>
                     ))}
                 </div>

@@ -9,7 +9,7 @@ import CheckoutDialog from "../components/shop/CheckoutDialog.jsx";
 import { ItemImage, Volts } from "../components/shop/ShopParts.jsx";
 import { cancelShopOrder, clearMyProfile, getMyShopOrders, getShop } from "../lib/endpoints.js";
 import { errorText } from "../lib/forms.js";
-import { formatDay, lastDay, LEVELS } from "../lib/projects.js";
+import { formatDay, lastDay } from "../lib/projects.js";
 import { PAUSE, pausedMessage, useSettings } from "../lib/settings.js";
 import { ORDER_STATUS, REASON_LABEL, regionName, stockText, useCountdown } from "../lib/shop.js";
 import { useApi } from "../lib/useApi.js";
@@ -233,7 +233,6 @@ const fade = ({ start, end }) =>
 // with ‹ › buttons once it overflows. Locked levels still show what's on them,
 // drawn neutral, with what unlocks them.
 function LevelSection({ tier, dailyId, volts, onBuy }) {
-    const level = LEVELS.find((l) => l.level === tier.tier);
     const id = `level-${tier.tier}`;
     const rowRef = useRef(null);
     const edges = useScrollEdges(rowRef, tier.items);
@@ -247,7 +246,7 @@ function LevelSection({ tier, dailyId, volts, onBuy }) {
     return (
         <Section
             id={`${id}-heading`}
-            title={`Level ${tier.tier}${level ? ` · ${level.name}` : ""}`}
+            title={`Level ${tier.tier}`}
             count={tier.items.length}
             action={(!tier.unlocked || edges.start || edges.end) && (
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
