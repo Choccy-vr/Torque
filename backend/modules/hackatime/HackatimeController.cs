@@ -88,7 +88,7 @@ public class HackatimeController : ControllerBase
         return Ok(new { projects = names });
     }
 
-    // Counted hours from October 27, 2026 onward (+ per-project breakdown) for a
+    // Counted hours from October 1, 2026 onward (+ per-project breakdown) for a
     // set of the authenticated user's linked Hackatime project names.
     [Authorize]
     [EnableRateLimiting("hackatime-read")]

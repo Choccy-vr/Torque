@@ -11,7 +11,7 @@ namespace Torque.Hackatime;
 
 public class HackatimeService
 {
-    private const string CountingStartsAt = "2026-10-27T00:00:00Z";
+    private const string CountingStartsAt = "2026-10-01T00:00:00Z";
 
     // Written to User.InternalNote when a trust check bans an account: at connect, or
     // when it's re-checked before shipping.
@@ -230,7 +230,7 @@ public class HackatimeService
             .Select(n => n!)];
     }
 
-    // Counted hours from October 27, 2026 onward (in seconds from Hackatime,
+    // Counted hours from October 1, 2026 onward (in seconds from Hackatime,
     // converted to hours) for the given linked project names, plus a per-project
     // breakdown. Single API call.
     public async Task<(double Hours, Dictionary<string, double> PerProject)> GetHoursForProjectsAsync(Guid userId, string[] projectNames)
@@ -242,7 +242,7 @@ public class HackatimeService
         return (Math.Round(seconds.Values.Sum() / 3600 * 10) / 10, perProject);
     }
 
-    // Raw counted seconds from October 27, 2026 onward summed across the given
+    // Raw counted seconds from October 1, 2026 onward summed across the given
     // linked project names. Null when Hackatime isn't connected or the fetch fails
     // (as opposed to 0 tracked).
     public async Task<double?> GetTotalSecondsForProjectsAsync(Guid userId, string[] projectNames)

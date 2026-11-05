@@ -723,7 +723,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/api/hackatime/hours',
     auth: true,
-    desc: 'Counted Hackatime hours from October 27, 2026 onward + per-project breakdown for the given linked project names.',
+    desc: 'Counted Hackatime hours from October 1, 2026 onward + per-project breakdown for the given linked project names.',
     body: {
       projectNames: ['my-project'],
     },
