@@ -1059,6 +1059,14 @@ namespace torque_backend.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
+                    b.Property<DateTime?>("NoJournalNudgeSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("no_journal_nudge_sent_at");
+
+                    b.Property<DateTime?>("NoProjectNudgeSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("no_project_nudge_sent_at");
+
                     b.Property<string>("ProfilePictureUrl")
                         .HasColumnType("text")
                         .HasColumnName("profile_picture_url");

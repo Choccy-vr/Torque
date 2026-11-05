@@ -89,6 +89,7 @@ public static class TestingExtension
 
         app.MapStreakSimulation();
         app.MapSlackTesting();
+        app.MapNudgeTesting();
         app.MapShopTesting();
 
         // Logs a journal entry carrying `hours` of tracked time without going through

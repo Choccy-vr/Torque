@@ -92,8 +92,18 @@ The "Custom request" panel handles anything not worth adding permanently.
 - The Slack section's **test DM** row calls the dev-only `POST /testing/slack/dm`
   (`modules/testing/SlackTesting.cs`), which sends one of the real DM templates
   (`welcome`, `shipped`, `approved`, `changes_needed`, `rejected`, and the streak ones with
-  sample numbers: `streak_at_risk`, `streak_freeze_used`, `streak_lost`, `streak_maxed`) to **your own** Slack ID
+  sample numbers: `streak_at_risk`, `streak_freeze_used`, `streak_lost`, `streak_maxed`, the shop ones, and the
+  nudges `no_project_nudge` and `no_journal_nudge`) to **your own** Slack ID
   and reports whether Slack accepted it. Needs `SLACK_BOT_TOKEN` in `backend/.env`.
+- The Slack section's nudge rows (`modules/testing/NudgeTesting.cs`) test `NudgeWorker`'s
+  "start a project" / "log your first hours" DMs. All of them check eligibility with the worker's own queries:
+  - `GET /testing/slack/nudges/me`: whether **you** qualify for each nudge, condition by condition.
+  - `POST /testing/slack/nudges/me/reset`: clears your sent-at markers; `backdateDays` also backdates your
+    account and projects so you clear the 4-day / 3-day delays.
+  - `POST /testing/slack/nudges/me`: sends one nudge to your own Slack ID now (ignores the daytime window).
+  - `GET /testing/slack/nudges/preview`: dry run listing everyone the real pass would DM.
+  - `POST /testing/slack/nudges`: runs the real pass. Careful: it DMs every qualifying user in your
+    database, not just you.
 - The Shop section's **test purchase** row (`POST /testing/shop/purchase`,
   `modules/testing/ShopTesting.cs`) runs the real purchase code with a fake address in
   `country` instead of reading your Hack Club Auth address, as you or any `userId`, so you

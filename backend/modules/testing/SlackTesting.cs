@@ -9,7 +9,7 @@ namespace Torque.Testing;
 
 // `template` is one of welcome | shipped | approved | changes_needed | rejected | streak_at_risk |
 // streak_freeze_used | streak_lost | streak_maxed | shop_order_placed | shop_order_fulfilled |
-// shop_order_refunded (sample numbers). The DM always
+// shop_order_refunded | no_project_nudge | no_journal_nudge (sample numbers). The DM always
 // goes to the signed-in user's own Slack ID — even in dev there's no way to message anyone
 // else. Sent synchronously (unlike SlackNotifier) so the harness can show whether it landed.
 public record SlackDmTestRequest(string? Template = null, string? ProjectTitle = null, string? Feedback = null);
@@ -51,11 +51,15 @@ public static class SlackTesting
                 "shop_order_placed" => SlackMessages.ShopOrderPlaced("USB drive", 2, 160, options.ShopUrl),
                 "shop_order_fulfilled" => SlackMessages.ShopOrderFulfilled("USB drive", 2, "1Z999AA10123456784", options.ShopUrl),
                 "shop_order_refunded" => SlackMessages.ShopOrderRefunded("USB drive", 2, 160, body.Feedback, options.ShopUrl),
+                "no_project_nudge" => SlackMessages.NoProjectNudge(user.Username ?? "builder", options.NewProjectUrl,
+                    options.DocsUrl("project-guides"), options.DocsUrl("projects/what-is-a-good-project")),
+                "no_journal_nudge" => SlackMessages.NoJournalNudge(title, 1, url,
+                    options.DocsUrl("journaling/how-to-journal"), options.DocsUrl("getting-started")),
                 _ => null
             };
             if (message is null)
             {
-                return Results.BadRequest("template must be welcome, shipped, approved, changes_needed, rejected, streak_at_risk, streak_freeze_used, streak_lost, streak_maxed, shop_order_placed, shop_order_fulfilled or shop_order_refunded.");
+                return Results.BadRequest("template must be welcome, shipped, approved, changes_needed, rejected, streak_at_risk, streak_freeze_used, streak_lost, streak_maxed, shop_order_placed, shop_order_fulfilled, shop_order_refunded, no_project_nudge or no_journal_nudge.");
             }
 
             var sent = await slack.SendDmAsync(user.SlackUserID, message);

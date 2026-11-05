@@ -4,7 +4,8 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace Torque.Slack;
 
 // Send-only Slack bot: DMs builders when they sign up, ship, get final approval or get a
-// review back, and about their streaks (see SlackMessages), and lets a user add themselves to the program's
+// review back, about their streaks, and nudges them to start a project / log time
+// (NudgeWorker; see SlackMessages), and lets a user add themselves to the program's
 // channels. Nothing here takes message text from a request — every message is a template.
 public static class SlackExtension
 {
@@ -25,6 +26,9 @@ public static class SlackExtension
         services.AddSingleton(options);
         services.AddHttpClient<SlackClient>(http => http.Timeout = TimeSpan.FromSeconds(10));
         services.AddSingleton<SlackNotifier>();
+        // Singleton + hosted so the dev-only test harness can trigger a pass on demand.
+        services.AddSingleton<NudgeWorker>();
+        services.AddHostedService(sp => sp.GetRequiredService<NudgeWorker>());
 
         if (!options.Configured)
         {

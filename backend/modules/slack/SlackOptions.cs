@@ -19,4 +19,10 @@ public class SlackOptions
     public string ProjectUrl(Guid projectId) => $"{FrontendUrl}/projects/{projectId}";
 
     public string ShopUrl => $"{FrontendUrl}/shop";
+
+    public string ProjectsUrl => $"{FrontendUrl}/projects";
+
+    public string NewProjectUrl => $"{FrontendUrl}/projects/new";
+
+    public string DocsUrl(string path) => $"{FrontendUrl}/docs/{path}";
 }

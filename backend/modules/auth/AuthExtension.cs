@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Torque.Data;
@@ -106,13 +107,22 @@ public static class AuthExtension
                 oidc.NonceCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 
                 oidc.Events.OnTokenValidated = SignInFromHcaAsync;
-                // Denied consent, a stale login link, HCA down: back to the landing page
-                // instead of an exception page.
+                // Denied consent, a stale login link, HCA down: back to where sign-in started
+                // (the validated returnTo, or the landing page if the state was unreadable)
+                // instead of an exception page. Development also gets the reason, for /testing.
                 oidc.Events.OnRemoteFailure = context =>
                 {
-                    context.HttpContext.RequestServices.GetRequiredService<ILogger<HcaOptions>>()
+                    var services = context.HttpContext.RequestServices;
+                    services.GetRequiredService<ILogger<HcaOptions>>()
                         .LogWarning(context.Failure, "HCA sign-in failed");
-                    context.Response.Redirect($"{options.FrontendUrl}/?login=failed");
+
+                    var target = context.Properties?.RedirectUri is { Length: > 0 } returnTo ? returnTo : $"{options.FrontendUrl}/";
+                    var query = new Dictionary<string, string?> { ["login"] = "failed" };
+                    if (services.GetRequiredService<IWebHostEnvironment>().IsDevelopment() && context.Failure is { } failure)
+                    {
+                        query["reason"] = failure.Message;
+                    }
+                    context.Response.Redirect(QueryHelpers.AddQueryString(target, query));
                     context.HandleResponse();
                     return Task.CompletedTask;
                 };

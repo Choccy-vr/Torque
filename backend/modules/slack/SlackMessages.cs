@@ -110,6 +110,40 @@ public static class SlackMessages
             + $"*{voltsPerHour:0.#} Volts/hr*. Keep journaling every day to hold it.",
         projectUrl);
 
+    // One-time nudge a few days after sign-up for people who haven't created a project.
+    public static SlackMessage NoProjectNudge(string username, string newProjectUrl, string guidesUrl, string goodProjectUrl) => Build(
+        "Ready to start your first Torque project?",
+        "What will you build? :gear:",
+        $"Hey *{Escape(username)}*, you joined Torque a few days ago but haven't started a project yet. "
+            + "If it makes something move with a motor, it counts, and no hardware experience is needed: Level 1 is made for first-timers.\n\n"
+            + "*A few ideas to get you going:*\n"
+            + "• A blind opener that lets the morning light in for you\n"
+            + "• A servo that turns your deadbolt from your phone\n"
+            + "• A belt-driven camera slider with a pan and tilt head\n"
+            + "• A small robot arm that records and replays its moves\n"
+            + "• An inverted pendulum to tune your own PID loop\n"
+            + "• An RC car with your own chassis and steering linkage\n\n"
+            + $"<{guidesUrl}|Project Guides> has build guides to start from (make them your own, since clones aren't accepted), "
+            + $"and <{goodProjectUrl}|What Makes a Good Project?> covers what reviewers look for. "
+            + $"Still stuck? Throw your ideas around in <#{TorqueChannelId}>.",
+        newProjectUrl, "Start a project");
+
+    // One-time nudge a few days after someone's first project for people who haven't
+    // journaled any time. projectTitle is set when they have exactly one project.
+    public static SlackMessage NoJournalNudge(string? projectTitle, int projectCount, string buttonUrl, string journalingUrl, string gettingStartedUrl) => Build(
+        projectTitle is null
+            ? "You haven't logged any time on your projects yet"
+            : $"You haven't logged any time on {Escape(projectTitle)} yet",
+        "Time to log your first hours :memo:",
+        (projectTitle is null
+            ? $"You started *{projectCount} projects* a few days ago but haven't logged any time yet. "
+            : $"You started *{Escape(projectTitle)}* a few days ago but haven't logged any time on it yet. ")
+            + "Journal entries are how your hours count: they earn your Volts or grant, an hour a day builds a streak that raises your Volts rate, "
+            + "and they're what reviewers check when you ship.\n\n"
+            + $"Already done some work? Make sure Hackatime is tracking it (see <{gettingStartedUrl}|Getting Started>), "
+            + $"then post an entry on your project page. <{journalingUrl}|How to journal> walks you through it.",
+        buttonUrl, projectTitle is null ? "View projects" : "View project");
+
     public static SlackMessage ShopOrderPlaced(string itemName, int quantity, int totalVolts, string shopUrl) => Build(
         $"Order placed: {Escape(itemName)}",
         "Order placed! :package:",
@@ -129,6 +163,9 @@ public static class SlackMessages
         $"Your order for *{Item(itemName, quantity)}* was cancelled and *{totalVolts} Volts* went back to your balance."
             + (string.IsNullOrWhiteSpace(reason) ? "" : $"\n\n*Reason:*\n>{Escape(reason.Trim()).Replace("\n", "\n>")}"),
         shopUrl, "View orders");
+
+    // #torque on the Hack Club Slack
+    private const string TorqueChannelId = "C0BHGT33JHH";
 
     private static string Item(string itemName, int quantity) =>
         quantity > 1 ? $"{quantity}× {Escape(itemName)}" : Escape(itemName);

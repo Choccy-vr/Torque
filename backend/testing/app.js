@@ -623,12 +623,59 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/testing/slack/dm',
     auth: true,
-    desc: 'Dev-only. Sends one of the real DM templates to your own Slack ID (never anyone else\'s) and waits for Slack, so sent: true/false is the real result. template: welcome | shipped | approved | changes_needed | rejected | streak_at_risk | streak_freeze_used | streak_lost | streak_maxed | shop_order_placed | shop_order_fulfilled | shop_order_refunded (streak and shop ones use sample numbers). projectTitle and feedback are optional (feedback shows on changes_needed/rejected, and as the reason on shop_order_refunded — try <!channel> to check it stays plain text). 400 no Slack ID / bad template, 503 SLACK_BOT_TOKEN not set.',
+    desc: 'Dev-only. Sends one of the real DM templates to your own Slack ID (never anyone else\'s) and waits for Slack, so sent: true/false is the real result. template: welcome | shipped | approved | changes_needed | rejected | streak_at_risk | streak_freeze_used | streak_lost | streak_maxed | shop_order_placed | shop_order_fulfilled | shop_order_refunded | no_project_nudge | no_journal_nudge (streak and shop ones use sample numbers). projectTitle and feedback are optional (feedback shows on changes_needed/rejected, and as the reason on shop_order_refunded — try <!channel> to check it stays plain text). 400 no Slack ID / bad template, 503 SLACK_BOT_TOKEN not set.',
     body: {
       template: 'changes_needed',
       projectTitle: 'Harness test project',
       feedback: 'Add a wiring diagram to the README.\nAlso <!channel> should not ping anyone.',
     },
+  },
+  {
+    id: 'slack-nudges-me',
+    group: 'slack',
+    method: 'GET',
+    path: '/testing/slack/nudges/me',
+    auth: true,
+    desc: 'Dev-only. Your own standing for both nudge DMs: Slack ID / setup / ban / local hour, then for no_project and no_journal whether you qualify (from the worker\'s real queries), when you would, and whether it was already sent. Read-only.',
+  },
+  {
+    id: 'slack-nudges-me-reset',
+    group: 'slack',
+    method: 'POST',
+    path: '/testing/slack/nudges/me/reset',
+    auth: true,
+    desc: 'Dev-only. Clears your no_project / no_journal sent-at markers so you can get them again. backdateDays (0–365, optional) also moves your account\'s and all your projects\' created_at back that many days, so you clear the 4-day / 3-day delays. Only touches your own rows. Returns your new standing.',
+    body: {
+      backdateDays: 5,
+    },
+  },
+  {
+    id: 'slack-nudges-me-send',
+    group: 'slack',
+    method: 'POST',
+    path: '/testing/slack/nudges/me',
+    auth: true,
+    desc: 'Dev-only. Sends one nudge to your own Slack ID (never anyone else\'s) right now, ignoring the daytime window, and marks it sent like the worker would. kind: no_project | no_journal. 409 with your standing if you don\'t qualify; force: true sends anyway. no_journal uses your real projects (1 project → that project\'s button, more → View projects). 400 no Slack ID / bad kind / no open project, 503 SLACK_BOT_TOKEN not set.',
+    body: {
+      kind: 'no_project',
+      force: false,
+    },
+  },
+  {
+    id: 'slack-nudges-preview',
+    group: 'slack',
+    method: 'GET',
+    path: '/testing/slack/nudges/preview',
+    auth: true,
+    desc: 'Dev-only. Dry run of the nudge pass: every user who qualifies for each nudge, with their local hour and whether it\'s daytime for them (10 AM–8 PM, so this pass would send). Writes nothing, sends nothing. Check this before running the real pass below.',
+  },
+  {
+    id: 'slack-nudges',
+    group: 'slack',
+    method: 'POST',
+    path: '/testing/slack/nudges',
+    auth: true,
+    desc: 'Dev-only. Runs the nudge worker pass now, which DMs real users in this database: "start a project" to anyone 4+ days past sign-up with no project, and "log your first hours" to anyone whose first project is 3+ days old with no journaled time. Each goes once per user, only between 10 AM and 8 PM their time, up to 25 per kind per pass. Set users.created_at / projects.created_at back in Studio to qualify, and clear users.no_project_nudge_sent_at / no_journal_nudge_sent_at to resend. Returns { noProjectSent, noJournalSent }. 503 SLACK_BOT_TOKEN not set.',
   },
   {
     id: 'ship-flow',
@@ -1072,8 +1119,18 @@ async function boot() {
   $('auth-provider-line').textContent = `Hack Club Auth via ${config.hcaUrl}`;
 
   await loadSession();
+  showLoginFailure();
 
   pingBackend();
+}
+
+// A failed HCA sign-in comes back here as ?login=failed&reason=… (reason is
+// Development-only). Show it, then drop the params so a reload doesn't repeat it.
+function showLoginFailure() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('login') !== 'failed') return;
+  showAuthError(`Sign-in failed: ${params.get('reason') || 'see the backend log'}`);
+  history.replaceState(null, '', location.pathname);
 }
 
 async function pingBackend() {

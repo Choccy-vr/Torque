@@ -59,6 +59,11 @@ public class User
 
     public bool CompletedFirstTimeSetup { get; set; } = false;
 
+    // When NudgeWorker sent the one-time "start a project" / "log your first hours" DMs.
+    // Null = not sent yet.
+    public DateTime? NoProjectNudgeSentAt { get; set; }
+    public DateTime? NoJournalNudgeSentAt { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
 }
