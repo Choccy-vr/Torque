@@ -15,9 +15,11 @@ public class UploadController : ControllerBase
     // A little headroom over the 10 MB file cap for the multipart envelope
     private const long MaxRequestBytes = UploadService.MaxImageBytes + 512 * 1024;
 
-    // Builders upload covers and journal photos; shop and announcement images are admin-only
-    private static readonly HashSet<string> Purposes = ["cover", "journal", "shop", "announcement"];
+    // Builders upload covers and journal photos; shop and announcement images are admin-only,
+    // and review screenshots are reviewer-only
+    private static readonly HashSet<string> Purposes = ["cover", "journal", "shop", "announcement", "review"];
     private static readonly HashSet<string> AdminPurposes = ["shop", "announcement"];
+    private static readonly HashSet<string> ReviewerPurposes = ["review"];
 
     private readonly AppDbContext _db;
     private readonly UploadService _uploads;
@@ -44,11 +46,16 @@ public class UploadController : ControllerBase
         purpose = purpose?.Trim().ToLowerInvariant();
         if (purpose is null || !Purposes.Contains(purpose))
         {
-            return BadRequest("Purpose must be one of: cover, journal, shop, announcement.");
+            return BadRequest("Purpose must be one of: cover, journal, shop, announcement, review.");
         }
         if (AdminPurposes.Contains(purpose))
         {
             var (_, denied) = await this.RequireRoleAsync(_db, "admin");
+            if (denied is not null) return denied;
+        }
+        if (ReviewerPurposes.Contains(purpose))
+        {
+            var (_, denied) = await this.RequireRoleAsync(_db, "reviewer");
             if (denied is not null) return denied;
         }
 

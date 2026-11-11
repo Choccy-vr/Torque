@@ -247,7 +247,7 @@ function ProjectShips({ projectId }) {
 }
 
 // Lapse is a slow outside call, so it only runs when asked.
-function Timelapses({ projectId, linked }) {
+export function Timelapses({ projectId, linked }) {
     const [state, setState] = useState({ status: "idle", items: [], error: null });
 
     async function load() {

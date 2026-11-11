@@ -21,7 +21,8 @@ export function useParam(name) {
 }
 
 // Wraps an async action with busy/error state. `run` resolves true on success.
-export function useAction() {
+// `forbidden` is the message for a 403 (the review pages say "reviewers").
+export function useAction({ forbidden = "Only admins can do that." } = {}) {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState(null);
     async function run(action) {
@@ -31,7 +32,7 @@ export function useAction() {
             await action();
             return true;
         } catch (err) {
-            setError(err?.status === 403 ? "Only admins can do that." : errorText(err));
+            setError(err?.status === 403 ? forbidden : errorText(err));
             return false;
         } finally {
             setBusy(false);

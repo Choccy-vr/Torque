@@ -46,7 +46,7 @@ async function apiError(res) {
 }
 
 // POST api/upload/image (multipart) — stores one image in the bucket and
-// resolves to its public URL. purpose: cover | journal | shop | announcement.
+// resolves to its public URL. purpose: cover | journal | shop | announcement | review.
 export async function uploadImage(file, purpose) {
     const body = new FormData()
     body.append('purpose', purpose)
@@ -299,6 +299,45 @@ export function searchAdminShips(params = {}) {
 // GET api/admin/ships/{id} — AdminShipmentDetailDto (with reviews)
 export function getAdminShip(id) {
     return getJson(`api/admin/ships/${encodeURIComponent(id)}`)
+}
+
+// Reviewer-only (the "reviewer" role) — the /review section.
+
+// GET api/admin/review/get/pending — ReviewQueueItemDto[], oldest first, with the live claim
+export function getReviewQueue() {
+    return getJson('api/admin/review/get/pending')
+}
+
+// GET api/admin/review/get/{id} — ReviewShipmentDetailDto: the ship, its builder,
+// the project's markers and history, and the builder's other projects
+export function getReviewShip(id) {
+    return getJson(`api/admin/review/get/${encodeURIComponent(id)}`)
+}
+
+// POST api/admin/review/claim/{id} — { claimedBy, claimedByUsername, claimedAt, claimExpiresAt, claimedByMe }.
+// 409 while someone else holds a fresh claim, unless `force`.
+export function claimReviewShip(id, force = false) {
+    return sendJson('POST', `api/admin/review/claim/${encodeURIComponent(id)}${force ? '?force=true' : ''}`)
+}
+
+// POST api/admin/review/unclaim/{id} — 204
+export function unclaimReviewShip(id) {
+    return sendJson('POST', `api/admin/review/unclaim/${encodeURIComponent(id)}`)
+}
+
+// PATCH api/admin/review/project/{projectId}/markers — { isStaffPick, exceptional }
+export function setReviewMarkers(projectId, changes) {
+    return sendJson('PATCH', `api/admin/review/project/${encodeURIComponent(projectId)}/markers`, changes)
+}
+
+// GET api/admin/review/hackatime/{id} — { connected, reachable, trustLevel, totalHours, perProject: [{ name, hours }] }
+export function getReviewHackatime(id) {
+    return getJson(`api/admin/review/hackatime/${encodeURIComponent(id)}`)
+}
+
+// POST api/admin/review/create — AdminShipmentReviewDto
+export function submitReview(body) {
+    return sendJson('POST', 'api/admin/review/create', body)
 }
 
 // POST api/admin/announcement/create — AnnouncementDto. { title, body (markdown) }

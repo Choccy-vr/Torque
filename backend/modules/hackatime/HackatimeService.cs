@@ -166,6 +166,16 @@ public class HackatimeService
         return true;
     }
 
+    // The linked account's Hackatime trust level ("blue", "yellow", "red"...), for the
+    // reviewer page. Reachable is false when nothing is linked or Hackatime couldn't be
+    // asked; Level can be null even when reachable (Hackatime didn't say).
+    public async Task<(bool Reachable, string? Level)> GetTrustLevelAsync(User user)
+    {
+        if (string.IsNullOrEmpty(user.HackatimeToken)) return (false, null);
+        var me = await FetchMeAsync(user.HackatimeToken, user.Id);
+        return me is null ? (false, null) : (true, me.TrustLevel);
+    }
+
     // GET /me for a token. Null when it couldn't be read (Hackatime down, token rejected).
     private async Task<HackatimeMe?> FetchMeAsync(string token, Guid userId)
     {
@@ -251,7 +261,9 @@ public class HackatimeService
         return seconds?.Values.Sum();
     }
 
-    private async Task<Dictionary<string, double>?> GetSecondsPerProjectAsync(Guid userId, string[] projectNames)
+    // Counted seconds (from October 1, 2026) per linked project name. Names with no time
+    // are left out. Null when Hackatime isn't connected or the fetch fails.
+    public async Task<Dictionary<string, double>?> GetSecondsPerProjectAsync(Guid userId, string[] projectNames)
     {
         if (projectNames.Length == 0) return [];
 

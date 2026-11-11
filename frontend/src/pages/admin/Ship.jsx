@@ -129,7 +129,7 @@ function ShipDetail({ id }) {
     );
 }
 
-function Review({ review: r }) {
+export function Review({ review: r }) {
     const fields = [
         ["Feedback to the builder", r.feedback],
         ["Internal note", r.internalNote],

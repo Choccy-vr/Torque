@@ -19,6 +19,8 @@ import AdminSettings from './pages/admin/Settings.jsx'
 import AdminShop from './pages/admin/Shop.jsx'
 import AdminShopOrders from './pages/admin/ShopOrders.jsx'
 import AdminShopOrder from './pages/admin/ShopOrder.jsx'
+import ReviewQueue from './pages/review/Queue.jsx'
+import ReviewShip from './pages/review/Ship.jsx'
 import HackatimeCallback from './pages/HackatimeCallback.jsx'
 import NotFound from './pages/NotFound.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
@@ -86,6 +88,8 @@ function AppRoutes() {
                     <Route path="/docs/*" element={<Suspense fallback={<div className="min-h-screen" />}><Docs /></Suspense>} />
                     <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
                     <Route path="/profile/:id" element={<Profile />} />
+                    <Route path="/review" element={<RequireAuth><ReviewQueue /></RequireAuth>} />
+                    <Route path="/review/:id" element={<RequireAuth><ReviewShip /></RequireAuth>} />
                     <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
                     <Route path="/admin/users" element={<RequireAuth><AdminUsers /></RequireAuth>} />
                     <Route path="/admin/users/:id" element={<RequireAuth><AdminUser /></RequireAuth>} />

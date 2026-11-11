@@ -58,6 +58,10 @@ export function pausedMessage(current, key) {
 // Who can flip them (/admin/settings): a profile (OwnProfileDto) with the admin role.
 export const isAdmin = (profile) => Boolean(profile?.role?.includes('admin'))
 
+// Who can open /review: a profile with the reviewer role (admins need it too —
+// the review endpoints only check for "reviewer").
+export const isReviewer = (profile) => Boolean(profile?.role?.includes('reviewer'))
+
 // Called when an action comes back 503 { paused }: it was switched on after
 // this page loaded.
 export function notePaused(key, message) {
