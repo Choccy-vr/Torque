@@ -226,6 +226,13 @@ export function getAdminStats() {
     return getJson('api/admin/stats')
 }
 
+// GET api/admin/modules — { checkedAt, modules: [{ key, name, description,
+// required, status, detail, latencyMs, missing, facts }] }. Runs live checks
+// against every integration, so only call it on demand.
+export function getModuleStatus() {
+    return getJson('api/admin/modules')
+}
+
 // GET api/admin/user/search — AdminUserSummaryDto[], newest first, max 50
 export function searchAdminUsers(q) {
     return getJson(`api/admin/user/search${query({ q })}`)
@@ -284,6 +291,12 @@ export function updateAdminProject(id, changes) {
 // POST api/admin/project/{id}/staff-pick — PublicProjectDto
 export function setStaffPick(id, isStaffPick) {
     return sendJson('POST', `api/admin/project/${encodeURIComponent(id)}/staff-pick`, { isStaffPick })
+}
+
+// POST api/admin/project/{id}/funding-rate — AdminProjectDto. Raising the rate
+// DMs the owner; null resets it to the default $5/hr.
+export function setProjectFundingRate(id, grantDollarsPerHour) {
+    return sendJson('POST', `api/admin/project/${encodeURIComponent(id)}/funding-rate`, { grantDollarsPerHour })
 }
 
 // GET api/admin/project/{id}/lapse — { timelapses: TimelapseDto[] }

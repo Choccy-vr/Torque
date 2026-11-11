@@ -46,6 +46,9 @@ public class Project
     // Build grant from an approved design ship that requested funding (see Torque.Grants).
     // Pending blocks the build ship until an admin marks the grant sent.
     public ProjectGrantStatus GrantStatus { get; set; } = ProjectGrantStatus.None;
+    // Admin funding boost: the most a design ship can be granted per hour, in USD. Null
+    // means the default (PayoutService.DefaultGrantDollarsPerHour).
+    public decimal? GrantDollarsPerHour { get; set; }
 
     // Consecutive owner-local days with 1+ journaled hour (see Torque.Streaks).
     // Capped at the level's max streak.

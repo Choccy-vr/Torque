@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CircleAlert, Ship, Timer } from "lucide-react";
 import { createShip } from "../../lib/endpoints.js";
-import { formatDeadline, formatHours, lastDay } from "../../lib/projects.js";
+import { formatDeadline, formatHours, formatRate, GRANT_RATE_DEFAULT, lastDay } from "../../lib/projects.js";
 import { BTN_GHOST, BTN_PRIMARY, Field, FOCUS, FormError, INPUT } from "../Form.jsx";
 import { errorText, useRevealOnMount } from "../../lib/forms.js";
 
@@ -30,10 +30,13 @@ export default function ShipForm({ project, designApproved, shipWindow, onEdit, 
 
     // The journaled hours no approved ship has credited yet; the server has the
     // exact figure, this is close enough to size a grant by. The server caps the
-    // grant at $5 per hour, floored, so the cap is worked out before rounding.
+    // grant at the project's rate ($5 per hour unless an admin boosted it),
+    // floored, so the cap is worked out before rounding.
     const unpaidRaw = Math.max(0, (project.totalHours ?? 0) - (project.totalHoursApproved ?? 0));
     const unpaid = Math.round(unpaidRaw * 10) / 10;
-    const grantCap = Math.floor(unpaidRaw * 5);
+    const rate = project.grantDollarsPerHour ?? GRANT_RATE_DEFAULT;
+    const boosted = rate > GRANT_RATE_DEFAULT;
+    const grantCap = Math.floor(unpaidRaw * rate);
     const overCap = !build && Number(funding) > grantCap;
 
     const answer = (key) => (e) => setAnswers((a) => ({ ...a, [key]: e.target.value }));
@@ -136,7 +139,7 @@ export default function ShipForm({ project, designApproved, shipWindow, onEdit, 
             </fieldset>
 
             {!build && (
-                <Field label="Grant you're asking for" hint={`$5 per design hour, so up to $${grantCap.toLocaleString()}. Put 0 if you're paying for parts yourself.`}>
+                <Field label="Grant you're asking for" hint={`${formatRate(rate)} per design hour${boosted ? " (boosted for this project)" : ""}, so up to $${grantCap.toLocaleString()}. Put 0 if you're paying for parts yourself.`}>
                     {(p) => (
                         <div className="flex flex-col gap-2">
                             <div className="relative max-w-56">
@@ -146,7 +149,7 @@ export default function ShipForm({ project, designApproved, shipWindow, onEdit, 
                             {overCap && (
                                 <p className="flex items-start gap-2 text-sm leading-relaxed text-(--text)">
                                     <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-(--accent)" />
-                                    That's more than $5 for each hour you're shipping (up to ${grantCap.toLocaleString()}). For special cases, DM @Ginobeano on Slack about extra funding.
+                                    That's more than {formatRate(rate)} for each hour you're shipping (up to ${grantCap.toLocaleString()}). For special cases, DM @Ginobeano on Slack about extra funding.
                                 </p>
                             )}
                         </div>

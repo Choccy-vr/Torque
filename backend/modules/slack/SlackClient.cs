@@ -1,6 +1,8 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Torque.Data;
 
 namespace Torque.Slack;
 
@@ -18,16 +20,18 @@ public class SlackClient
     private readonly HttpClient _http;
     private readonly SlackOptions _options;
     private readonly ILogger<SlackClient> _logger;
+    private readonly IServiceScopeFactory _scopes;
 
-    public SlackClient(HttpClient http, SlackOptions options, ILogger<SlackClient> logger)
+    public SlackClient(HttpClient http, SlackOptions options, ILogger<SlackClient> logger, IServiceScopeFactory scopes)
     {
         _http = http;
         _options = options;
         _logger = logger;
+        _scopes = scopes;
     }
 
     // Opens (or reuses) the bot's DM with the user and posts the message. False on any
-    // failure.
+    // failure. Every attempt is recorded in slack_logs.
     public async Task<bool> SendDmAsync(string slackId, SlackMessage message)
     {
         var open = await CallAsync("conversations.open", new { users = slackId });
@@ -35,6 +39,7 @@ public class SlackClient
             || !opened.Json.TryGetProperty("channel", out var channel)
             || !channel.TryGetProperty("id", out var channelId))
         {
+            await LogAsync(slackId, SlackAction.dm, message.Text, false, ErrorOf(open) ?? "no_channel");
             return false;
         }
 
@@ -44,18 +49,54 @@ public class SlackClient
             text = message.Text,
             blocks = message.Blocks
         });
-        return post is { Ok: true };
+        var sent = post is { Ok: true };
+        await LogAsync(slackId, SlackAction.dm, message.Text, sent, ErrorOf(post));
+        return sent;
     }
 
+    // Every attempt is recorded in slack_logs.
     public async Task<SlackInviteResult> InviteAsync(string channelId, string slackId)
     {
         var result = await CallAsync("conversations.invite", new { channel = channelId, users = slackId });
-        return result switch
+        var status = result switch
         {
             { Ok: true } => SlackInviteResult.Joined,
             { Error: "already_in_channel" } => SlackInviteResult.AlreadyMember,
             _ => SlackInviteResult.Failed
         };
+        await LogAsync(slackId, SlackAction.channel_invite, channelId, status != SlackInviteResult.Failed, ErrorOf(result));
+        return status;
+    }
+
+    private static string? ErrorOf(SlackResponse? response) => response is null ? "no_response" : response.Error;
+
+    // Written in its own scope so it never flushes the caller's pending changes, and never
+    // throws: a logging failure mustn't turn a sent DM into a failed one.
+    private async Task LogAsync(string slackId, SlackAction action, string detail, bool success, string? error)
+    {
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var userId = await db.Users
+                .Where(u => u.SlackUserID == slackId)
+                .Select(u => (Guid?)u.Id)
+                .FirstOrDefaultAsync();
+            db.SlackLogs.Add(new SlackLog
+            {
+                SlackUserId = slackId,
+                UserId = userId,
+                Action = action,
+                Detail = detail,
+                Success = success,
+                Error = error
+            });
+            await db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Couldn't record Slack {Action} to {SlackId}", action, slackId);
+        }
     }
 
     // The user's Slack display name (falling back to their real name) and profile picture

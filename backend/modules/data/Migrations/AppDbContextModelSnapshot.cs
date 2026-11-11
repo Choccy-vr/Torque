@@ -167,6 +167,10 @@ namespace torque_backend.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<decimal>("DollarsPerHour")
+                        .HasColumnType("numeric")
+                        .HasColumnName("dollars_per_hour");
+
                     b.Property<bool>("Fulfilled")
                         .HasColumnType("boolean")
                         .HasColumnName("fulfilled");
@@ -315,6 +319,10 @@ namespace torque_backend.Data.Migrations
                     b.Property<bool>("Exceptional")
                         .HasColumnType("boolean")
                         .HasColumnName("exceptional");
+
+                    b.Property<decimal?>("GrantDollarsPerHour")
+                        .HasColumnType("numeric")
+                        .HasColumnName("grant_dollars_per_hour");
 
                     b.Property<int>("GrantStatus")
                         .HasColumnType("integer")
@@ -902,6 +910,57 @@ namespace torque_backend.Data.Migrations
                         .HasDatabaseName("ix_shop_orders_user_id_client_request_id");
 
                     b.ToTable("shop_orders", (string)null);
+                });
+
+            modelBuilder.Entity("Torque.Slack.SlackLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Detail")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("detail");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text")
+                        .HasColumnName("error");
+
+                    b.Property<string>("SlackUserId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("slack_user_id");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("boolean")
+                        .HasColumnName("success");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_slack_logs");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_slack_logs_created_at");
+
+                    b.HasIndex("SlackUserId", "CreatedAt")
+                        .HasDatabaseName("ix_slack_logs_slack_user_id_created_at");
+
+                    b.ToTable("slack_logs", (string)null);
                 });
 
             modelBuilder.Entity("Torque.Streaks.ProjectStreakDay", b =>

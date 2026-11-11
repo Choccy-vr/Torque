@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { FolderOpen, Megaphone, PackageOpen, Settings2, Ship, ShoppingBag, Users } from "lucide-react";
+import { Activity, FolderOpen, Megaphone, PackageOpen, Settings2, Ship, ShoppingBag, Users } from "lucide-react";
 import AppShell, { PageHeader } from "../AppShell.jsx";
 import { Empty, InlineError } from "../PageParts.jsx";
-import { BTN_PRIMARY, FOCUS } from "../Form.jsx";
+import { BTN_OUTLINE, BTN_PRIMARY, FOCUS } from "../Form.jsx";
+import SystemStatusDialog from "./SystemStatusDialog.jsx";
 import { getAdminStats, getMyProfile } from "../../lib/endpoints.js";
 import { isAdmin } from "../../lib/settings.js";
 import { useApi } from "../../lib/useApi.js";
@@ -64,12 +65,31 @@ export default function AdminShell({ title, children }) {
                     </Empty>
                 ) : (
                     <div className="flex flex-col gap-8">
-                        <Totals />
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <Totals />
+                            <SystemStatusButton />
+                        </div>
                         {children}
                     </div>
                 )}
             </div>
         </AppShell>
+    );
+}
+
+// Opens the live integration checks. They call outside services, so they only
+// run while the dialog is open, not on every admin page load.
+function SystemStatusButton() {
+    const [open, setOpen] = useState(false);
+    const buttonRef = useRef(null);
+    return (
+        <>
+            <button ref={buttonRef} type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" className={`${BTN_OUTLINE} self-start sm:self-auto`}>
+                <Activity aria-hidden="true" className="size-4.5" />
+                System status
+            </button>
+            {open && <SystemStatusDialog onClose={() => { setOpen(false); buttonRef.current?.focus(); }} />}
+        </>
     );
 }
 

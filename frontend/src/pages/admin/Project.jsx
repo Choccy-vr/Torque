@@ -1,19 +1,23 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowUpRight, Clapperboard, FileText, FolderGit2, Globe, Sparkles, Star, Trash2 } from "lucide-react";
+import {
+    ArrowUpRight, Check, Clapperboard, FileText, FolderGit2, Globe, RotateCcw, Send, Sparkles, Star, Trash2, TrendingDown, TrendingUp,
+} from "lucide-react";
 import AdminShell from "../../components/admin/AdminShell.jsx";
 import {
     BackLink, ConfirmBox, CopyId, EntityTitle, Facts, NotFoundNote, Panel, ResultList, Rows, SwitchRow, Tag,
 } from "../../components/admin/AdminParts.jsx";
 import { useAction } from "../../lib/admin.js";
 import { InlineError } from "../../components/PageParts.jsx";
-import { BTN_OUTLINE, FOCUS, FormError } from "../../components/Form.jsx";
+import { BTN_GHOST, BTN_OUTLINE, BTN_PRIMARY, FieldError, FOCUS, FormError, INPUT } from "../../components/Form.jsx";
 import ProjectStatusBadge from "../../components/ProjectStatusBadge.jsx";
 import Cover from "../../components/project/Cover.jsx";
 import {
-    getAdminProject, getProjectTimelapses, searchAdminShips, setStaffPick, updateAdminProject,
+    getAdminProject, getProjectTimelapses, searchAdminShips, setProjectFundingRate, setStaffPick, updateAdminProject,
 } from "../../lib/endpoints.js";
-import { ADMIN_PROJECT_STATUS, formatDay, formatWhen, isSet } from "../../lib/projects.js";
+import {
+    ADMIN_PROJECT_STATUS, formatDay, formatHours, formatRate, formatWhen, GRANT_RATE_DEFAULT, GRANT_RATE_MAX, isSet,
+} from "../../lib/projects.js";
 import { useApi } from "../../lib/useApi.js";
 import { ShipRow } from "./Ships.jsx";
 
@@ -177,6 +181,7 @@ function Overrides({ project: p, onSaved }) {
                     </div>
                     <FormError>{level.error}</FormError>
                 </div>
+                <FundingRate project={p} onSaved={onSaved} />
                 <SwitchRow
                     id="staff-pick"
                     label="Staff pick"
@@ -231,6 +236,198 @@ function Overrides({ project: p, onSaved }) {
                 </div>
             </Rows>
         </Panel>
+    );
+}
+
+// The project's grant rate: the most a design ship can ask for per hour.
+// Boosting opens an inline form; raising the rate DMs the owner (the backend
+// sends it), lowering or resetting doesn't. Reset asks first.
+function FundingRate({ project: p, onSaved }) {
+    const inputId = useId();
+    const [open, setOpen] = useState(false);
+    const [confirmingReset, setConfirmingReset] = useState(false);
+    const [value, setValue] = useState("");
+    const save = useAction();
+    const reset = useAction();
+    // What the last save did, so the admin knows whether a DM went out.
+    const [done, setDone] = useState(null);
+    // Closing the form or the reset box unmounts whatever had focus; hand it back
+    // to the Boost button so keyboard users keep their place.
+    const triggerRef = useRef(null);
+    const refocus = useRef(false);
+    useEffect(() => {
+        if (!open && !confirmingReset && refocus.current) {
+            refocus.current = false;
+            triggerRef.current?.focus();
+        }
+    }, [open, confirmingReset]);
+    const current = p.grantDollarsPerHour ?? GRANT_RATE_DEFAULT;
+    const owner = p.ownerUsername || "the owner";
+    const Owner = p.ownerUsername || "The owner"; // at the start of a sentence
+
+    const n = Number(value);
+    const problem = value === "" ? null
+        : !Number.isFinite(n) || n <= GRANT_RATE_DEFAULT ? `It has to be more than ${formatRate(GRANT_RATE_DEFAULT)}/hr.`
+            : n > GRANT_RATE_MAX ? `${formatRate(GRANT_RATE_MAX)}/hr is the most it can go.`
+                : Math.abs(Math.round(n * 100) - n * 100) > 1e-6 ? "Use whole cents at most."
+                    : n === current ? "That's already its rate."
+                        : null;
+    const valid = value !== "" && !problem;
+    const raising = valid && n > current;
+    // Same estimate the ship form uses: journaled hours no approved ship has credited.
+    const unpaid = Math.max(0, (p.totalHours ?? 0) - (p.totalHoursApproved ?? 0));
+
+    function close() {
+        refocus.current = true;
+        setOpen(false);
+        setValue("");
+        save.setError(null);
+    }
+
+    async function submit(e) {
+        e.preventDefault();
+        if (!valid) return;
+        if (await save.run(async () => onSaved(await setProjectFundingRate(p.id, n)))) {
+            close();
+            setDone(raising
+                ? `Boosted to ${formatRate(n)}/hr. A Slack DM is on its way to ${owner}.`
+                : `Lowered to ${formatRate(n)}/hr. ${Owner} wasn't DMed.`);
+        }
+    }
+
+    return (
+        <div role="group" aria-labelledby="funding-label" className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-3">
+                <div className="flex min-w-0 flex-col gap-1">
+                    <p id="funding-label" className="flex flex-wrap items-center gap-2 font-semibold">
+                        Grant rate
+                        {p.fundingBoosted && <Tag accent><TrendingUp aria-hidden="true" className="size-3.5" />Boosted</Tag>}
+                    </p>
+                    <p className="max-w-[60ch] text-sm leading-relaxed text-(--text)/85">
+                        <b className="font-bold text-(--text) tabular-nums">{formatRate(current)} per design hour</b>
+                        {p.fundingBoosted ? `, up from the usual ${formatRate(GRANT_RATE_DEFAULT)}.` : ", the default."}
+                        {" "}Caps what a design ship can ask for.
+                    </p>
+                </div>
+                {!open && !confirmingReset && (
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            ref={triggerRef}
+                            type="button"
+                            disabled={p.isArchived}
+                            onClick={() => { setOpen(true); setDone(null); }}
+                            aria-describedby={p.isArchived ? "funding-archived" : undefined}
+                            className={BTN_OUTLINE}
+                        >
+                            <TrendingUp aria-hidden="true" className="size-4.5" />
+                            {p.fundingBoosted ? "Change rate" : "Boost funding"}
+                        </button>
+                        {p.fundingBoosted && (
+                            <button type="button" disabled={p.isArchived} onClick={() => { setConfirmingReset(true); setDone(null); }} className={BTN_GHOST}>
+                                <RotateCcw aria-hidden="true" className="size-4.5" />
+                                Reset to {formatRate(GRANT_RATE_DEFAULT)}
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+            {p.isArchived && <p id="funding-archived" className="text-sm text-(--text)/80">Restore the project to change its rate.</p>}
+            {/* Always mounted so screen readers catch the update; takes no gap while empty. */}
+            <div role="status" className="empty:-mt-3">
+                {done && (
+                    <p className="flex items-start gap-2 text-sm leading-relaxed font-medium text-(--text)">
+                        <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-(--accent)" />
+                        {done}
+                    </p>
+                )}
+            </div>
+
+            {open && (
+                // noValidate: the browser's step maths would flag valid cents; validation is ours.
+                <form
+                    noValidate
+                    onSubmit={submit}
+                    onKeyDown={(e) => { if (e.key === "Escape" && !save.busy) close(); }}
+                    aria-label="Boost funding"
+                    className="flex flex-col gap-3 rounded-2xl border-2 border-white/10 bg-(--bg)/45 px-4 py-4 sm:px-5"
+                >
+                    <div className="flex flex-col gap-1.5">
+                        <label htmlFor={inputId} className="text-sm text-(--text)/85">New rate per design hour</label>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="relative w-40">
+                                <span aria-hidden="true" className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 font-semibold text-(--text)/85">$</span>
+                                <input
+                                    id={inputId}
+                                    autoFocus
+                                    type="number"
+                                    inputMode="decimal"
+                                    min={GRANT_RATE_DEFAULT}
+                                    max={GRANT_RATE_MAX}
+                                    step={1}
+                                    placeholder="10"
+                                    value={value}
+                                    onChange={(e) => setValue(e.target.value)}
+                                    aria-invalid={problem ? true : undefined}
+                                    aria-describedby={`${inputId}-note`}
+                                    className={`${INPUT} pr-12 pl-8 tabular-nums`}
+                                />
+                                <span aria-hidden="true" className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm text-(--text)/75">/hr</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                <button type="submit" disabled={save.busy || !valid} className={BTN_PRIMARY}>
+                                    {valid && !raising
+                                        ? <TrendingDown aria-hidden="true" className="size-4.5" />
+                                        : <TrendingUp aria-hidden="true" className="size-4.5" />}
+                                    {save.busy ? "Saving…" : valid ? `${raising ? "Boost" : "Lower"} to ${formatRate(n)}/hr` : "Boost"}
+                                </button>
+                                <button type="button" disabled={save.busy} onClick={close} className={BTN_GHOST}>Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id={`${inputId}-note`}>
+                        {problem ? (
+                            <FieldError>{problem}</FieldError>
+                        ) : (
+                            <p className="flex items-start gap-2 text-sm leading-relaxed text-(--text)/85">
+                                <Send aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-(--accent)" />
+                                <span>
+                                    {valid && !raising
+                                        ? `Lowering it doesn't DM ${owner}.`
+                                        : `${Owner} gets a Slack DM saying their funding was boosted.`}
+                                    {valid && unpaid >= 1 && (
+                                        <> The {formatHours(Math.round(unpaid * 10) / 10)} not paid for yet could ask for up to{" "}
+                                            <b className="font-bold text-(--text) tabular-nums">${Math.floor(unpaid * n).toLocaleString()}</b>.</>
+                                    )}
+                                </span>
+                            </p>
+                        )}
+                    </div>
+                    <FormError>{save.error}</FormError>
+                </form>
+            )}
+
+            {confirmingReset && (
+                <ConfirmBox
+                    id="funding-reset-confirm"
+                    title={`Reset ${p.title} to ${formatRate(GRANT_RATE_DEFAULT)}/hr?`}
+                    confirmLabel="Reset it"
+                    busyLabel="Resetting…"
+                    icon={RotateCcw}
+                    busy={reset.busy}
+                    onConfirm={async () => {
+                        if (await reset.run(async () => onSaved(await setProjectFundingRate(p.id, null)))) {
+                            refocus.current = true;
+                            setConfirmingReset(false);
+                            setDone(`Reset to ${formatRate(GRANT_RATE_DEFAULT)}/hr.`);
+                        }
+                    }}
+                    onCancel={() => { refocus.current = true; setConfirmingReset(false); reset.setError(null); }}
+                >
+                    Design ships approved from now on, including one already in review, are capped at {formatRate(GRANT_RATE_DEFAULT)} per hour again. {Owner} won't get a DM.
+                </ConfirmBox>
+            )}
+            <FormError>{reset.error}</FormError>
+        </div>
     );
 }
 

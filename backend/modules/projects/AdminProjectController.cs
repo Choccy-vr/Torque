@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Torque.Data;
 using Torque.Extensions;
+using Torque.Payouts;
+using Torque.Slack;
 using Torque.Streaks;
 // Admin-only project moderation actions
 // endpoint: /api/admin/project/<command>
@@ -16,7 +18,15 @@ public class AdminProjectController : ControllerBase
     private const int MaxResults = 50;
 
     private readonly AppDbContext _db;
-    public AdminProjectController(AppDbContext db) => _db = db;
+    private readonly SlackNotifier _slack;
+    private readonly SlackOptions _slackOptions;
+
+    public AdminProjectController(AppDbContext db, SlackNotifier slack, SlackOptions slackOptions)
+    {
+        _db = db;
+        _slack = slack;
+        _slackOptions = slackOptions;
+    }
 
     // Search every project (any status, archived too) by title, id or owner username,
     // newest first. Filters: status, ownerId, archived. No query lists the newest.
@@ -127,6 +137,46 @@ public class AdminProjectController : ControllerBase
         }
         if (dto.Exceptional is not null) project.Exceptional = dto.Exceptional.Value;
         await _db.SaveChangesAsync();
+
+        return Ok(AdminProjectDto.From(project, await UsernameAsync(project.OwnerUserId) ?? "", await UsernameAsync(project.ClaimedByReviewer)));
+    }
+
+    // Boost (or reset) how much a design ship on this project can be granted per hour.
+    // Raising it DMs the owner. Applies to ships approved from now on, including one
+    // already in review (though that ship's request was capped at the old rate).
+    [Authorize]
+    [HttpPost("{id:guid}/funding-rate")]
+    public async Task<IActionResult> SetFundingRate(Guid id, [FromBody] SetFundingRateDto dto)
+    {
+        var (_, denied) = await this.RequireRoleAsync(_db, "admin");
+        if (denied is not null) return denied;
+
+        var rate = dto.GrantDollarsPerHour;
+        if (rate is not null)
+        {
+            if (rate <= PayoutService.DefaultGrantDollarsPerHour || rate > PayoutService.MaxGrantDollarsPerHour)
+            {
+                return BadRequest($"The rate must be over ${PayoutService.DefaultGrantDollarsPerHour:0.##} and at most ${PayoutService.MaxGrantDollarsPerHour:0.##} per hour. Send null to reset it.");
+            }
+            if (decimal.Round(rate.Value, 2) != rate) return BadRequest("The rate can't have more than 2 decimal places.");
+        }
+
+        var project = await _db.Projects.FindAsync(id);
+        if (project is null) return NotFound();
+        if (project.IsArchived) return Conflict("This project has been deleted.");
+
+        var before = PayoutService.GrantRateFor(project);
+        project.GrantDollarsPerHour = rate;
+        await _db.SaveChangesAsync();
+
+        if (rate > before)
+        {
+            var ownerSlackId = await _db.Users
+                .Where(u => u.Id == project.OwnerUserId)
+                .Select(u => u.SlackUserID)
+                .FirstOrDefaultAsync();
+            _slack.Send(ownerSlackId, SlackMessages.FundingBoosted(project.Title, _slackOptions.ProjectUrl(project.Id), rate.Value));
+        }
 
         return Ok(AdminProjectDto.From(project, await UsernameAsync(project.OwnerUserId) ?? "", await UsernameAsync(project.ClaimedByReviewer)));
     }

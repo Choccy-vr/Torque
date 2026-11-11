@@ -24,6 +24,8 @@ public record PrivateProjectDto
 
     public ProjectStatus Status { get; init; } = ProjectStatus.Unshipped;
     public ProjectGrantStatus GrantStatus { get; init; } = ProjectGrantStatus.None;
+    // Most a design ship can be granted per hour, in USD ($5 unless an admin boosted it)
+    public decimal GrantDollarsPerHour { get; init; }
 
     public float TrackedDesignHours { get; init; } = 0;// hours spent on design stage
     public float TrackedBuildHours { get; init; } = 0;// hours spent on build stage

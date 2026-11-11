@@ -12,6 +12,7 @@ using Torque.Payouts;
 using Torque.Settings;
 using Torque.Shop;
 using Torque.Slack;
+using Torque.Status;
 using Torque.Streaks;
 using Torque.Testing;
 using Torque.Uploads;
@@ -51,6 +52,7 @@ builder.Services.AddSettings();
 builder.Services.AddShop();
 builder.Services.AddDeadlines();
 builder.Services.AddUploads(builder.Configuration);
+builder.Services.AddModuleStatus();
 
 var app = builder.Build();
 

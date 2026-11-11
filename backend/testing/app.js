@@ -122,6 +122,14 @@ const ENDPOINTS = [
     desc: 'Admin-only. Totals: users (banned too), projects (archived too), ships (any status).',
   },
   {
+    id: 'admin-modules',
+    group: 'users',
+    method: 'GET',
+    path: '/api/admin/modules',
+    auth: true,
+    desc: 'Admin-only. Live status of each integration (database, HCA, Hackatime, Airtable, Slack, Lapse, uploads): healthy/degraded/down/disabled, why, latency, missing env vars and a few facts.',
+  },
+  {
     id: 'admin-user-search',
     group: 'users',
     method: 'GET',
@@ -347,6 +355,16 @@ const ENDPOINTS = [
     body: {
       isStaffPick: true,
     },
+  },
+  {
+    id: 'admin-project-funding-rate',
+    group: 'projects',
+    method: 'POST',
+    path: '/api/admin/project/{id}/funding-rate',
+    auth: true,
+    desc: 'Admin-only. Boost the most a design ship can be granted per hour (default $5; must be over $5, at most $100, 2 decimals max). Raising it DMs the owner. null resets to $5 (no DM). 409 for a deleted project.',
+    params: [{ name: 'id', placeholder: 'project uuid' }],
+    body: { grantDollarsPerHour: 10 },
   },
   {
     id: 'project-streak',
@@ -660,7 +678,7 @@ const ENDPOINTS = [
     method: 'POST',
     path: '/testing/slack/dm',
     auth: true,
-    desc: 'Dev-only. Sends one of the real DM templates to your own Slack ID (never anyone else\'s) and waits for Slack, so sent: true/false is the real result. template: welcome | shipped | approved | changes_needed | rejected | streak_at_risk | streak_freeze_used | streak_lost | streak_maxed | shop_order_placed | shop_order_fulfilled | shop_order_refunded | no_project_nudge | no_journal_nudge (streak and shop ones use sample numbers). projectTitle and feedback are optional (feedback shows on changes_needed/rejected, and as the reason on shop_order_refunded — try <!channel> to check it stays plain text). 400 no Slack ID / bad template, 503 SLACK_BOT_TOKEN not set.',
+    desc: 'Dev-only. Sends one of the real DM templates to your own Slack ID (never anyone else\'s) and waits for Slack, so sent: true/false is the real result. template: welcome | shipped | approved | changes_needed | rejected | funding_boosted | streak_at_risk | streak_freeze_used | streak_lost | streak_maxed | shop_order_placed | shop_order_fulfilled | shop_order_refunded | no_project_nudge | no_journal_nudge (streak and shop ones use sample numbers). projectTitle and feedback are optional (feedback shows on changes_needed/rejected, and as the reason on shop_order_refunded — try <!channel> to check it stays plain text). 400 no Slack ID / bad template, 503 SLACK_BOT_TOKEN not set.',
     body: {
       template: 'changes_needed',
       projectTitle: 'Harness test project',

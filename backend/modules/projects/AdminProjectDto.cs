@@ -1,3 +1,4 @@
+using Torque.Payouts;
 using Torque.Streaks;
 namespace Torque.Projects;
 // Everything about a project an admin can see
@@ -27,6 +28,10 @@ public record AdminProjectDto
     public float TotalHoursApproved { get; init; }
     public int VoltsGranted { get; init; }
     public ProjectGrantStatus GrantStatus { get; init; }
+    // Most a design ship can be granted per hour, in USD, and whether an admin boosted it
+    // above the default
+    public decimal GrantDollarsPerHour { get; init; }
+    public bool FundingBoosted { get; init; }
     public bool Exceptional { get; init; }
     public bool IsStaffPick { get; init; }
     public bool IsArchived { get; init; }
@@ -62,6 +67,8 @@ public record AdminProjectDto
         TotalHoursApproved = project.TotalHoursApproved,
         VoltsGranted = project.VoltsGranted,
         GrantStatus = project.GrantStatus,
+        GrantDollarsPerHour = PayoutService.GrantRateFor(project),
+        FundingBoosted = project.GrantDollarsPerHour is not null,
         Exceptional = project.Exceptional,
         IsStaffPick = project.IsStaffPick,
         IsArchived = project.IsArchived,

@@ -88,6 +88,7 @@ function ProjectPage({ projectApi, isOwner }) {
             voltsGranted: priv.voltsGranted,
             hackatimeProjectNames: priv.hackatimeProjectNames,
             streakFreezesPaused: priv.streakFreezesPaused,
+            grantDollarsPerHour: priv.grantDollarsPerHour,
         }),
     };
     const projectShips = (ships.data ?? []).filter((s) => s.projectId === pub.id);

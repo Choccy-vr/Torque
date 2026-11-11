@@ -47,6 +47,7 @@ public static class SlackTesting
                      new StreakReminderItem("Second test project", url, 4, 0, FreezeWillCover: false)], 1),
                 "streak_freeze_used" => SlackMessages.StreakFreezeUsed(title, url, 12, 1, 2),
                 "streak_lost" => SlackMessages.StreakLost(title, url, 12, 0, freezesPaused: false),
+                "funding_boosted" => SlackMessages.FundingBoosted(title, url, 10),
                 "streak_maxed" => SlackMessages.StreakMaxed(title, url, 15, 1, StreakService.VoltsPerHour(1, 15)),
                 "shop_order_placed" => SlackMessages.ShopOrderPlaced("USB drive", 2, 160, options.ShopUrl),
                 "shop_order_fulfilled" => SlackMessages.ShopOrderFulfilled("USB drive", 2, "1Z999AA10123456784", options.ShopUrl),
@@ -59,7 +60,7 @@ public static class SlackTesting
             };
             if (message is null)
             {
-                return Results.BadRequest("template must be welcome, shipped, approved, changes_needed, rejected, streak_at_risk, streak_freeze_used, streak_lost, streak_maxed, shop_order_placed, shop_order_fulfilled, shop_order_refunded, no_project_nudge or no_journal_nudge.");
+                return Results.BadRequest("template must be welcome, shipped, approved, changes_needed, rejected, funding_boosted, streak_at_risk, streak_freeze_used, streak_lost, streak_maxed, shop_order_placed, shop_order_fulfilled, shop_order_refunded, no_project_nudge or no_journal_nudge.");
             }
 
             var sent = await slack.SendDmAsync(user.SlackUserID, message);

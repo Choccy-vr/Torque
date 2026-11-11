@@ -13,6 +13,7 @@ using Torque.Reviews;
 using Torque.Settings;
 using Torque.Shipments;
 using Torque.Shop;
+using Torque.Slack;
 using Torque.Streaks;
 using Torque.Uploads;
 using Torque.Users;
@@ -43,6 +44,7 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<DailyShopPick> DailyShopPicks => Set<DailyShopPick>();
     public DbSet<ShopOrder> ShopOrders => Set<ShopOrder>();
     public DbSet<Upload> Uploads => Set<Upload>();
+    public DbSet<SlackLog> SlackLogs => Set<SlackLog>();
     // Session-cookie signing keys (see Torque.Auth.AuthExtension).
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -159,6 +161,17 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             .HasDefaultValueSql("gen_random_uuid()");
         builder.Entity<Upload>()
             .HasIndex(u => new { u.UserId, u.CreatedAt });
+        builder.Entity<SlackLog>()
+            .Property(p => p.Id)
+            .HasDefaultValueSql("gen_random_uuid()");
+        // Stored as text so the table reads on its own in SQL.
+        builder.Entity<SlackLog>()
+            .Property(l => l.Action)
+            .HasConversion<string>();
+        builder.Entity<SlackLog>()
+            .HasIndex(l => new { l.SlackUserId, l.CreatedAt });
+        builder.Entity<SlackLog>()
+            .HasIndex(l => l.CreatedAt);
         // Sign-in finds users by their HCA `sub`. Rows that never got one are left out.
         builder.Entity<User>()
             .HasIndex(u => u.HcUserID)

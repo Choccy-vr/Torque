@@ -209,12 +209,13 @@ public class ShipmentController : ControllerBase
         {
             return BadRequest("You need at least 1 hour of journaled time since your last approved ship to ship.");
         }
-        // Grants are $5 per design hour being shipped. Bigger ones are a special case,
-        // arranged with an organizer by hand.
-        var maxFunding = PayoutService.MaxGrantFor(unpaidHours);
+        // Grants are $5 per design hour being shipped, unless an admin boosted the
+        // project's rate (POST api/admin/project/{id}/funding-rate).
+        var grantRate = PayoutService.GrantRateFor(project);
+        var maxFunding = PayoutService.MaxGrantFor(unpaidHours, grantRate);
         if (!dto.IsBuildComplete.Value && dto.RequestedFunding.Value > maxFunding)
         {
-            return BadRequest($"You can ask for up to ${maxFunding} for this ship ($5 per hour you're shipping). For special cases, DM @Ginobeano on Slack about extra funding.");
+            return BadRequest($"You can ask for up to ${maxFunding} for this ship (${grantRate:0.##} per hour you're shipping). For special cases, DM @Ginobeano on Slack about extra funding.");
         }
 
         Shipment shipment = new Shipment

@@ -110,6 +110,14 @@ public static class SlackMessages
             + $"*{voltsPerHour:0.#} Volts/hr*. Keep journaling every day to hold it.",
         projectUrl);
 
+    // An admin raised the project's grant cap (POST api/admin/project/{id}/funding-rate).
+    public static SlackMessage FundingBoosted(string projectTitle, string projectUrl, decimal dollarsPerHour) => Build(
+        $"Your funding on {Escape(projectTitle)} has been boosted!",
+        "Funding boosted! :money_with_wings:",
+        $"An organizer boosted the grant rate on *{Escape(projectTitle)}* to *${dollarsPerHour:0.##} per design hour* (up from the usual "
+            + $"${Payouts.PayoutService.DefaultGrantDollarsPerHour:0.##}). Ask for up to that much per hour you're shipping on your next design ship.",
+        projectUrl);
+
     // One-time nudge a few days after sign-up for people who haven't created a project.
     public static SlackMessage NoProjectNudge(string username, string newProjectUrl, string guidesUrl, string goodProjectUrl) => Build(
         "Ready to start your first Torque project?",

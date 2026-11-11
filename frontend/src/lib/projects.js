@@ -59,6 +59,13 @@ export const lastDay = (closesAt) =>
 export const formatDeadline = (iso) =>
     new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
+// Grant rate: the most a design ship can ask for per hour, in USD. Admins can
+// boost a project's rate up to GRANT_RATE_MAX (the backend enforces both).
+export const GRANT_RATE_DEFAULT = 5;
+export const GRANT_RATE_MAX = 100;
+export const formatRate = (rate) =>
+    `$${Number(rate).toLocaleString(undefined, { minimumFractionDigits: rate % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
+
 // The backend sends 0001-01-01 for timestamps that were never set.
 export const isSet = (iso) => Boolean(iso) && new Date(iso).getFullYear() > 2000;
 

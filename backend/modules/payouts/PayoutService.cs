@@ -14,17 +14,24 @@ namespace Torque.Payouts;
 // gets a Grant for an admin to send.
 public class PayoutService
 {
-    // A grant of $N covers N / 5 hours, which aren't paid again as Volts.
-    public const decimal GrantDollarsPerHour = 5;
+    // A grant is capped at $5 per approved design hour, unless an admin boosted the
+    // project's rate (Project.GrantDollarsPerHour). A grant of $N at $R/hr covers N / R
+    // hours, which aren't paid again as Volts.
+    public const decimal DefaultGrantDollarsPerHour = 5;
+    // Ceiling on a boost, to catch typos.
+    public const decimal MaxGrantDollarsPerHour = 100;
 
     private readonly AppDbContext _db;
     public PayoutService(AppDbContext db) => _db = db;
 
     public record PayoutResult(int Volts, Grant? Grant);
 
-    // The most a design ship over `hours` can be granted, in whole dollars.
-    public static int MaxGrantFor(float hours) =>
-        (int)Math.Floor((decimal)Math.Max(0, hours) * GrantDollarsPerHour);
+    public static decimal GrantRateFor(Project project) =>
+        project.GrantDollarsPerHour ?? DefaultGrantDollarsPerHour;
+
+    // The most a design ship over `hours` can be granted at `dollarsPerHour`, in whole dollars.
+    public static int MaxGrantFor(float hours, decimal dollarsPerHour) =>
+        (int)Math.Floor((decimal)Math.Max(0, hours) * dollarsPerHour);
 
     // Journaled hours not yet credited by a final-approved ship. Snapshotted as a ship's hours.
     public async Task<float> UnpaidJournalHoursAsync(Guid projectId, CancellationToken ct = default)
@@ -55,7 +62,8 @@ public class PayoutService
         if (!shipment.IsBuildComplete)
         {
             // Capped again here, since the approved hours can come in under what was shipped.
-            var amount = Math.Min(shipment.RequestedFunding, MaxGrantFor(approvedHours));
+            var grantRate = GrantRateFor(project);
+            var amount = Math.Min(shipment.RequestedFunding, MaxGrantFor(approvedHours, grantRate));
             if (amount <= 0) return new PayoutResult(0, null);
 
             var grant = new Grant
@@ -63,7 +71,8 @@ public class PayoutService
                 ShipmentId = shipment.Id,
                 ProjectId = project.Id,
                 UserId = shipment.UserId,
-                Amount = amount
+                Amount = amount,
+                DollarsPerHour = grantRate
             };
             _db.Grants.Add(grant);
             project.GrantStatus = ProjectGrantStatus.Pending;
@@ -74,13 +83,15 @@ public class PayoutService
             .Where(s => s.ProjectId == project.Id && s.FinalApprovedAt != null && s.Id != shipment.Id)
             .Select(s => new { s.ApprovedHours, s.PaidHours })
             .ToListAsync(ct);
-        var grantDollars = await _db.Grants
+        var grants = await _db.Grants
             .Where(g => g.ProjectId == project.Id)
-            .SumAsync(g => g.Amount, ct);
+            .Select(g => new { g.Amount, g.DollarsPerHour })
+            .ToListAsync(ct);
+        var grantHours = grants.Sum(g => g.Amount / g.DollarsPerHour);
 
         // Everything credited so far, minus what earlier build ships paid and what grants covered.
         var payableHours = (decimal)(earlier.Sum(s => s.ApprovedHours) + approvedHours - earlier.Sum(s => s.PaidHours))
-            - grantDollars / GrantDollarsPerHour;
+            - grantHours;
         payableHours = Math.Max(0, payableHours);
 
         // The streak was paused while the ship was in review, so this is the rate it shipped at.

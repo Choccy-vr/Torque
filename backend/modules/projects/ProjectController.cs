@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Torque.Data;
 using Torque.Extensions;
 using Torque.Hackatime;
+using Torque.Payouts;
 using Torque.Settings;
 using Torque.Streaks;
 // A controller for project data
@@ -280,6 +281,7 @@ public class ProjectController : ControllerBase
                 DevlogIds = p.DevlogIds,
                 Status = p.Status,
                 GrantStatus = p.GrantStatus,
+                GrantDollarsPerHour = p.GrantDollarsPerHour ?? PayoutService.DefaultGrantDollarsPerHour,
                 TrackedDesignHours = p.TrackedDesignHours,
                 TrackedBuildHours = p.TrackedBuildHours,
                 TotalHoursRaw = p.TotalHoursRaw,
@@ -581,6 +583,7 @@ public class ProjectController : ControllerBase
         DevlogIds = project.DevlogIds,
         Status = project.Status,
         GrantStatus = project.GrantStatus,
+        GrantDollarsPerHour = PayoutService.GrantRateFor(project),
         TrackedDesignHours = project.TrackedDesignHours,
         TrackedBuildHours = project.TrackedBuildHours,
         TotalHoursRaw = project.TotalHoursRaw,
