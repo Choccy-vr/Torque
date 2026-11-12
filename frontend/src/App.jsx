@@ -19,6 +19,7 @@ import AdminSettings from './pages/admin/Settings.jsx'
 import AdminShop from './pages/admin/Shop.jsx'
 import AdminShopOrders from './pages/admin/ShopOrders.jsx'
 import AdminShopOrder from './pages/admin/ShopOrder.jsx'
+import AdminSlack from './pages/admin/Slack.jsx'
 import ReviewQueue from './pages/review/Queue.jsx'
 import ReviewShip from './pages/review/Ship.jsx'
 import HackatimeCallback from './pages/HackatimeCallback.jsx'
@@ -97,6 +98,7 @@ function AppRoutes() {
                     <Route path="/admin/projects/:id" element={<RequireAuth><AdminProject /></RequireAuth>} />
                     <Route path="/admin/ships" element={<RequireAuth><AdminShips /></RequireAuth>} />
                     <Route path="/admin/ships/:id" element={<RequireAuth><AdminShip /></RequireAuth>} />
+                    <Route path="/admin/slack" element={<RequireAuth><AdminSlack /></RequireAuth>} />
                     <Route path="/admin/announcements" element={<RequireAuth><AdminAnnouncements /></RequireAuth>} />
                     <Route path="/admin/settings" element={<RequireAuth><AdminSettings /></RequireAuth>} />
                     <Route path="/admin/shop" element={<RequireAuth><AdminShop /></RequireAuth>} />

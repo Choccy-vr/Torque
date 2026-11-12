@@ -28,11 +28,12 @@ public class AdminProjectController : ControllerBase
         _slackOptions = slackOptions;
     }
 
-    // Search every project (any status, archived too) by title, id or owner username,
-    // newest first. Filters: status, ownerId, archived. No query lists the newest.
+    // Search every project (any status, archived too) by title, id or owner username.
+    // Filters: status, ownerId, archived. No query lists the top results for the sort.
+    // sort: newest (default) | hours (most journaled hours first, ties newest first).
     [Authorize]
     [HttpGet("search")]
-    public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] ProjectStatus? status, [FromQuery] Guid? ownerId, [FromQuery] bool? archived)
+    public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] ProjectStatus? status, [FromQuery] Guid? ownerId, [FromQuery] bool? archived, [FromQuery] string? sort)
     {
         var (_, denied) = await this.RequireRoleAsync(_db, "admin");
         if (denied is not null) return denied;
@@ -58,8 +59,12 @@ public class AdminProjectController : ControllerBase
             }
         }
 
-        var results = await projects
-            .OrderByDescending(p => p.CreatedAt)
+        if (sort is not (null or "" or "newest" or "hours")) return BadRequest("sort must be newest or hours.");
+        var ordered = sort == "hours"
+            ? projects.OrderByDescending(p => p.TotalHoursRaw).ThenByDescending(p => p.CreatedAt)
+            : projects.OrderByDescending(p => p.CreatedAt);
+
+        var results = await ordered
             .Take(MaxResults)
             .Select(p => new AdminProjectSummaryDto
             {

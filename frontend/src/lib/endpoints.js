@@ -278,6 +278,14 @@ export function searchAdminProjects(params = {}) {
     return getJson(`api/admin/project/search${query(params)}`)
 }
 
+// GET api/admin/slack/logs — every DM / channel invite the Slack bot attempted,
+// newest first, max 100: [{ id, slackUserId, userId, username,
+// profilePictureUrl, action, detail, success, error, createdAt }].
+// params: q, action (dm | channel_invite), success, userId
+export function getAdminSlackLogs(params = {}) {
+    return getJson(`api/admin/slack/logs${query(params)}`)
+}
+
 // GET api/admin/project/{id} — AdminProjectDto
 export function getAdminProject(id) {
     return getJson(`api/admin/project/${encodeURIComponent(id)}`)

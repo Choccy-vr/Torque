@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Activity, FolderOpen, Megaphone, PackageOpen, Settings2, Ship, ShoppingBag, Users } from "lucide-react";
+import { Activity, FolderOpen, Megaphone, MessageSquare, PackageOpen, Settings2, Ship, ShoppingBag, Users } from "lucide-react";
 import AppShell, { PageHeader } from "../AppShell.jsx";
 import { Empty, InlineError } from "../PageParts.jsx";
 import { BTN_OUTLINE, BTN_PRIMARY, FOCUS } from "../Form.jsx";
@@ -15,6 +15,7 @@ const SECTIONS = [
     { name: "Ships", path: "/admin/ships", icon: Ship },
     { name: "Shop items", path: "/admin/shop", icon: ShoppingBag, end: true },
     { name: "Orders", path: "/admin/shop/orders", icon: PackageOpen },
+    { name: "Slack DMs", path: "/admin/slack", icon: MessageSquare },
     { name: "Announcements", path: "/admin/announcements", icon: Megaphone },
     { name: "Settings", path: "/admin/settings", icon: Settings2 },
 ];
